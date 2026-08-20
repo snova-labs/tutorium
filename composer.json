@@ -1,0 +1,60 @@
+{
+    "name": "snova-labs/platform",
+    "type": "project",
+    "description": "Cohort management platform for tutoring centres, language schools and training institutes.",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.0",
+        "laravel/tinker": "^2.10",
+        "filament/filament": "^5.0",
+        "spatie/laravel-permission": "^6.9",
+        "maatwebsite/excel": "^3.1",
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "dompdf/dompdf": "^3.0",
+        "nesbot/carbon": "^3.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.5",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "@fmt-check",
+            "@stan",
+            "@test"
+        ],
+        "fmt": "pint",
+        "fmt-check": "pint --test",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "test": "@php artisan test",
+        "isolation": "@php artisan test --testsuite=Tenancy"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

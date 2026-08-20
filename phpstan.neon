@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - app
+        - database
+        - tests
+    ignoreErrors:
+        # Eloquent's dynamic factory() is resolved by larastan, but model states are not.
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory::#'
+    checkModelProperties: true
+    checkOctaneCompatibility: false
