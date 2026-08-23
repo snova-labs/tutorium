@@ -37,10 +37,11 @@ services:
     volumes:
       - db-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psecret"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-psecret", "--silent"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 300s
     networks: [platform]
 
   worker:
@@ -114,7 +115,7 @@ services:
       - "63790:6379"
     networks: [platform]
 
-  #   docker compose --profile automation up -d
+  #   docker compose --profile automation up -d 
   n8n:
     image: n8nio/n8n:latest
     profiles: [automation]
