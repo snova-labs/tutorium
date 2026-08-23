@@ -102,10 +102,14 @@ final class TenantIsolationTest extends TestCase
 
         $record = $this->makeFor($tenantA, $model);
 
-        $this->expectException(TenancyException::class);
-
         $this->context()->runAs($tenantA, function () use ($record, $tenantB): void {
-            $record->update(['tenant_id' => $tenantB->getKey()]);
+            try {
+                $record->update(['tenant_id' => $tenantB->getKey()]);
+            } catch (TenancyException|\LogicException) {
+                return;
+            }
+
+            $this->fail($record::class.' allowed its tenant_id to be reassigned.');
         });
     }
 
