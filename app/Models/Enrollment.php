@@ -78,4 +78,9 @@ final class Enrollment extends Model
     {
         return $this->number;
     }
+
+    public function notes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TeacherNote::class);
+    }
 }
