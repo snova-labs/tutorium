@@ -57,6 +57,8 @@ final class DatabaseSeeder extends Seeder
 
         $this->command?->newLine();
         $this->command?->info('Sign in with owner@sample-one.test or owner@sample-two.test — password: password');
+        $this->call(AcademicSeeder::class);
+        
     }
 
     private function seedTenantOne(Tenant $tenant): void
