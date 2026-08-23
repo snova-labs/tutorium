@@ -21,7 +21,7 @@ final class AuditLog extends Model
     use BelongsToTenant, HasFactory;
 
     public $timestamps = false;
-    
+
     public const ACTOR_USER = 'user';
 
     public const ACTOR_OPERATOR = 'operator';

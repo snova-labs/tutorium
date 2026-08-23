@@ -60,7 +60,6 @@ final class DatabaseSeeder extends Seeder
         $this->call(AcademicSeeder::class);
         $this->call(PeopleSeeder::class);
         $this->call(AttendanceSeeder::class);
-        
 
     }
 
@@ -180,5 +179,4 @@ final class DatabaseSeeder extends Seeder
 
         return $user;
     }
-
 }
