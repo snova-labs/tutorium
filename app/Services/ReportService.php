@@ -9,7 +9,6 @@ use App\Jobs\GenerateReportJob;
 use App\Models\Batch;
 use App\Models\Enrollment;
 use App\Models\Report;
-use App\Models\ReportingPeriod;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
 use App\Support\Pdf\PdfOptions;
@@ -38,7 +37,7 @@ final class ReportService
     /**
      * Generate one report.
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public function generate(Enrollment $enrollment, PeriodBoundary $period, array $options = []): Report
     {
@@ -88,7 +87,7 @@ final class ReportService
      * One job per learner rather than one job for the batch, so a single broken record cannot
      * stop the other thirty-nine reports going out (FR-RPT-3).
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public function queueBatchRun(Batch $batch, ?string $periodLabel, array $options = []): ReportRun
     {
@@ -155,7 +154,7 @@ final class ReportService
     }
 
     /**
-     * @param  array<string, mixed>  $snapshot
+     * @param array<string, mixed> $snapshot
      * @return array<string, string>
      */
     private function store(Report $report, ReportTemplate $template, array $snapshot, Enrollment $enrollment): array

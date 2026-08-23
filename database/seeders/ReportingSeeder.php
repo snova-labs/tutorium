@@ -7,12 +7,11 @@ namespace Database\Seeders;
 use App\Models\Batch;
 use App\Models\EmailTemplate;
 use App\Models\Enrollment;
+use App\Models\IdSequence;
 use App\Models\NoteCategory;
 use App\Models\ReportTemplate;
 use App\Models\Tenant;
 use App\Services\TeacherNoteService;
-use App\Support\Sequences\IdSequenceService;
-use App\Models\IdSequence;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 

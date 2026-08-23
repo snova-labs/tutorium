@@ -6,6 +6,7 @@ namespace Tests\Feature\Reporting;
 
 use App\Models\Report;
 use App\Models\ReportTemplate;
+use App\Services\ReportService;
 use App\Support\Reporting\ReportRenderer;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\PeriodService;
@@ -63,7 +64,7 @@ final class ReportSnapshotTest extends TestCase
             $this->gradeHomework(20);
 
             // Downloaded six weeks later, it must match the PDF the parent received.
-            $pdf = app(\App\Services\ReportService::class)->rerender($report->refresh());
+            $pdf = app(ReportService::class)->rerender($report->refresh());
 
             $this->assertStringStartsWith('%PDF', $pdf);
             $this->assertSame(80.0, $report->stats_snapshot['average']['percentage']);
@@ -180,7 +181,7 @@ final class ReportSnapshotTest extends TestCase
     {
         $period = app(PeriodService::class)->forLabel($this->batch->load('course'), '2026-08');
 
-        return app(\App\Services\ReportService::class)->generate(
+        return app(ReportService::class)->generate(
             $this->enrollment->setRelation('batch', $this->batch),
             $period,
             $options,

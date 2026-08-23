@@ -13,6 +13,7 @@ use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\ClassSession;
 use App\Models\Course;
+use App\Models\EmailTemplate;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
 use App\Models\EnrollmentStatusHistory;
@@ -25,23 +26,22 @@ use App\Models\IdSequence;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
+use App\Models\NoteCategory;
 use App\Models\RelationType;
+use App\Models\Report;
+use App\Models\ReportDelivery;
 use App\Models\ReportingPeriod;
+use App\Models\ReportRun;
+use App\Models\ReportTemplate;
 use App\Models\RubricCriterion;
 use App\Models\SessionType;
 use App\Models\Setting;
 use App\Models\SubmissionStatus;
+use App\Models\TeacherNote;
 use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
 use App\Models\User;
-use App\Models\ReportTemplate;
-use App\Models\Report;
-use App\Models\ReportRun;
-use App\Models\ReportDelivery;
-use App\Models\TeacherNote;
-use App\Models\NoteCategory;
-use App\Models\EmailTemplate;
 
 return [
 

@@ -44,7 +44,7 @@ final class TeacherNoteService
     /**
      * Write a note for a whole batch in one pass, skipping the empty ones.
      *
-     * @param  array<int, array{enrollment_id: int, body: string, note_category_id: int, is_report_visible?: bool}>  $notes
+     * @param array<int, array{enrollment_id: int, body: string, note_category_id: int, is_report_visible?: bool}> $notes
      * @return array{written: int, skipped: int}
      */
     public function writeMany(array $notes, ?string $period = null): array

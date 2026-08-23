@@ -9,7 +9,9 @@ use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\TeacherNote;
 use App\Support\Attendance\AttendanceCalculator;
+use App\Support\Attendance\AttendanceRate;
 use App\Support\Grading\GradeBookCalculator;
+use App\Support\Grading\PeriodAverage;
 use App\Support\Time\PeriodBoundary;
 
 /**
@@ -118,12 +120,12 @@ final class ReportDataBuilder
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $assessments
+     * @param array<int, array<string, mixed>> $assessments
      * @return array<int, string>
      */
     private function highlights(
-        \App\Support\Attendance\AttendanceRate $attendance,
-        \App\Support\Grading\PeriodAverage $average,
+        AttendanceRate $attendance,
+        PeriodAverage $average,
         array $assessments,
     ): array {
         $highlights = [];
@@ -186,8 +188,8 @@ final class ReportDataBuilder
      * judgement that is not that precise.
      */
     private function engagement(
-        \App\Support\Attendance\AttendanceRate $attendance,
-        \App\Support\Grading\PeriodAverage $average,
+        AttendanceRate $attendance,
+        PeriodAverage $average,
     ): ?int {
         $attendancePct = $attendance->percentage();
 

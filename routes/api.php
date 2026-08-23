@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use Illuminate\Support\Facades\Route;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -36,7 +35,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
 
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
-    Route::get('ping', fn() => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
+    Route::get('ping', fn () => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
 
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
 
@@ -109,12 +108,12 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.assessments.ungraded');
         Route::get('enrollments/{enrollment}/average', [GradeBookController::class, 'average'])
             ->name('api.enrollments.average');
-// Notes
+        // Notes
         Route::get('enrollments/{enrollment}/notes', [NoteController::class, 'index'])->name('api.notes.index');
         Route::post('enrollments/{enrollment}/notes', [NoteController::class, 'store'])->name('api.notes.store');
         Route::post('batches/{batch}/notes', [NoteController::class, 'storeMany'])->name('api.notes.bulk');
 
-// Reporting
+        // Reporting
         Route::get('batches/{batch}/reports/readiness', [ReportController::class, 'readiness'])
             ->name('api.reports.readiness');
         Route::post('batches/{batch}/reports', [ReportController::class, 'generateBatch'])

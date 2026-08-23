@@ -17,11 +17,11 @@ use Illuminate\Contracts\Support\Arrayable;
 final class ReportSnapshot implements Arrayable
 {
     /**
-     * @param  array<string, mixed>  $attendance
-     * @param  array<string, mixed>  $average
-     * @param  array<int, array<string, mixed>>  $assessments
-     * @param  array<int, string>  $highlights
-     * @param  array<int, array{category: string, body: string}>  $notes
+     * @param array<string, mixed> $attendance
+     * @param array<string, mixed> $average
+     * @param array<int, array<string, mixed>> $assessments
+     * @param array<int, string> $highlights
+     * @param array<int, array{category: string, body: string}> $notes
      */
     public function __construct(
         public readonly string $learnerName,

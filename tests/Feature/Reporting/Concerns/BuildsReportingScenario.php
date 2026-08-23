@@ -18,8 +18,8 @@ use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
-use App\Models\Guardian;
 use App\Models\GradingScheme;
+use App\Models\Guardian;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\NoteCategory;
@@ -54,7 +54,7 @@ trait BuildsReportingScenario
         parent::setUp();
 
         $this->tenant = app(TenantContext::class)->withoutScoping(
-            fn () => Tenant::factory()->create(['slug' => 'reporting-'.uniqid()])
+            fn () => Tenant::factory()->create(['slug' => 'reporting-'.uniqid()]),
         );
 
         app(TenantContext::class)->runAs($this->tenant, function (): void {
@@ -174,7 +174,7 @@ trait BuildsReportingScenario
                 'title' => 'Sample worksheet',
                 'due_local_date' => '2026-08-15',
                 'max_points' => 20,
-            ])
+            ]),
         );
     }
 }
