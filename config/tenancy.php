@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\IdSequence;
@@ -30,6 +31,7 @@ return [
         User::class,
         Setting::class,
         IdSequence::class,
+        AuditLog::class,
     ],
 
     /*
