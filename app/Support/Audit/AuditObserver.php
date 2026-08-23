@@ -60,8 +60,8 @@ final class AuditObserver
     }
 
     /**
-     * @param  array<string, mixed>|null  $before
-     * @param  array<string, mixed>|null  $after
+     * @param array<string, mixed>|null $before
+     * @param array<string, mixed>|null $after
      */
     private function write(Model $model, string $action, ?array $before, ?array $after): void
     {
@@ -91,7 +91,7 @@ final class AuditObserver
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      * @return array<string, mixed>
      */
     private function scrub(Model $model, array $attributes): array

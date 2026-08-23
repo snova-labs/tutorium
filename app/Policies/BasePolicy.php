@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -61,7 +62,7 @@ abstract class BasePolicy
     protected function inScope(User $user, Model $record): bool
     {
         $branchId = $record->getAttribute('branch_id')
-            ?? ($record instanceof \App\Models\Branch ? $record->getKey() : null);
+            ?? ($record instanceof Branch ? $record->getKey() : null);
 
         if ($branchId === null) {
             return true;

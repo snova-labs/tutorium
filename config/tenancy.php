@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\IdSequence;
 use App\Models\Setting;
+use App\Models\Tenant;
 use App\Models\User;
 
 return [
@@ -46,7 +47,7 @@ return [
     */
 
     'global_models' => [
-        \App\Models\Tenant::class,
+        Tenant::class,
     ],
 
 ];

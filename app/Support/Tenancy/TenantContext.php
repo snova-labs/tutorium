@@ -14,7 +14,7 @@ use Closure;
  * once, at the edge (ResolveTenant middleware for requests, TenantAware for jobs), and every
  * query is scoped from it automatically.
  *
- * @see \App\Support\Tenancy\TenantScope
+ * @see TenantScope
  */
 final class TenantContext
 {
@@ -76,7 +76,7 @@ final class TenantContext
      *
      * @template TReturn
      *
-     * @param  Closure(): TReturn  $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function runAs(Tenant $tenant, Closure $callback): mixed
@@ -103,7 +103,7 @@ final class TenantContext
      *
      * @template TReturn
      *
-     * @param  Closure(): TReturn  $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function withoutScoping(Closure $callback): mixed

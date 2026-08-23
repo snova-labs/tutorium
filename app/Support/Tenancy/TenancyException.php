@@ -13,7 +13,7 @@ final class TenancyException extends RuntimeException
         return new self(
             'No tenant is bound to the current context. Requests must pass through ResolveTenant; '
             .'queued jobs must use the TenantAware trait; control-plane work must call '
-            .'TenantContext::withoutScoping() explicitly.'
+            .'TenantContext::withoutScoping() explicitly.',
         );
     }
 

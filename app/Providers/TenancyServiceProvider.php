@@ -51,7 +51,7 @@ final class TenancyServiceProvider extends ServiceProvider
                 // The cached permission map belongs to the previous tenant; keeping it would let
                 // one account's roles answer another account's questions.
                 $registrar->forgetCachedPermissions();
-            }
+            },
         );
     }
 

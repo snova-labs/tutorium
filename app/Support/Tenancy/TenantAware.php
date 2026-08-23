@@ -36,7 +36,7 @@ trait TenantAware
         }
 
         $tenant = app(TenantContext::class)->withoutScoping(
-            fn () => Tenant::query()->find($this->tenantId)
+            fn () => Tenant::query()->find($this->tenantId),
         );
 
         return $tenant ?? throw TenancyException::unresolvableJob(static::class);

@@ -30,8 +30,8 @@ final class IdSequenceService
      * Must be called inside the transaction that creates the record, so a rolled-back write does
      * not consume a number invisibly.
      *
-     * @param  string  $entity  learner | enrollment | assessment | report | invoice | ...
-     * @param  string  $scopeType  tenant | brand | branch
+     * @param string $entity learner | enrollment | assessment | report | invoice | ...
+     * @param string $scopeType tenant | brand | branch
      */
     public function next(string $entity, string $scopeType = 'tenant', ?int $scopeId = null): string
     {
@@ -95,7 +95,7 @@ final class IdSequenceService
                 ->where('scope_id', $scopeId)
                 ->where('is_active', true)
                 ->first()
-                ?? $this->fallback($tenantId, $entity, $scopeType, $scopeId)
+                ?? $this->fallback($tenantId, $entity, $scopeType, $scopeId),
         );
     }
 
