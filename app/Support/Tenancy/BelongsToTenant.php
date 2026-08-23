@@ -25,13 +25,20 @@ trait BelongsToTenant
             $column = $model->getTenantColumn();
 
             if ($model->getAttribute($column) === null) {
+                // Control-plane and system writes may legitimately have no tenant — a
+                // platform-level audit entry, for instance. Those must call withoutScoping()
+                // explicitly, which is what makes the exception visible in review.
+                if ($context->isSuspended()) {
+                    return;
+                }
+
                 $model->setAttribute($column, $context->require()->getKey());
 
                 return;
             }
 
-            // An explicitly set tenant is allowed only when it matches the bound context, or when
-            // scoping is deliberately suspended (provisioning, control plane, imports).
+            // An explicitly set tenant is allowed only when it matches the bound context, or
+            // when scoping is deliberately suspended (provisioning, control plane, imports).
             if (! $context->isSuspended() && $model->getAttribute($column) !== $context->id()) {
                 throw TenancyException::mismatch(
                     static::class,
