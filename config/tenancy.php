@@ -27,6 +27,16 @@ use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\User;
+use App\Models\Assessment;
+use App\Models\AssessmentType;
+use App\Models\Grade;
+use App\Models\GradeRubricScore;
+use App\Models\RubricCriterion;
+use App\Models\SubmissionStatus;
+use App\Models\TypeWeight;
+use App\Models\GradingScheme;
+
+    
 
 return [
 
@@ -80,6 +90,15 @@ return [
         AttendancePolicy::class,
         AttendanceRecord::class,
         MakeupLink::class,
+
+        AssessmentType::class,
+        SubmissionStatus::class,
+        GradingScheme::class,
+        Assessment::class,
+        RubricCriterion::class,
+        Grade::class,
+        GradeRubricScore::class,
+        TypeWeight::class,
     ],
 
     'global_models' => [

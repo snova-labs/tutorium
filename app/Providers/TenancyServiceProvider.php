@@ -35,6 +35,8 @@ final class TenancyServiceProvider extends ServiceProvider
             TenantContext::class,
             fn (TenantContext $context) => $context->onChange($this->syncPermissionTenant()),
         );
+
+        $this->app->singleton(\App\Support\Grading\GradingRegistry::class);
     }
 
     public function boot(): void
