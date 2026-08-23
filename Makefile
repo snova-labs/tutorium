@@ -1,12 +1,28 @@
-.PHONY: up down restart install migrate fresh seed test stan fmt fmt-check shell logs isolation
+export WWW_UID := $(shell id -u)
+export WWW_GID := $(shell id -g)
 
-up:            ## start the stack
+.PHONY: setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation
+
+setup:         ## one command for a new developer
+	@test -f .env || cp .env.example .env
+	docker compose build
+	docker compose up -d
+	docker compose exec -T app composer install
+	docker compose exec -T app php artisan key:generate
+	docker compose exec -T app php artisan migrate --seed
+	@echo "Ready: http://localhost:8080  |  mail http://localhost:8025  |  minio http://localhost:9001"
+
+build:
+	docker compose build
+
+up:
 	docker compose up -d
 
-down:          ## stop the stack
+down:
 	docker compose down
 
 restart: down up
+
 
 install:       ## first run: key, migrate, seed
 	docker compose exec app composer install
