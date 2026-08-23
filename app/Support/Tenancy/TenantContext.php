@@ -36,11 +36,14 @@ final class TenantContext
     public function onChange(Closure $listener): void
     {
         $this->listeners[] = $listener;
-        $listener($this->tenant);
     }
 
     public function set(?Tenant $tenant): void
     {
+        if ($this->tenant?->getKey() === $tenant?->getKey()) {
+            return; // no-op switches shouldn't fire listeners
+        }
+
         $this->tenant = $tenant;
         $this->notify();
     }
