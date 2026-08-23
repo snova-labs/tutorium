@@ -35,6 +35,11 @@ final class TenancyServiceProvider extends ServiceProvider
 
         $this->keepPermissionsInStepWithTenant();
         $this->grantOwnerEverything();
+
+        Gate::policy(\App\Models\ClassSession::class, \App\Policies\ClassSessionPolicy::class);
+
+        Gate::define('viewRoster', [\App\Policies\AttendancePolicyGate::class, 'viewRoster']);
+        Gate::define('record', [\App\Policies\AttendancePolicyGate::class, 'record']);
     }
 
     /**
