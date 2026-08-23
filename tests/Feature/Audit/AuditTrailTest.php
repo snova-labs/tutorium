@@ -114,4 +114,22 @@ final class AuditTrailTest extends TestCase
             $this->assertSame(0, AuditLog::query()->count());
         });
     }
+    #[Test]
+    #[DataProvider('tenantResources')]
+    public function moving_a_record_between_tenants_is_refused(string $model): void
+    {
+        [$tenantA, $tenantB] = $this->twoTenants();
+
+        $record = $this->makeFor($tenantA, $model);
+
+        $this->context()->runAs($tenantA, function () use ($record, $tenantB): void {
+            try {
+                $record->update(['tenant_id' => $tenantB->getKey()]);
+            } catch (TenancyException|LogicException) {
+                return;   // refused, which is the contract
+            }
+
+            $this->fail($record::class.' allowed its tenant_id to be reassigned.');
+        });
+    }
 }
