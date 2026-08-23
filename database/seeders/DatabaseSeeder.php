@@ -60,6 +60,7 @@ final class DatabaseSeeder extends Seeder
         $this->call(AcademicSeeder::class);
         $this->call(PeopleSeeder::class);
         $this->call(AttendanceSeeder::class);
+        $this->call(GradingSeeder::class);
 
     }
 

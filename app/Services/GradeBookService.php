@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Assessment;
+use App\Models\Batch;
 use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\SubmissionStatus;
@@ -26,7 +27,7 @@ final class GradeBookService
      *
      * @return array<string, mixed>
      */
-    public function grid(\App\Models\Batch $batch, ?string $from = null, ?string $to = null): array
+    public function grid(Batch $batch, ?string $from = null, ?string $to = null): array
     {
         $assessments = Assessment::query()
             ->with(['assessmentType', 'gradingScheme', 'rubricCriteria'])
@@ -98,10 +99,10 @@ final class GradeBookService
     /**
      * Save a set of cells.
      *
-     * @param  array<int, array<string, mixed>>  $cells
+     * @param array<int, array<string, mixed>> $cells
      * @return array{saved: int, updated: int}
      */
-    public function saveGrid(\App\Models\Batch $batch, array $cells): array
+    public function saveGrid(Batch $batch, array $cells): array
     {
         $assessments = Assessment::query()
             ->with(['gradingScheme', 'rubricCriteria'])

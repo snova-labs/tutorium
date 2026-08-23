@@ -13,6 +13,7 @@ use App\Models\Brand;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
+use App\Models\Grade;
 use App\Models\GradingScheme;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
@@ -41,7 +42,7 @@ final class GradingNormalisationTest extends TestCase
         parent::setUp();
 
         $this->tenant = app(TenantContext::class)->withoutScoping(
-            fn () => Tenant::factory()->create(['slug' => 'grading-test'])
+            fn () => Tenant::factory()->create(['slug' => 'grading-test']),
         );
     }
 
@@ -240,9 +241,9 @@ final class GradingNormalisationTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
-     * @param  array<int, array<string, mixed>>  $criteria
-     * @param  array<string, mixed>  $config
+     * @param array<string, mixed> $attributes
+     * @param array<int, array<string, mixed>> $criteria
+     * @param array<string, mixed> $config
      */
     private function assessment(
         GradingSchemeKind $kind,
@@ -323,14 +324,14 @@ final class GradingNormalisationTest extends TestCase
             ]),
         ]);
 
-        return \App\Models\Grade::query()
+        return Grade::query()
             ->where('assessment_id', $assessment->getKey())
             ->where('enrollment_id', $this->enrollment()->getKey())
             ->value('normalized_pct');
     }
 
     /**
-     * @param  array<int, float>  $points
+     * @param array<int, float> $points
      * @return array<int, float>
      */
     private function criteriaScores(Assessment $assessment, array $points): array

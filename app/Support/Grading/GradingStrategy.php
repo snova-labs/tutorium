@@ -26,7 +26,7 @@ interface GradingStrategy
      * Reject a value that cannot mean anything under this scheme, with a message a teacher can act
      * on rather than a type error.
      *
-     * @param  array<string, mixed>  $input
+     * @param array<string, mixed> $input
      */
     public function validate(array $input, Assessment $assessment): void;
 

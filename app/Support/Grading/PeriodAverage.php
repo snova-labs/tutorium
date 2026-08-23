@@ -17,7 +17,7 @@ use Illuminate\Contracts\Support\Arrayable;
 final class PeriodAverage implements Arrayable
 {
     /**
-     * @param  array<int, array{type: string, mean: float, weight: ?float, contribution: ?float, counted: int, excluded: int}>  $breakdown
+     * @param array<int, array{type: string, mean: float, weight: ?float, contribution: ?float, counted: int, excluded: int}> $breakdown
      */
     public function __construct(
         public readonly ?float $percentage,

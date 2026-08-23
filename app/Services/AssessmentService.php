@@ -18,8 +18,8 @@ final class AssessmentService
     public function __construct(private readonly IdSequenceService $sequences) {}
 
     /**
-     * @param  array<string, mixed>  $attributes
-     * @param  array<int, array{name: string, max_points: float, descriptor?: string}>  $criteria
+     * @param array<string, mixed> $attributes
+     * @param array<int, array{name: string, max_points: float, descriptor?: string}> $criteria
      */
     public function create(Batch $batch, array $attributes, array $criteria = []): Assessment
     {
@@ -97,8 +97,8 @@ final class AssessmentService
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
-     * @param  array<int, array<string, mixed>>  $criteria
+     * @param array<string, mixed> $attributes
+     * @param array<int, array<string, mixed>> $criteria
      */
     private function guardSchemeInputs(GradingScheme $scheme, array $attributes, array $criteria): void
     {

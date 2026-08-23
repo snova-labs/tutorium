@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Policies\AttendancePolicyGate;
 use App\Policies\ClassSessionPolicy;
 use App\Support\Audit\AuditContext;
+use App\Support\Grading\GradingRegistry;
 use App\Support\Sequences\IdSequenceService;
 use App\Support\Settings\SettingsResolver;
 use App\Support\Tenancy\TenantContext;
@@ -36,7 +37,7 @@ final class TenancyServiceProvider extends ServiceProvider
             fn (TenantContext $context) => $context->onChange($this->syncPermissionTenant()),
         );
 
-        $this->app->singleton(\App\Support\Grading\GradingRegistry::class);
+        $this->app->singleton(GradingRegistry::class);
     }
 
     public function boot(): void

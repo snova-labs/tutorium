@@ -90,8 +90,8 @@ final class GradeBookCalculator
     }
 
     /**
-     * @param  array<int, array{name: string, values: array<int, float>, excluded: int}>  $byType
-     * @param  array<int, float>  $weights
+     * @param array<int, array{name: string, values: array<int, float>, excluded: int}> $byType
+     * @param array<int, float> $weights
      */
     private function combine(array $byType, array $weights, int $graded, int $missing, int $excluded, int $ungraded): PeriodAverage
     {

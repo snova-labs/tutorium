@@ -22,6 +22,7 @@ use App\Models\TypeWeight;
 use App\Services\AssessmentService;
 use App\Services\GradeBookService;
 use App\Support\Grading\GradeBookCalculator;
+use App\Support\Grading\PeriodAverage;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\PeriodService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,7 +54,7 @@ final class WeightedAverageTest extends TestCase
         parent::setUp();
 
         $this->tenant = app(TenantContext::class)->withoutScoping(
-            fn () => Tenant::factory()->create(['slug' => 'weights-test'])
+            fn () => Tenant::factory()->create(['slug' => 'weights-test']),
         );
 
         app(TenantContext::class)->runAs($this->tenant, function (): void {
@@ -221,7 +222,7 @@ final class WeightedAverageTest extends TestCase
         app(TenantContext::class)->runAs($this->tenant, $callback);
     }
 
-    private function average(): \App\Support\Grading\PeriodAverage
+    private function average(): PeriodAverage
     {
         $period = app(PeriodService::class)->forLabel($this->batch->load('course'), '2026-08');
 
@@ -312,9 +313,9 @@ final class WeightedAverageTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
-     * @param  array<int, array<string, mixed>>  $criteria
-     * @param  array<string, mixed>  $config
+     * @param array<string, mixed> $attributes
+     * @param array<int, array<string, mixed>> $criteria
+     * @param array<string, mixed> $config
      */
     private function make(
         string $title,
@@ -359,7 +360,7 @@ final class WeightedAverageTest extends TestCase
     }
 
     /**
-     * @param  array<int, float>  $points
+     * @param array<int, float> $points
      * @return array<int, float>
      */
     private function scores(Assessment $assessment, array $points): array

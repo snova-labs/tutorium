@@ -114,6 +114,7 @@ final class AuditTrailTest extends TestCase
             $this->assertSame(0, AuditLog::query()->count());
         });
     }
+
     #[Test]
     #[DataProvider('tenantResources')]
     public function moving_a_record_between_tenants_is_refused(string $model): void
