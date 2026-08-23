@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Guardian;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Guardian */
+/** @mixin Guardian */
 final class GuardianResource extends JsonResource
 {
     /** @return array<string, mixed> */
