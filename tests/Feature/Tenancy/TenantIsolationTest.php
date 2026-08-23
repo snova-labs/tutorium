@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace Tests\Feature\Tenancy;
 
@@ -27,9 +27,11 @@ final class TenantIsolationTest extends TestCase
     /** @return array<string, array{0: class-string<Model>}> */
     public static function tenantResources(): array
     {
+        $config = require __DIR__ . '/../../../config/tenancy.php';
+
         $cases = [];
 
-        foreach (config('tenancy.resources') as $model) {
+        foreach ($config['resources'] as $model) {
             $cases[class_basename($model)] = [$model];
         }
 
@@ -121,14 +123,14 @@ final class TenantIsolationTest extends TestCase
             0,
             $model::query()->count(),
             "{$model} returned rows with no tenant bound. Unscoped queries must fail closed, "
-            .'never open.',
+            . 'never open.',
         );
     }
 
     /** @return array{0: Tenant, 1: Tenant} */
     private function twoTenants(): array
     {
-        return $this->context()->withoutScoping(fn () => [
+        return $this->context()->withoutScoping(fn() => [
             Tenant::factory()->create(['name' => 'Sample Academy One', 'slug' => 'sample-one']),
             Tenant::factory()->create(['name' => 'Sample Academy Two', 'slug' => 'sample-two']),
         ]);
@@ -136,7 +138,7 @@ final class TenantIsolationTest extends TestCase
 
     private function makeFor(Tenant $tenant, string $model): Model
     {
-        return $this->context()->runAs($tenant, fn () => $model::factory()->create());
+        return $this->context()->runAs($tenant, fn() => $model::factory()->create());
     }
 
     private function context(): TenantContext

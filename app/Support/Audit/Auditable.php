@@ -17,7 +17,17 @@ trait Auditable
 {
     public static function bootAuditable(): void
     {
-        static::observe(AuditObserver::class);
+        $events = [
+            'retrieved', 'creating', 'created', 'updating', 'updated',
+            'saving', 'saved', 'restoring', 'restored', 'replicating',
+            'deleting', 'deleted', 'forceDeleting', 'forceDeleted',
+        ];
+
+        foreach ($events as $event) {
+            if (method_exists(AuditObserver::class, $event)) {
+                static::registerModelEvent($event, AuditObserver::class.'@'.$event);
+            }
+        }
     }
 
     /** Grouping shown in the activity log filter. Override where the class name reads oddly. */

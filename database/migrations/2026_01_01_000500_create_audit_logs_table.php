@@ -30,6 +30,7 @@ return new class extends Migration
             $table->json('after')->nullable();
             $table->string('ip', 45)->nullable();
             $table->timestamp('occurred_at')->useCurrent();
+            // $table->timestamps(); // not needed, we have occurred_at
 
             $table->index(['tenant_id', 'occurred_at']);
             $table->index(['auditable_type', 'auditable_id']);
