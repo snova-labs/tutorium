@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 /**
  * A scheduled run of a course, and the authoritative timezone for everything beneath it.
@@ -96,9 +97,9 @@ final class Batch extends Model
     {
         return 'Academic';
     }
-    
+
     /** Enrollments that should appear on a register or a summary. */
-    public function enrollmentsForAttendance(): \Illuminate\Support\Collection
+    public function enrollmentsForAttendance(): Collection
     {
         return $this->hasMany(Enrollment::class)->with('learner')->active()->get();
     }

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\ClassSession;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\AttendancePolicyGate;
+use App\Policies\ClassSessionPolicy;
 use App\Support\Audit\AuditContext;
 use App\Support\Sequences\IdSequenceService;
 use App\Support\Settings\SettingsResolver;
@@ -36,10 +39,10 @@ final class TenancyServiceProvider extends ServiceProvider
         $this->keepPermissionsInStepWithTenant();
         $this->grantOwnerEverything();
 
-        Gate::policy(\App\Models\ClassSession::class, \App\Policies\ClassSessionPolicy::class);
+        Gate::policy(ClassSession::class, ClassSessionPolicy::class);
 
-        Gate::define('viewRoster', [\App\Policies\AttendancePolicyGate::class, 'viewRoster']);
-        Gate::define('record', [\App\Policies\AttendancePolicyGate::class, 'record']);
+        Gate::define('viewRoster', [AttendancePolicyGate::class, 'viewRoster']);
+        Gate::define('record', [AttendancePolicyGate::class, 'record']);
     }
 
     /**
