@@ -38,6 +38,21 @@ final class TenancyServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(GradingRegistry::class);
+
+        $this->app->bind(\App\Support\Pdf\PdfRenderer::class, function ($app) {
+            return config('reporting.pdf.renderer') === 'chrome'
+                ? new \App\Support\Pdf\ChromePdfRenderer(config('reporting.pdf.chrome_binary'))
+                : new \App\Support\Pdf\PhpPdfRenderer;
+        });
+
+        $this->app->bind(\App\Support\Mail\MailProvider::class, function ($app) {
+            return config('reporting.mail.provider') === 'n8n'
+                ? new \App\Support\Mail\N8nMailProvider(
+                    config('reporting.mail.n8n_webhook'),
+                    config('reporting.mail.n8n_secret'),
+                )
+                : new \App\Support\Mail\SmtpMailProvider($app['mailer']);
+        });
     }
 
     public function boot(): void

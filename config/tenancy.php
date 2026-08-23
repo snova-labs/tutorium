@@ -35,6 +35,13 @@ use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
 use App\Models\User;
+use App\Models\ReportTemplate;
+use App\Models\Report;
+use App\Models\ReportRun;
+use App\Models\ReportDelivery;
+use App\Models\TeacherNote;
+use App\Models\NoteCategory;
+use App\Models\EmailTemplate;
 
 return [
 
@@ -97,6 +104,14 @@ return [
         Grade::class,
         GradeRubricScore::class,
         TypeWeight::class,
+
+        NoteCategory::class,
+        TeacherNote::class,
+        ReportTemplate::class,
+        Report::class,
+        ReportRun::class,
+        ReportDelivery::class,
+        EmailTemplate::class,
     ],
 
     'global_models' => [
