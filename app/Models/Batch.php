@@ -96,4 +96,10 @@ final class Batch extends Model
     {
         return 'Academic';
     }
+    
+    /** Enrollments that should appear on a register or a summary. */
+    public function enrollmentsForAttendance(): \Illuminate\Support\Collection
+    {
+        return $this->hasMany(Enrollment::class)->with('learner')->active()->get();
+    }
 }
