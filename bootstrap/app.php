@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureOperator;
+use App\Http\Middleware\RestrictImpersonatedAccess;
 use App\Support\Tenancy\RequiresTenant;
 use App\Support\Tenancy\ResolveTenant;
 use App\Support\Tenancy\TenancyException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            Route::middleware(['api', 'auth:operator', 'operator'])
+                ->prefix('operator/v1')
+                ->group(base_path('routes/operator.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // On the web the session has already resolved the user by the time this runs, so the
@@ -27,7 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.resolve' => ResolveTenant::class,
             'tenant' => RequiresTenant::class,
+            'operator' => EnsureOperator::class,
         ]);
+        $middleware->api(append: [RestrictImpersonatedAccess::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // A tenancy failure is a programming error, not something to explain to a caller: loud
@@ -38,4 +48,5 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json(['message' => 'Request could not be completed.'], 500);
         });
     })
+
     ->create();

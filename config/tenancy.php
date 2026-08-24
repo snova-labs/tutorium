@@ -23,10 +23,12 @@ use App\Models\GradingScheme;
 use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
+use App\Models\Impersonation;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
+use App\Models\Operator;
 use App\Models\PresetApplication;
 use App\Models\RelationType;
 use App\Models\Report;
@@ -41,6 +43,7 @@ use App\Models\Setting;
 use App\Models\SubmissionStatus;
 use App\Models\TeacherNote;
 use App\Models\Tenant;
+use App\Models\TenantExport;
 use App\Models\TerminologyOverride;
 use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
@@ -119,10 +122,14 @@ return [
         TerminologyOverride::class,
         PresetApplication::class,
         SampleDataSet::class,
+
+        TenantExport::class,
     ],
 
     'global_models' => [
         Tenant::class,
+        Operator::class,
+        Impersonation::class,
     ],
 
 ];
