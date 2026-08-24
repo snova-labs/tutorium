@@ -11,6 +11,12 @@ use App\Policies\AttendancePolicyGate;
 use App\Policies\ClassSessionPolicy;
 use App\Support\Audit\AuditContext;
 use App\Support\Grading\GradingRegistry;
+use App\Support\Mail\MailProvider;
+use App\Support\Mail\N8nMailProvider;
+use App\Support\Mail\SmtpMailProvider;
+use App\Support\Pdf\ChromePdfRenderer;
+use App\Support\Pdf\PdfRenderer;
+use App\Support\Pdf\PhpPdfRenderer;
 use App\Support\Sequences\IdSequenceService;
 use App\Support\Settings\SettingsResolver;
 use App\Support\Tenancy\TenantContext;
@@ -38,6 +44,21 @@ final class TenancyServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(GradingRegistry::class);
+
+        $this->app->bind(PdfRenderer::class, function ($app) {
+            return config('reporting.pdf.renderer') === 'chrome'
+                ? new ChromePdfRenderer(config('reporting.pdf.chrome_binary'))
+                : new PhpPdfRenderer;
+        });
+
+        $this->app->bind(MailProvider::class, function ($app) {
+            return config('reporting.mail.provider') === 'n8n'
+                ? new N8nMailProvider(
+                    config('reporting.mail.n8n_webhook'),
+                    config('reporting.mail.n8n_secret'),
+                )
+                : new SmtpMailProvider($app['mailer']);
+        });
     }
 
     public function boot(): void
