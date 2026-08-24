@@ -39,7 +39,7 @@ final class UsageSnapshot extends Model
     public function update(array $attributes = [], array $options = []): bool
     {
         throw new LogicException(
-            'Usage snapshots are immutable. Record a correction instead, so both figures stay visible.'
+            'Usage snapshots are immutable. Record a correction instead, so both figures stay visible.',
         );
     }
 }
