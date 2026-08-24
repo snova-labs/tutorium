@@ -42,6 +42,9 @@ use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
 use App\Models\User;
+use App\Models\TerminologyOverride;
+use App\Models\PresetApplication;
+use App\Models\SampleDataSet;
 
 return [
 
@@ -112,6 +115,10 @@ return [
         ReportRun::class,
         ReportDelivery::class,
         EmailTemplate::class,
+
+        TerminologyOverride::class,
+        PresetApplication::class,
+        SampleDataSet::class,
     ],
 
     'global_models' => [
