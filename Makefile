@@ -1,7 +1,7 @@
 export WWW_UID := $(shell id -u)
 export WWW_GID := $(shell id -g)
 
-.PHONY: setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation
+.PHONY: setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm
 
 setup:         ## one command for a new developer
 	@test -f .env || cp .env.example .env
@@ -58,3 +58,10 @@ shell:
 
 logs:
 	docker compose logs -f app worker
+
+
+npm:           ## one-off npm, e.g. make npm ARGS="install -D tailwindcss"
+	docker compose run --rm node npm $(ARGS)
+
+assets:        ## vite dev server on :5173
+	docker compose --profile assets up -d node
