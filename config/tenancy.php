@@ -134,6 +134,7 @@ return [
         UsageSnapshot::class,
         Invoice::class,
         TenantEntitlementOverride::class,
+        App\Models\Invitation::class
     ],
 
     'global_models' => [
@@ -142,6 +143,7 @@ return [
         Impersonation::class,
         Plan::class,
         PlanFeature::class,
+        App\Models\SignupAttempt::class
     ],
 
 ];
