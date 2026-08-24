@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\TerminologyController;
+use App\Http\Controllers\Api\V1\UsageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -145,5 +146,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('terminology', [TerminologyController::class, 'index'])->name('api.terminology.index');
         Route::put('terminology', [TerminologyController::class, 'update'])->name('api.terminology.update');
 
+        Route::get('usage', [UsageController::class, 'meter'])->name('api.usage.meter');
+        Route::get('usage/invoices', [UsageController::class, 'invoices'])->name('api.usage.invoices');
+        
     });
 });
