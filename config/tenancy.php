@@ -124,12 +124,18 @@ return [
         SampleDataSet::class,
 
         TenantExport::class,
+        App\Models\Subscription::class,
+        App\Models\UsageSnapshot::class,
+        App\Models\Invoice::class,
+        App\Models\TenantEntitlementOverride::class,
     ],
 
     'global_models' => [
         Tenant::class,
         Operator::class,
         Impersonation::class,
+        App\Models\Plan::class,
+        App\Models\PlanFeature::class,
     ],
 
 ];

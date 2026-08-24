@@ -12,3 +12,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 Schedule::call(fn () => app(ImpersonationService::class)->closeExpired())
     ->everyFiveMinutes();
+
+Schedule::job(new \App\Jobs\TakeUsageSnapshotsJob)->dailyAt('02:00');
