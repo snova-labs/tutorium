@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 namespace App\Providers;
 
@@ -9,7 +9,11 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Policies\AttendancePolicyGate;
 use App\Policies\ClassSessionPolicy;
+use App\Services\EntitlementService;
 use App\Support\Audit\AuditContext;
+use App\Support\Billing\EntitlementSource;
+use App\Support\Billing\LicenceEntitlements;
+use App\Support\Billing\SubscriptionEntitlements;
 use App\Support\Grading\GradingRegistry;
 use App\Support\Mail\MailProvider;
 use App\Support\Mail\N8nMailProvider;
@@ -42,7 +46,7 @@ final class TenancyServiceProvider extends ServiceProvider
         // attach it to exactly one instance and silently miss the rest.
         $this->app->resolving(
             TenantContext::class,
-            fn(TenantContext $context) => $context->onChange($this->syncPermissionTenant()),
+            fn (TenantContext $context) => $context->onChange($this->syncPermissionTenant()),
         );
 
         $this->app->singleton(GradingRegistry::class);
@@ -56,23 +60,23 @@ final class TenancyServiceProvider extends ServiceProvider
         $this->app->bind(MailProvider::class, function ($app) {
             return config('reporting.mail.provider') === 'n8n'
                 ? new N8nMailProvider(
-                config('reporting.mail.n8n_webhook'),
-                config('reporting.mail.n8n_secret'),
-            )
+                    config('reporting.mail.n8n_webhook'),
+                    config('reporting.mail.n8n_secret'),
+                )
                 : new SmtpMailProvider($app['mailer']);
         });
         $this->app->singleton(PresetRepository::class);
         $this->app->scoped(Terminology::class);
 
-        $this->app->bind(\App\Support\Billing\EntitlementSource::class, function ($app) {
+        $this->app->bind(EntitlementSource::class, function ($app) {
             return config('platform.deployment_mode') === 'self_hosted'
-                ? new \App\Support\Billing\LicenceEntitlements(
-                json_decode((string) @file_get_contents(storage_path('app/licence.json')), true) ?: []
-            )
-                : new \App\Support\Billing\SubscriptionEntitlements($app->make(\App\Support\Tenancy\TenantContext::class));
+                ? new LicenceEntitlements(
+                    json_decode((string) @file_get_contents(storage_path('app/licence.json')), true) ?: [],
+                )
+                : new SubscriptionEntitlements($app->make(TenantContext::class));
         });
 
-        $this->app->scoped(\App\Services\EntitlementService::class);
+        $this->app->scoped(EntitlementService::class);
 
     }
 
