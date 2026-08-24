@@ -13,8 +13,10 @@ use App\Http\Controllers\Api\V1\GradeBookController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\NoteController;
+use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
+use App\Http\Controllers\Api\V1\TerminologyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -128,6 +130,20 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('report-templates/{template}/preview', [ReportController::class, 'preview'])
             ->name('api.reports.preview');
+
+        Route::get('onboarding', [OnboardingController::class, 'status'])->name('api.onboarding.status');
+        Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('api.onboarding.dismiss');
+
+        Route::get('presets', [OnboardingController::class, 'presets'])->name('api.presets.index');
+        Route::post('presets/apply', [OnboardingController::class, 'applyPreset'])->name('api.presets.apply');
+
+        Route::post('onboarding/sample-data', [OnboardingController::class, 'loadSample'])
+            ->name('api.onboarding.sample.load');
+        Route::delete('onboarding/sample-data', [OnboardingController::class, 'removeSample'])
+            ->name('api.onboarding.sample.remove');
+
+        Route::get('terminology', [TerminologyController::class, 'index'])->name('api.terminology.index');
+        Route::put('terminology', [TerminologyController::class, 'update'])->name('api.terminology.update');
 
     });
 });

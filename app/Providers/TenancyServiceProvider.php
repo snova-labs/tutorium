@@ -17,9 +17,11 @@ use App\Support\Mail\SmtpMailProvider;
 use App\Support\Pdf\ChromePdfRenderer;
 use App\Support\Pdf\PdfRenderer;
 use App\Support\Pdf\PhpPdfRenderer;
+use App\Support\Presets\PresetRepository;
 use App\Support\Sequences\IdSequenceService;
 use App\Support\Settings\SettingsResolver;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Terminology\Terminology;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -59,6 +61,8 @@ final class TenancyServiceProvider extends ServiceProvider
                 )
                 : new SmtpMailProvider($app['mailer']);
         });
+        $this->app->singleton(PresetRepository::class);
+        $this->app->scoped(Terminology::class);
     }
 
     public function boot(): void
