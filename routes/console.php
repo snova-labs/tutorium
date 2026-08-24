@@ -15,3 +15,8 @@ Schedule::call(fn () => app(ImpersonationService::class)->closeExpired())
     ->everyFiveMinutes();
 
 Schedule::job(new TakeUsageSnapshotsJob)->dailyAt('02:00');
+
+Schedule::command('platform:trials')->dailyAt('08:00')->name('trials');
+Schedule::call(fn () => \App\Models\SignupAttempt::query()
+    ->where('attempted_at', '<', now()->subDays(14))->delete())
+    ->weekly()->name('purge-signup-attempts');
