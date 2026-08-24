@@ -65,3 +65,10 @@ npm:           ## one-off npm, e.g. make npm ARGS="install -D tailwindcss"
 
 assets:        ## vite dev server on :5173
 	docker compose --profile assets up -d node
+
+composer:      ## install dependencies from composer.lock
+	docker compose exec app composer install
+
+require:       ## add a package: make require PKG="livewire/livewire"
+	@test -n "$(PKG)" || { echo "Usage: make require PKG=\"vendor/package\""; exit 1; }
+	docker compose exec app composer require $(PKG)
