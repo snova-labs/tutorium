@@ -15,6 +15,8 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+
 
 /**
  * Attendance policy, with its provenance visible.
@@ -26,9 +28,9 @@ use Filament\Schemas\Schema;
  */
 final class AttendanceSettings extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected static ?string $navigationGroup = 'Administration';
+    protected static string|\UnitEnum|null $navigationGroup = 'Administration';
 
     protected static ?string $navigationLabel = 'Attendance policy';
 
