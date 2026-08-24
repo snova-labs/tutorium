@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Tenancy;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -20,7 +21,7 @@ use Tests\TestCase;
  * BelongsToTenant but is not registered, or is registered but lacks the trait or the column,
  * the build goes red. Isolation coverage stops depending on anyone remembering.
  *
- * @see \App\Support\Tenancy\BelongsToTenant
+ * @see BelongsToTenant
  * @see config/tenancy.php
  */
 final class TenantRegistryTest extends TestCase
@@ -90,8 +91,8 @@ final class TenantRegistryTest extends TestCase
 
         $this->assertSame([], $undeclared, sprintf(
             "These models are neither tenant-owned nor declared global:\n  %s\n\n"
-            ."Every model must make a deliberate statement about whether it holds tenant data. "
-            ."Declaring one global is reviewed like a security change, because a mistake is a leak.",
+            .'Every model must make a deliberate statement about whether it holds tenant data. '
+            .'Declaring one global is reviewed like a security change, because a mistake is a leak.',
             implode("\n  ", $undeclared),
         ));
     }
@@ -119,7 +120,7 @@ final class TenantRegistryTest extends TestCase
 
             $reflection = new ReflectionClass($class);
 
-            if ($reflection->isAbstract() || ! $reflection->isSubclassOf(\Illuminate\Database\Eloquent\Model::class)) {
+            if ($reflection->isAbstract() || ! $reflection->isSubclassOf(Model::class)) {
                 continue;
             }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Support\Tenancy\RequiresTenant;
 use App\Support\Tenancy\ResolveTenant;
+use App\Support\Tenancy\TenancyException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,20 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Tenant resolution runs on every authenticated route, for both the web
-        // interface and the API. The tenant is derived from the credential, never
-        // from a route parameter — that would let a caller choose their own tenant.
+        // On the web the session has already resolved the user by the time this runs, so the
+        // tenant can be bound for the whole group.
         $middleware->web(append: [ResolveTenant::class]);
-        $middleware->api(append: [ResolveTenant::class]);
 
+        // On the API the user only exists after auth:sanctum, so tenant resolution is applied
+        // per route group *after* authentication rather than globally. Binding it globally would
+        // silently leave every API request with no tenant — and a query that finds nothing.
         $middleware->alias([
+            'tenant.resolve' => ResolveTenant::class,
             'tenant' => RequiresTenant::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Never render a tenancy failure to a user as a validation message — it is a
-        // programming error and must be loud in logs, generic on screen.
-        $exceptions->render(function (\App\Support\Tenancy\TenancyException $e) {
+        // A tenancy failure is a programming error, not something to explain to a caller: loud
+        // in the logs, generic on screen.
+        $exceptions->render(function (TenancyException $e) {
             report($e);
 
             return response()->json(['message' => 'Request could not be completed.'], 500);

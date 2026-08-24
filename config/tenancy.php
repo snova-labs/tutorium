@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\IdSequence;
 use App\Models\Setting;
+use App\Models\Tenant;
 use App\Models\User;
 
 return [
@@ -30,6 +32,7 @@ return [
         User::class,
         Setting::class,
         IdSequence::class,
+        AuditLog::class,
     ],
 
     /*
@@ -44,7 +47,7 @@ return [
     */
 
     'global_models' => [
-        \App\Models\Tenant::class,
+        Tenant::class,
     ],
 
 ];

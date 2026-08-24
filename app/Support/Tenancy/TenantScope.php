@@ -28,7 +28,7 @@ final class TenantScope implements Scope
         // Failing open here is how multi-tenant products leak.
         $builder->where(
             $model->qualifyColumn($model->getTenantColumn()),
-            $context->id() ?? 0
+            $context->id() ?? 0,
         );
     }
 }

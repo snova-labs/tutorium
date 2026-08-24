@@ -140,7 +140,7 @@ final class IdSequenceServiceTest extends TestCase
     private function tenant(string $slug = 'sample-academy'): Tenant
     {
         return app(TenantContext::class)->withoutScoping(
-            fn () => Tenant::factory()->create(['slug' => $slug])
+            fn () => Tenant::factory()->create(['slug' => $slug]),
         );
     }
 }

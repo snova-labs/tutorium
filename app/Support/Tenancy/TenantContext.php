@@ -14,7 +14,7 @@ use Closure;
  * once, at the edge (ResolveTenant middleware for requests, TenantAware for jobs), and every
  * query is scoped from it automatically.
  *
- * @see \App\Support\Tenancy\TenantScope
+ * @see TenantScope
  */
 final class TenantContext
 {
@@ -23,9 +23,26 @@ final class TenantContext
     /** True while running control-plane work that must see across tenants. */
     private bool $suspended = false;
 
+    /**
+     * Callbacks fired whenever the bound tenant changes.
+     *
+     * This exists so that packages keeping their own tenant state — the permission registrar,
+     * for one — stay in step without this class having to know they exist.
+     *
+     * @var array<int, Closure(?Tenant):void>
+     */
+    private array $listeners = [];
+
+    public function onChange(Closure $listener): void
+    {
+        $this->listeners[] = $listener;
+        $listener($this->tenant);
+    }
+
     public function set(?Tenant $tenant): void
     {
         $this->tenant = $tenant;
+        $this->notify();
     }
 
     public function get(): ?Tenant
@@ -43,9 +60,7 @@ final class TenantContext
         return $this->tenant !== null;
     }
 
-    /**
-     * The tenant, or a hard failure. Use where operating without one is a bug rather than a state.
-     */
+    /** The tenant, or a hard failure. Use where operating without one is a bug, not a state. */
     public function require(): Tenant
     {
         return $this->tenant ?? throw TenancyException::missingContext();
@@ -61,22 +76,24 @@ final class TenantContext
      *
      * @template TReturn
      *
-     * @param  Closure(): TReturn  $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function runAs(Tenant $tenant, Closure $callback): mixed
     {
-        $previous = $this->tenant;
+        $previousTenant = $this->tenant;
         $previousSuspended = $this->suspended;
 
         $this->tenant = $tenant;
         $this->suspended = false;
+        $this->notify();
 
         try {
             return $callback();
         } finally {
-            $this->tenant = $previous;
+            $this->tenant = $previousTenant;
             $this->suspended = $previousSuspended;
+            $this->notify();
         }
     }
 
@@ -86,7 +103,7 @@ final class TenantContext
      *
      * @template TReturn
      *
-     * @param  Closure(): TReturn  $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function withoutScoping(Closure $callback): mixed
@@ -105,5 +122,13 @@ final class TenantContext
     {
         $this->tenant = null;
         $this->suspended = false;
+        $this->notify();
+    }
+
+    private function notify(): void
+    {
+        foreach ($this->listeners as $listener) {
+            $listener($this->tenant);
+        }
     }
 }

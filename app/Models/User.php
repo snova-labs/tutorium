@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * A login identity.
@@ -21,7 +24,7 @@ use Illuminate\Notifications\Notifiable;
  */
 final class User extends Authenticatable
 {
-    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
+    use Auditable, BelongsToTenant, HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'timezone', 'locale',
@@ -53,12 +56,22 @@ final class User extends Authenticatable
     }
 
     /**
-     * Branch scope check. Authorization policies call this; it is never the only control —
-     * queries are already tenant-scoped underneath (SL-SEC-004 §3).
+     * Branch scope check. Policies call this; it is never the only control — queries are already
+     * tenant-scoped underneath (SL-SEC-004 §3).
      */
     public function canAccessBranch(int $branchId): bool
     {
         return $this->scope_all_branches
             || $this->branches()->whereKey($branchId)->exists();
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->hasRole(config('permissions.owner_role', 'Owner'));
+    }
+
+    public function auditModule(): string
+    {
+        return 'People';
     }
 }

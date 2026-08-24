@@ -97,7 +97,7 @@ final class SettingsResolver
 
         foreach ($chain as [$type, $id]) {
             $match = $candidates->first(
-                fn (Setting $setting) => $setting->scope_type === $type && $setting->scope_id === $id
+                fn (Setting $setting) => $setting->scope_type === $type && $setting->scope_id === $id,
             );
 
             if ($match !== null) {
