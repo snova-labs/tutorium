@@ -55,7 +55,7 @@ final class DuplicateDetector
         if ($guardianEmail !== null || $guardianPhone !== null) {
             $siblings = $this->learnersOfGuardian($guardianEmail, $guardianPhone)
                 ->reject(fn (Learner $l) => $candidates->contains(
-                    fn (DuplicateCandidate $c) => $c->learner->is($l)
+                    fn (DuplicateCandidate $c) => $c->learner->is($l),
                 ));
 
             foreach ($siblings as $learner) {

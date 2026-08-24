@@ -62,7 +62,7 @@ final class EnrollmentController
         abort_unless($request->user()->can('view', $enrollment), 403);
 
         return new EnrollmentResource(
-            $enrollment->load(['learner', 'status', 'batch', 'history.fromStatus', 'history.toStatus'])
+            $enrollment->load(['learner', 'status', 'batch', 'history.fromStatus', 'history.toStatus']),
         );
     }
 

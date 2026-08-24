@@ -175,6 +175,8 @@ return new class extends Migration
             // that has already been sent.
             $table->string('status', 16)->default('open');
             $table->timestamp('closed_at')->nullable();
+            //
+            $table->softDeletes();
             $table->timestamps();
 
             $table->unique(['tenant_id', 'batch_id', 'label'], 'reporting_periods_batch_label_unique');

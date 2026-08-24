@@ -58,7 +58,9 @@ final class DatabaseSeeder extends Seeder
         $this->command?->newLine();
         $this->command?->info('Sign in with owner@sample-one.test or owner@sample-two.test — password: password');
         $this->call(AcademicSeeder::class);
-        
+        $this->call(PeopleSeeder::class);
+        $this->call(AttendanceSeeder::class);
+
     }
 
     private function seedTenantOne(Tenant $tenant): void
@@ -176,12 +178,5 @@ final class DatabaseSeeder extends Seeder
         $user->syncRoles([$role]);
 
         return $user;
-    }
-
-    /** @param array<string, mixed> $parameters */
-    private function callWith(string $seeder, array $parameters): void
-    {
-        app($seeder)->setContainer(app())->setCommand($this->command ?? app('Illuminate\Console\Command'))
-            ->run(...array_values($parameters));
     }
 }

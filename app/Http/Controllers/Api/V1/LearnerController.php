@@ -109,14 +109,14 @@ final class LearnerController
         abort_unless($request->user()->can('view', $learner), 403);
 
         return new LearnerResource(
-            $learner->load(['status', 'guardians.relationType', 'enrollments.status', 'enrollments.batch'])
+            $learner->load(['status', 'guardians.relationType', 'enrollments.status', 'enrollments.batch']),
         );
     }
 
     public function update(UpdateLearnerRequest $request, Learner $learner): LearnerResource
     {
         return new LearnerResource(
-            $this->learners->update($learner, $request->validated())->load(['status', 'guardians'])
+            $this->learners->update($learner, $request->validated())->load(['status', 'guardians']),
         );
     }
 

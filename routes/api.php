@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\BranchController;
@@ -78,5 +79,17 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.enrollments.status');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])
             ->name('api.enrollments.transfer');
+
+        Route::get('sessions/{session}/attendance', [AttendanceController::class, 'roster'])
+            ->name('api.sessions.attendance.roster');
+        Route::put('sessions/{session}/attendance', [AttendanceController::class, 'save'])
+            ->name('api.sessions.attendance.save');
+        Route::post('sessions/{session}/attendance/remaining', [AttendanceController::class, 'markRemaining'])
+            ->name('api.sessions.attendance.remaining');
+
+        Route::get('batches/{batch}/attendance', [AttendanceController::class, 'summary'])
+            ->name('api.batches.attendance.summary');
+        Route::get('enrollments/{enrollment}/attendance', [AttendanceController::class, 'forEnrollment'])
+            ->name('api.enrollments.attendance');
     });
 });

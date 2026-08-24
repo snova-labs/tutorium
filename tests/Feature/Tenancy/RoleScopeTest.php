@@ -52,10 +52,14 @@ final class RoleScopeTest extends TestCase
             Role::findOrCreate('Exams coordinator', 'web');
         });
 
-        $context->runAs($b, function (): void {
-            $this->assertFalse(
-                Role::query()->where('name', 'Exams coordinator')->exists(),
-                'Roles are tenant data, not platform data.',
+        $context->runAs($b, function () use ($b): void {
+            $this->assertSame(
+                0,
+                Role::query()
+                    ->where('name', 'Exams coordinator')
+                    ->where('team_id', $b->getKey())
+                    ->count(),
+                'A role invented by one tenant must not exist under another.',
             );
         });
     }

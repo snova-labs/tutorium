@@ -79,7 +79,7 @@ final class LearnerService
     private function defaultStatus(): LearnerStatus
     {
         return LearnerStatus::query()->where('code', 'ACTIVE')->firstOr(
-            fn () => LearnerStatus::query()->orderBy('sort')->firstOrFail()
+            fn () => LearnerStatus::query()->orderBy('sort')->firstOrFail(),
         );
     }
 }

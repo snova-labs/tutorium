@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\AttendancePolicy;
+use App\Models\AttendanceRecord;
+use App\Models\AttendanceStatus;
 use App\Models\AuditLog;
 use App\Models\Batch;
 use App\Models\Branch;
@@ -16,10 +19,12 @@ use App\Models\Holiday;
 use App\Models\IdSequence;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
+use App\Models\MakeupLink;
 use App\Models\RelationType;
 use App\Models\ReportingPeriod;
 use App\Models\SessionType;
 use App\Models\Setting;
+use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\User;
 
@@ -69,10 +74,16 @@ return [
 
         // Cross-cutting
         AuditLog::class,
+
+        // Attendance
+        AttendanceStatus::class,
+        AttendancePolicy::class,
+        AttendanceRecord::class,
+        MakeupLink::class,
     ],
 
     'global_models' => [
-        \App\Models\Tenant::class,
+        Tenant::class,
     ],
 
 ];

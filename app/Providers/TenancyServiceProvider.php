@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\ClassSession;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\AttendancePolicyGate;
+use App\Policies\ClassSessionPolicy;
 use App\Support\Audit\AuditContext;
 use App\Support\Sequences\IdSequenceService;
 use App\Support\Settings\SettingsResolver;
 use App\Support\Tenancy\TenantContext;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -19,11 +23,18 @@ final class TenancyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // One context per request or job lifecycle.
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(AuditContext::class);
         $this->app->scoped(SettingsResolver::class);
         $this->app->scoped(IdSequenceService::class);
+
+        // Every freshly-built context gets the listener — including the ones the queue
+        // worker creates after forgetScopedInstances(). Registering in boot() would
+        // attach it to exactly one instance and silently miss the rest.
+        $this->app->resolving(
+            TenantContext::class,
+            fn (TenantContext $context) => $context->onChange($this->syncPermissionTenant()),
+        );
     }
 
     public function boot(): void
@@ -33,8 +44,22 @@ final class TenancyServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! $this->app->isProduction());
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
-        $this->keepPermissionsInStepWithTenant();
+        // $this->keepPermissionsInStepWithTenant();
         $this->grantOwnerEverything();
+
+        Gate::policy(ClassSession::class, ClassSessionPolicy::class);
+
+        Gate::define('viewRoster', [AttendancePolicyGate::class, 'viewRoster']);
+        Gate::define('record', [AttendancePolicyGate::class, 'record']);
+    }
+
+    private function syncPermissionTenant(): Closure
+    {
+        return function (?Tenant $tenant): void {
+            $registrar = $this->app->make(PermissionRegistrar::class);
+            $registrar->setPermissionsTeamId($tenant?->getKey());
+            $registrar->clearClassPermissions();
+        };
     }
 
     /**

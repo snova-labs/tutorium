@@ -23,7 +23,7 @@ final class GuardianService
      * Siblings are the common case: the second child should attach to the parent already on file,
      * not create a second copy whose email has to be corrected separately later.
      *
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      */
     public function attachOrCreate(Learner $learner, array $attributes, bool $isPrimary = false, bool $receivesReports = true): Guardian
     {

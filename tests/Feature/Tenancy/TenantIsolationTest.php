@@ -27,9 +27,11 @@ final class TenantIsolationTest extends TestCase
     /** @return array<string, array{0: class-string<Model>}> */
     public static function tenantResources(): array
     {
+        $config = require __DIR__.'/../../../config/tenancy.php';
+
         $cases = [];
 
-        foreach (config('tenancy.resources') as $model) {
+        foreach ($config['resources'] as $model) {
             $cases[class_basename($model)] = [$model];
         }
 
