@@ -14,6 +14,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
 /**
  * A login identity.
@@ -22,7 +24,7 @@ use Spatie\Permission\Traits\HasRoles;
  * account, and are granted a login later by linking rather than duplicating (SL-ARC-002 §8).
  * That separation is what makes the P5 portals a feature rather than a migration.
  */
-final class User extends Authenticatable
+final class User extends Authenticatable implements FilamentUser
 {
     use Auditable, BelongsToTenant, HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
@@ -42,6 +44,15 @@ final class User extends Authenticatable
             'is_active' => 'boolean',
             'scope_all_branches' => 'boolean',
         ];
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Teachers have their own screens; the panel is for people who
+        // administer the account.
+        return $this->is_active && $this->hasAnyPermission([
+            'learners.view', 'batches.manage', 'settings.manage',
+        ]);
     }
 
     public function tenant(): BelongsTo
