@@ -24,11 +24,14 @@ use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
 use App\Models\Impersonation;
+use App\Models\Invoice;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
 use App\Models\Operator;
+use App\Models\Plan;
+use App\Models\PlanFeature;
 use App\Models\PresetApplication;
 use App\Models\RelationType;
 use App\Models\Report;
@@ -41,12 +44,15 @@ use App\Models\SampleDataSet;
 use App\Models\SessionType;
 use App\Models\Setting;
 use App\Models\SubmissionStatus;
+use App\Models\Subscription;
 use App\Models\TeacherNote;
 use App\Models\Tenant;
+use App\Models\TenantEntitlementOverride;
 use App\Models\TenantExport;
 use App\Models\TerminologyOverride;
 use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
+use App\Models\UsageSnapshot;
 use App\Models\User;
 
 return [
@@ -124,18 +130,18 @@ return [
         SampleDataSet::class,
 
         TenantExport::class,
-        App\Models\Subscription::class,
-        App\Models\UsageSnapshot::class,
-        App\Models\Invoice::class,
-        App\Models\TenantEntitlementOverride::class,
+        Subscription::class,
+        UsageSnapshot::class,
+        Invoice::class,
+        TenantEntitlementOverride::class,
     ],
 
     'global_models' => [
         Tenant::class,
         Operator::class,
         Impersonation::class,
-        App\Models\Plan::class,
-        App\Models\PlanFeature::class,
+        Plan::class,
+        PlanFeature::class,
     ],
 
 ];

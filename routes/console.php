@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Jobs\TakeUsageSnapshotsJob;
 use App\Services\ImpersonationService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -13,4 +14,4 @@ Artisan::command('inspire', function () {
 Schedule::call(fn () => app(ImpersonationService::class)->closeExpired())
     ->everyFiveMinutes();
 
-Schedule::job(new \App\Jobs\TakeUsageSnapshotsJob)->dailyAt('02:00');
+Schedule::job(new TakeUsageSnapshotsJob)->dailyAt('02:00');
