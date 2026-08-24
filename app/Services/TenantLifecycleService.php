@@ -1,0 +1,148 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\AuditLog;
+use App\Models\Operator;
+use App\Models\Tenant;
+use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Moving an account between states.
+ *
+ * The principle running through all of it: **restricting service is not the same as withholding
+ * data**. A suspended account keeps reading and exporting everything; only writing stops. Holding
+ * records about children hostage over an expired card would be indefensible, and would generate
+ * exactly the chargebacks and complaints it deserves (SL-BIL-006 §6).
+ */
+final class TenantLifecycleService
+{
+    /** How long a cancelled account is kept before it is purged for good. */
+    private const RETENTION_DAYS = 30;
+
+    public function __construct(private readonly TenantContext $tenancy) {}
+
+    public function suspend(Tenant $tenant, Operator $operator, string $reason): Tenant
+    {
+        return $this->transition($tenant, $operator, Tenant::STATUS_SUSPENDED, $reason, [
+            'suspended_at' => now(),
+        ]);
+    }
+
+    public function reactivate(Tenant $tenant, Operator $operator, string $reason = 'Payment received'): Tenant
+    {
+        // Reactivating restores everything instantly. Nothing was taken away, so nothing has to be
+        // rebuilt — which is the whole reason suspension is read-only rather than destructive.
+        return $this->transition($tenant, $operator, Tenant::STATUS_ACTIVE, $reason, [
+            'suspended_at' => null,
+            'purge_after' => null,
+        ]);
+    }
+
+    public function cancel(Tenant $tenant, Operator $operator, string $reason): Tenant
+    {
+        return $this->transition($tenant, $operator, Tenant::STATUS_CANCELLED, $reason, [
+            'purge_after' => now()->addDays(self::RETENTION_DAYS),
+        ]);
+    }
+
+    /**
+     * Irreversible deletion.
+     *
+     * Four guards, none of them decorative: the account must be cancelled, its retention window
+     * must have passed, an export must already exist, and the caller must type the account's slug.
+     * Everything about this operation should feel like it is trying to talk you out of it.
+     */
+    public function purge(Tenant $tenant, Operator $operator, string $confirmation, bool $exportExists): Tenant
+    {
+        if ($tenant->status !== Tenant::STATUS_CANCELLED) {
+            throw ValidationException::withMessages([
+                'tenant' => 'Only a cancelled account can be purged. Cancel it first.',
+            ]);
+        }
+
+        if ($tenant->purge_after !== null && $tenant->purge_after->isFuture()) {
+            throw ValidationException::withMessages([
+                'tenant' => 'The retention window has not passed. This account can be purged after '
+                    .$tenant->purge_after->toDateString().'.',
+            ]);
+        }
+
+        if (! $exportExists) {
+            throw ValidationException::withMessages([
+                'tenant' => 'Produce an export first. Deleting a customer\'s records without offering '
+                    .'them a copy is not something this system will do.',
+            ]);
+        }
+
+        if ($confirmation !== $tenant->slug) {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Type the account identifier exactly to confirm: '.$tenant->slug,
+            ]);
+        }
+
+        return DB::transaction(function () use ($tenant, $operator): Tenant {
+            // The audit entry is written before the data goes, and deliberately carries no tenant
+            // id, so it survives the cascade that removes everything else.
+            $this->tenancy->withoutScoping(function () use ($tenant, $operator): void {
+                AuditLog::query()->create([
+                    'tenant_id' => null,
+                    'actor_type' => AuditLog::ACTOR_OPERATOR,
+                    'actor_id' => $operator->getKey(),
+                    'actor_name' => $operator->name.' (support)',
+                    'module' => 'Platform',
+                    'action' => 'tenant_purged',
+                    'target_label' => $tenant->name.' ('.$tenant->slug.')',
+                    'before' => ['slug' => $tenant->slug, 'name' => $tenant->name],
+                    'occurred_at' => now(),
+                ]);
+
+                $tenant->update(['status' => Tenant::STATUS_PURGED]);
+                $tenant->forceDelete();
+            });
+
+            return $tenant;
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    private function transition(Tenant $tenant, Operator $operator, string $status, string $reason, array $attributes = []): Tenant
+    {
+        if (trim($reason) === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'Say why. Someone will read this in six months and need to understand it.',
+            ]);
+        }
+
+        $from = $tenant->status;
+
+        return DB::transaction(function () use ($tenant, $operator, $status, $reason, $attributes, $from): Tenant {
+            $this->tenancy->withoutScoping(fn () => $tenant->update(['status' => $status] + $attributes));
+
+            // Written into the customer's own log, not only ours. An account that goes read-only
+            // should be able to see who did it and why without asking.
+            $this->tenancy->withoutScoping(function () use ($tenant, $operator, $status, $reason, $from): void {
+                AuditLog::query()->create([
+                    'tenant_id' => $tenant->getKey(),
+                    'actor_type' => AuditLog::ACTOR_OPERATOR,
+                    'actor_id' => $operator->getKey(),
+                    'actor_name' => $operator->name.' (support)',
+                    'module' => 'Account',
+                    'action' => 'status_changed',
+                    'target_label' => $tenant->name,
+                    'before' => ['status' => $from],
+                    'after' => ['status' => $status, 'reason' => $reason],
+                    'occurred_at' => now(),
+                ]);
+            });
+
+            return $tenant->refresh();
+        });
+    }
+}
