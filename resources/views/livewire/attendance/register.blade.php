@@ -7,7 +7,7 @@
     $showBoth = $viewerZone !== null && $viewerZone !== $batchZone;
 @endphp
 
-<div class="mx-auto max-w-3xl" x-data>
+<div class="mx-auto max-w-3xl">
 
     {{-- ── Heading ─────────────────────────────────────────────────────── --}}
     <div class="mb-4">
@@ -46,7 +46,7 @@
                 />
             </div>
 
-            @unless ($this->policy()->isCompulsory)
+            @unless ($policy->isCompulsory)
                 <x-pill tone="neutral">Recorded for information only</x-pill>
             @endunless
 
@@ -112,13 +112,18 @@
                 </div>
 
                 {{-- The note only appears once a mark is made: an empty field per
-                     person on a phone is mostly a way to lose the list. --}}
+                     person on a phone is mostly a way to lose the list.
+
+                     `.live.blur` rather than `.blur` — under Livewire v4 the bare
+                     modifier controls client-side syncing rather than network
+                     timing, and a note typed here would never reach the server.
+                     Nothing would error; the note would simply not be saved. --}}
                 @if ($current !== null)
                     <input
                         type="text"
                         class="input mt-2 text-xs"
                         placeholder="Add a note (optional)"
-                        wire:model.blur="notes.{{ $row['enrollment_id'] }}"
+                        wire:model.live.blur="notes.{{ $row['enrollment_id'] }}"
                     >
                 @endif
             </div>
