@@ -59,6 +59,8 @@ final class TenancyServiceProvider extends ServiceProvider
                 )
                 : new SmtpMailProvider($app['mailer']);
         });
+        $this->app->singleton(\App\Support\Presets\PresetRepository::class);
+        $this->app->scoped(\App\Support\Terminology\Terminology::class);
     }
 
     public function boot(): void
