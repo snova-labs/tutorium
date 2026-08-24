@@ -3,11 +3,18 @@
 declare(strict_types=1);
 
 use App\Models\AuditLog;
+use App\Models\Batch;
 use App\Models\Branch;
 use App\Models\Brand;
+use App\Models\ClassSession;
+use App\Models\Course;
+use App\Models\Holiday;
 use App\Models\IdSequence;
+use App\Models\ReportingPeriod;
+use App\Models\SessionType;
 use App\Models\Setting;
 use App\Models\Tenant;
+use App\Models\TimetableSlot;
 use App\Models\User;
 
 return [
@@ -27,11 +34,27 @@ return [
     */
 
     'resources' => [
+        // Organisation
         Brand::class,
         Branch::class,
+        Holiday::class,
+
+        // Identity
         User::class,
+
+        // Configuration
         Setting::class,
         IdSequence::class,
+        SessionType::class,
+
+        // Academic
+        Course::class,
+        Batch::class,
+        TimetableSlot::class,
+        ClassSession::class,
+        ReportingPeriod::class,
+
+        // Cross-cutting
         AuditLog::class,
     ],
 
