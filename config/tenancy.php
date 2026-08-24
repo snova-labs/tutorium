@@ -8,12 +8,18 @@ use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\ClassSession;
 use App\Models\Course;
+use App\Models\Enrollment;
+use App\Models\EnrollmentStatus;
+use App\Models\EnrollmentStatusHistory;
+use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
+use App\Models\Learner;
+use App\Models\LearnerStatus;
+use App\Models\RelationType;
 use App\Models\ReportingPeriod;
 use App\Models\SessionType;
 use App\Models\Setting;
-use App\Models\Tenant;
 use App\Models\TimetableSlot;
 use App\Models\User;
 
@@ -29,8 +35,6 @@ return [
     | one is missing — so adding a resource without isolation coverage is not an
     | oversight that can reach production, it is a red pipeline.
     |
-    | Conversely, a model listed here that does not use the trait also fails.
-    |
     */
 
     'resources' => [
@@ -42,10 +46,13 @@ return [
         // Identity
         User::class,
 
-        // Configuration
+        // Configuration and vocabularies
         Setting::class,
         IdSequence::class,
         SessionType::class,
+        LearnerStatus::class,
+        EnrollmentStatus::class,
+        RelationType::class,
 
         // Academic
         Course::class,
@@ -54,23 +61,18 @@ return [
         ClassSession::class,
         ReportingPeriod::class,
 
+        // People
+        Learner::class,
+        Guardian::class,
+        Enrollment::class,
+        EnrollmentStatusHistory::class,
+
         // Cross-cutting
         AuditLog::class,
     ],
 
-    /*
-    |---------------------------------------------------------------------------
-    | Models exempt from tenant ownership
-    |---------------------------------------------------------------------------
-    |
-    | Control-plane and global lookup models. Listing one here is a deliberate
-    | statement that it holds no tenant data — it is reviewed like a security
-    | change, because a mistake here is a leak.
-    |
-    */
-
     'global_models' => [
-        Tenant::class,
+        \App\Models\Tenant::class,
     ],
 
 ];

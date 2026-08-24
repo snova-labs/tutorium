@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\EnrollmentController;
+use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,8 +20,7 @@ use Illuminate\Support\Facades\Route;
 |
 | Versioned from the first endpoint, because the future guardian portal,
 | learner portal and any customer integration consume exactly these routes
-| (SL-ARC-002 §1 "API-first"). Breaking changes get a new version; additive
-| changes ship within one.
+| (SL-ARC-002 §1 "API-first").
 |
 | Middleware order matters: authentication must resolve the user before
 | tenant.resolve can bind their tenant, and every write route sits behind
@@ -29,7 +31,6 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
 
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
-
     Route::get('ping', fn () => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
 
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
@@ -45,25 +46,37 @@ Route::prefix('v1')->group(function (): void {
         Route::apiResource('courses', CourseController::class)->names('api.courses');
         Route::apiResource('batches', BatchController::class)
             ->only(['index', 'store', 'show', 'update'])->names('api.batches');
-
         Route::post('batches/{batch}/timetable', [BatchController::class, 'addSlot'])
             ->name('api.batches.timetable.store');
         Route::put('batches/{batch}/teachers', [BatchController::class, 'assignTeachers'])
             ->name('api.batches.teachers');
 
         // Scheduling
-        Route::get('batches/{batch}/sessions', [ScheduleController::class, 'sessions'])
-            ->name('api.batches.sessions');
+        Route::get('batches/{batch}/sessions', [ScheduleController::class, 'sessions'])->name('api.batches.sessions');
         Route::post('batches/{batch}/sessions/generate', [ScheduleController::class, 'generate'])
             ->name('api.batches.sessions.generate');
-        Route::get('batches/{batch}/periods', [ScheduleController::class, 'periods'])
-            ->name('api.batches.periods');
-
-        // Sessions are cancelled or rescheduled, never deleted — the record of what was planned
-        // is part of the history (SL-DAT-003 §13).
-        Route::post('sessions/{session}/cancel', [ScheduleController::class, 'cancel'])
-            ->name('api.sessions.cancel');
+        Route::get('batches/{batch}/periods', [ScheduleController::class, 'periods'])->name('api.batches.periods');
+        Route::post('sessions/{session}/cancel', [ScheduleController::class, 'cancel'])->name('api.sessions.cancel');
         Route::post('sessions/{session}/reschedule', [ScheduleController::class, 'reschedule'])
             ->name('api.sessions.reschedule');
+
+        // People
+        Route::apiResource('learners', LearnerController::class)->names('api.learners');
+        Route::get('guardians', [GuardianController::class, 'index'])->name('api.guardians.index');
+        Route::post('learners/{learner}/guardians', [GuardianController::class, 'attach'])
+            ->name('api.learners.guardians.attach');
+        Route::delete('learners/{learner}/guardians/{guardian}', [GuardianController::class, 'detach'])
+            ->name('api.learners.guardians.detach');
+        Route::put('learners/{learner}/guardians/{guardian}/recipient', [GuardianController::class, 'setRecipient'])
+            ->name('api.learners.guardians.recipient');
+
+        // Enrollment. No destroy route by design — an enrollment is withdrawn, never deleted,
+        // because the record that someone attended for six weeks is what the reports were built on.
+        Route::apiResource('enrollments', EnrollmentController::class)
+            ->only(['index', 'store', 'show'])->names('api.enrollments');
+        Route::put('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])
+            ->name('api.enrollments.status');
+        Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])
+            ->name('api.enrollments.transfer');
     });
 });

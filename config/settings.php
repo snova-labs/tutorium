@@ -13,6 +13,12 @@ return [
     */
 
     'defaults' => [
+        // People
+        // Switched off by adult-only academies, where the concept is noise rather than absence.
+        'people.guardians_enabled' => true,
+        'people.require_guardian_for_minors' => true,
+        'people.duplicate_check_enabled' => true,
+
         // Attendance
         'attendance.compulsory' => true,
         'attendance.allow_late_join' => true,
