@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Operator;
 use App\Models\User;
 
 return [
@@ -44,6 +45,7 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'operator' => ['driver' => 'sanctum', 'provider' => 'operators'],
     ],
 
     /*
@@ -68,7 +70,7 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
-
+        'operators' => ['driver' => 'eloquent', 'model' => Operator::class],
         // 'users' => [
         //     'driver' => 'database',
         //     'table' => 'users',
