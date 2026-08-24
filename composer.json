@@ -46,7 +46,10 @@
         "fmt-check": "pint --test",
         "stan": "phpstan analyse --memory-limit=1G",
         "test": "@php artisan test",
-        "isolation": "@php artisan test --testsuite=Tenancy"
+        "isolation": "@php artisan test --testsuite=Tenancy",
+        "post-autoload-dump": [
+            "@php artisan filament:upgrade"
+        ]
     },
     "config": {
         "optimize-autoloader": true,
