@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\EnrollmentController;
+use App\Http\Controllers\Api\V1\GradeBookController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\ScheduleController;
@@ -91,5 +92,20 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.batches.attendance.summary');
         Route::get('enrollments/{enrollment}/attendance', [AttendanceController::class, 'forEnrollment'])
             ->name('api.enrollments.attendance');
+        Route::get('grading/vocabularies', [GradeBookController::class, 'vocabularies'])
+            ->name('api.grading.vocabularies');
+
+        Route::get('batches/{batch}/gradebook', [GradeBookController::class, 'grid'])
+            ->name('api.batches.gradebook');
+        Route::put('batches/{batch}/gradebook', [GradeBookController::class, 'save'])
+            ->name('api.batches.gradebook.save');
+        Route::post('batches/{batch}/assessments', [GradeBookController::class, 'storeAssessment'])
+            ->name('api.batches.assessments.store');
+
+        Route::get('assessments/{assessment}/ungraded', [GradeBookController::class, 'ungraded'])
+            ->name('api.assessments.ungraded');
+        Route::get('enrollments/{enrollment}/average', [GradeBookController::class, 'average'])
+            ->name('api.enrollments.average');
+
     });
 });

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\Assessment;
+use App\Models\AssessmentType;
 use App\Models\AttendancePolicy;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceStatus;
@@ -14,6 +16,9 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
 use App\Models\EnrollmentStatusHistory;
+use App\Models\Grade;
+use App\Models\GradeRubricScore;
+use App\Models\GradingScheme;
 use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
@@ -22,10 +27,13 @@ use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\RelationType;
 use App\Models\ReportingPeriod;
+use App\Models\RubricCriterion;
 use App\Models\SessionType;
 use App\Models\Setting;
+use App\Models\SubmissionStatus;
 use App\Models\Tenant;
 use App\Models\TimetableSlot;
+use App\Models\TypeWeight;
 use App\Models\User;
 
 return [
@@ -80,6 +88,15 @@ return [
         AttendancePolicy::class,
         AttendanceRecord::class,
         MakeupLink::class,
+
+        AssessmentType::class,
+        SubmissionStatus::class,
+        GradingScheme::class,
+        Assessment::class,
+        RubricCriterion::class,
+        Grade::class,
+        GradeRubricScore::class,
+        TypeWeight::class,
     ],
 
     'global_models' => [
