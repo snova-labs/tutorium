@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantEntitlementOverride;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Collection;
 
 /** Cloud mode: answers come from the plan, with negotiated overrides on top. */
 final class SubscriptionEntitlements implements EntitlementSource
@@ -94,8 +95,8 @@ final class SubscriptionEntitlements implements EntitlementSource
         );
     }
 
-    /** @return \Illuminate\Support\Collection<int, TenantEntitlementOverride> */
-    private function overrides(Tenant $tenant): \Illuminate\Support\Collection
+    /** @return Collection<int, TenantEntitlementOverride> */
+    private function overrides(Tenant $tenant): Collection
     {
         return $this->tenancy->runAs(
             $tenant,

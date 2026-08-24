@@ -31,7 +31,7 @@ final class MeterUsageCommand extends Command
 
         if ($this->option('tenant') !== null) {
             $tenant = $tenancy->withoutScoping(
-                fn () => Tenant::query()->where('slug', $this->option('tenant'))->firstOrFail()
+                fn () => Tenant::query()->where('slug', $this->option('tenant'))->firstOrFail(),
             );
 
             $snapshot = $this->option('backfill')

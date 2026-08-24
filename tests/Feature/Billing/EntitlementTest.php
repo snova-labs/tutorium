@@ -13,6 +13,7 @@ use App\Models\TenantEntitlementOverride;
 use App\Services\EntitlementService;
 use App\Services\TenantProvisioner;
 use App\Support\Billing\Entitlement;
+use App\Support\Billing\EntitlementSource;
 use App\Support\Billing\LicenceEntitlements;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -149,7 +150,7 @@ final class EntitlementTest extends TestCase
     public function a_licence_answers_the_same_questions_as_a_subscription(): void
     {
         // The self-hosted path, exercised now so it cannot drift later.
-        $this->app->instance(\App\Support\Billing\EntitlementSource::class, new LicenceEntitlements([
+        $this->app->instance(EntitlementSource::class, new LicenceEntitlements([
             'features' => ['max_learners' => 500, 'sso' => true, 'api_access' => true],
         ]));
 

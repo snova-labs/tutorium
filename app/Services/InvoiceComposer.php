@@ -99,7 +99,7 @@ final class InvoiceComposer
     }
 
     /**
-     * @param  array<string, mixed>  $peak
+     * @param array<string, mixed> $peak
      * @return array<int, string>
      */
     private function notes(array $peak, $plan, int $adjustment): array

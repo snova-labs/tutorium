@@ -148,6 +148,6 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('usage', [UsageController::class, 'meter'])->name('api.usage.meter');
         Route::get('usage/invoices', [UsageController::class, 'invoices'])->name('api.usage.invoices');
-        
+
     });
 });

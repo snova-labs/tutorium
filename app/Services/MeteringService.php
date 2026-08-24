@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Models\UsageSnapshot;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -67,7 +68,7 @@ final class MeteringService
             fn () => Tenant::query()->whereIn('status', [
                 Tenant::STATUS_TRIAL, Tenant::STATUS_ACTIVE,
                 Tenant::STATUS_PAST_DUE, Tenant::STATUS_SUSPENDED,
-            ])->get()
+            ])->get(),
         );
 
         foreach ($tenants as $tenant) {
@@ -163,7 +164,7 @@ final class MeteringService
                 'corrects_snapshot_id' => $original->getKey(),
                 'correction_reason' => $reason,
                 'corrected_by_operator_id' => $operator->getKey(),
-            ])
+            ]),
         ));
     }
 
@@ -205,9 +206,9 @@ final class MeteringService
     /**
      * Snapshots with corrections taking precedence over the originals they replace.
      *
-     * @return \Illuminate\Support\Collection<int, UsageSnapshot>
+     * @return Collection<int, UsageSnapshot>
      */
-    private function effectiveSnapshots(CarbonImmutable $from, CarbonImmutable $to): \Illuminate\Support\Collection
+    private function effectiveSnapshots(CarbonImmutable $from, CarbonImmutable $to): Collection
     {
         return UsageSnapshot::query()
             ->whereBetween('snapshot_date', [$from->toDateString(), $to->toDateString()])
@@ -251,10 +252,10 @@ final class MeteringService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, UsageSnapshot>  $snapshots
+     * @param Collection<int, UsageSnapshot> $snapshots
      * @return array<int, string>
      */
-    private function missingDays(\Illuminate\Support\Collection $snapshots, CarbonImmutable $from, CarbonImmutable $to): array
+    private function missingDays(Collection $snapshots, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $have = $snapshots->map(fn (UsageSnapshot $s) => $s->snapshot_date->toDateString())->flip();
         $missing = [];
