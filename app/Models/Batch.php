@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\Models;
 
@@ -102,5 +102,11 @@ final class Batch extends Model
     public function enrollmentsForAttendance(): Collection
     {
         return $this->hasMany(Enrollment::class)->with('learner')->active()->get();
+    }
+
+    //enrollments
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
     }
 }
