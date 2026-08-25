@@ -5,122 +5,100 @@ on:
     branches: [main]
   pull_request:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   quality:
-    name: Format & static analysis
+    name: Style and static analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           coverage: none
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Formatting
-        run: ./vendor/bin/pint --test
-
-      - name: Static analysis
-        run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: ./vendor/bin/pint --test
+      - run: ./vendor/bin/phpstan analyse --memory-limit=1G
 
   isolation:
-    name: Tenant isolation (blocking)
+    name: Tenant isolation
     runs-on: ubuntu-latest
+    # A separate, blocking job on purpose. Isolation is the one guarantee that must never be
+    # merged broken, and burying it inside a longer suite makes it easy to miss in a red run.
     services:
       mysql:
-        image: mysql:8.4
+        image: mysql:8
         env:
-          MYSQL_DATABASE: platform_testing
           MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: platform_testing
         ports: ['3306:3306']
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -psecret"
-          --health-interval=5s --health-timeout=5s --health-retries=20
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
-
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
-
+        with: { php-version: '8.3', coverage: none }
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
-
-      # A red isolation suite blocks deployment unconditionally. It is a separate
-      # job so the reason for a failed pipeline is unmistakable in the UI.
-      - name: Isolation suite
-        run: php artisan test --testsuite=Tenancy
+      - run: php artisan test --testsuite=Tenancy
         env:
           DB_HOST: 127.0.0.1
-          DB_PASSWORD: secret
+          DB_DATABASE: platform_testing
           DB_USERNAME: root
+          DB_PASSWORD: secret
 
   tests:
-    name: Test suite & migrations
+    name: Tests and install check
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.4
+        image: mysql:8
         env:
-          MYSQL_DATABASE: platform_testing
           MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: platform_testing
         ports: ['3306:3306']
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -psecret"
-          --health-interval=5s --health-timeout=5s --health-retries=20
-    env:
-      DB_HOST: 127.0.0.1
-      DB_PASSWORD: secret
-      DB_USERNAME: root
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
-
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
-
+        with: { php-version: '8.3', coverage: none }
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
 
-      - name: Full suite
-        run: php artisan test
-
-      # Every migration must be reversible within a release, so a rollback never
-      # faces a schema it cannot read (SL-SRS-001 NFR-REL-4).
-      - name: Migrations up / down / up
+      # Migrations must run cleanly in both directions. A down() nobody has exercised is a
+      # rollback that fails at exactly the wrong moment.
+      - name: Migrate up, down, up
         run: |
           php artisan migrate --force
-          php artisan migrate:rollback --force
+          php artisan migrate:rollback --step=100 --force
           php artisan migrate --force
+        env: &db
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: platform_testing
+          DB_USERNAME: root
+          DB_PASSWORD: secret
+
+      # Catches the class of failure this project is most exposed to: a model, binding, route or
+      # relation that a layer asked to be wired by hand and nobody did.
+      - name: Verify the installation
+        run: php artisan platform:verify --strict
+        env: *db
+
+      - run: php artisan test
+        env: *db
 
   security:
-    name: Dependency & secret scanning
+    name: Dependencies and secrets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+        with: { fetch-depth: 0 }
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
-
+        with: { php-version: '8.3', coverage: none }
       - run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Known vulnerabilities
-        run: composer audit --no-interaction
-
-      - name: Secret scan
-        uses: gitleaks/gitleaks-action@v2
+      - run: composer audit --no-interaction
+      - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

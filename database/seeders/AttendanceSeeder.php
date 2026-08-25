@@ -49,6 +49,7 @@ final class AttendanceSeeder extends Seeder
             }
 
             $sessions = ClassSession::query()
+                ->with('batch')
                 ->where('batch_id', $batch->getKey())
                 ->orderBy('session_local_date')
                 ->get();

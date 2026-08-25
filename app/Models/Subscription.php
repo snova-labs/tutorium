@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\Models;
 
@@ -30,9 +30,9 @@ final class Subscription extends Model
     {
         return [
             'current_period_start' => 'immutable_date',
-            'current_period_end' => 'immutable_date',
+            'current_period_end'   => 'immutable_date',
             'cancel_at_period_end' => 'boolean',
-            'cancelled_at' => 'immutable_datetime',
+            'cancelled_at'         => 'immutable_datetime',
         ];
     }
 
@@ -45,5 +45,11 @@ final class Subscription extends Model
     public function entitlesService(): bool
     {
         return in_array($this->status, [self::TRIALING, self::ACTIVE, self::PAST_DUE], true);
+    }
+
+    /** A downgrade waiting for the end of the period already paid for. */
+    public function pendingPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'pending_plan_id');
     }
 }
