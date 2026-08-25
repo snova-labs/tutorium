@@ -37,7 +37,6 @@ final class BatchResource extends Resource
 {
     protected static ?string $model = Batch::class;
 
-
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
 
     protected static ?int $navigationSort = 21;
