@@ -24,6 +24,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 
 
 /**
@@ -140,6 +141,7 @@ final class BatchResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('course'))
             ->columns([
                 TextColumn::make('name')
                     ->description(fn (Batch $record): string => $record->course->name)
