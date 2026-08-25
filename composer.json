@@ -5,16 +5,16 @@
     "license": "proprietary",
     "require": {
         "php": "^8.3",
-        "dompdf/dompdf": "^3.0",
+        "dompdf/dompdf": "^3.1",
         "filament/filament": "^5.0",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
-        "league/flysystem-aws-s3-v3": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "livewire/livewire": "^4.4",
         "maatwebsite/excel": "^3.1",
         "nesbot/carbon": "^3.0",
-        "spatie/laravel-permission": "^6.9"
+        "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
