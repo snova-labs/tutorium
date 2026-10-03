@@ -120,7 +120,12 @@ jobs:
       - name: Known vulnerabilities
         run: composer audit --no-interaction
 
+      # The gitleaks CLI directly: the GitHub Action wrapper requires a paid licence for
+      # organisation repositories, the scanner itself does not. Scans the full history.
       - name: Secret scan
-        uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.24.3
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose .
