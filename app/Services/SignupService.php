@@ -37,7 +37,7 @@ final class SignupService
     ) {}
 
     /**
-     * @param  array<string, mixed>  $input
+     * @param array<string, mixed> $input
      * @return array{tenant: Tenant, owner: User}
      */
     public function signUp(array $input, ?string $ip = null): array
@@ -86,7 +86,7 @@ final class SignupService
         $hash = hash('sha256', $token);
 
         $user = $this->tenancy->withoutScoping(
-            fn () => User::query()->where('verification_token_hash', $hash)->first()
+            fn () => User::query()->where('verification_token_hash', $hash)->first(),
         );
 
         if ($user === null) {
@@ -157,7 +157,7 @@ final class SignupService
     private function guardExistingAccount(string $email, ?string $ip): void
     {
         $exists = $this->tenancy->withoutScoping(
-            fn () => User::query()->where('email', $email)->exists()
+            fn () => User::query()->where('email', $email)->exists(),
         );
 
         if (! $exists) {

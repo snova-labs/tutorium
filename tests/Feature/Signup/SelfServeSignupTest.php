@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Signup;
 
+use App\Models\AttendanceStatus;
 use App\Models\Branch;
-use App\Models\SignupAttempt;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
@@ -42,7 +42,7 @@ final class SelfServeSignupTest extends TestCase
             // Roles, brand, branch, vocabularies — all of it, from one form submission.
             $this->assertTrue($result['owner']->fresh()->isOwner());
             $this->assertSame('Asia/Kathmandu', Branch::query()->first()->timezone);
-            $this->assertGreaterThan(0, \App\Models\AttendanceStatus::query()->count());
+            $this->assertGreaterThan(0, AttendanceStatus::query()->count());
         });
     }
 
@@ -181,7 +181,7 @@ final class SelfServeSignupTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $overrides
+     * @param array<string, mixed> $overrides
      * @return array{tenant: Tenant, owner: User}
      */
     private function signUp(array $overrides = [], string $ip = '203.0.113.1'): array

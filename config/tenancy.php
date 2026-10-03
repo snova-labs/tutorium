@@ -24,6 +24,7 @@ use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
 use App\Models\Impersonation;
+use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
@@ -43,6 +44,7 @@ use App\Models\RubricCriterion;
 use App\Models\SampleDataSet;
 use App\Models\SessionType;
 use App\Models\Setting;
+use App\Models\SignupAttempt;
 use App\Models\SubmissionStatus;
 use App\Models\Subscription;
 use App\Models\TeacherNote;
@@ -134,7 +136,7 @@ return [
         UsageSnapshot::class,
         Invoice::class,
         TenantEntitlementOverride::class,
-        App\Models\Invitation::class
+        Invitation::class,
     ],
 
     'global_models' => [
@@ -143,7 +145,7 @@ return [
         Impersonation::class,
         Plan::class,
         PlanFeature::class,
-        App\Models\SignupAttempt::class
+        SignupAttempt::class,
     ],
 
 ];

@@ -40,7 +40,7 @@ final class SessionController
         // No tenant is bound at sign-in, and the same address may legitimately
         // staff more than one academy, so the lookup deliberately crosses tenants.
         $user = $tenancy->withoutScoping(
-            fn () => User::query()->where('email', $credentials['email'])->first()
+            fn () => User::query()->where('email', $credentials['email'])->first(),
         );
 
         if ($user === null || ! Hash::check($credentials['password'], $user->password) || ! $user->is_active) {

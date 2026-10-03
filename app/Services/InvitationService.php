@@ -30,7 +30,7 @@ final class InvitationService
     public function __construct(private readonly TenantContext $tenancy) {}
 
     /**
-     * @param  array<string, mixed>  $input
+     * @param array<string, mixed> $input
      */
     public function invite(User $inviter, array $input): Invitation
     {
@@ -133,7 +133,7 @@ final class InvitationService
         $invitation = $this->preview($token);
 
         $tenant = $this->tenancy->withoutScoping(
-            fn () => Tenant::query()->findOrFail($invitation->tenant_id)
+            fn () => Tenant::query()->findOrFail($invitation->tenant_id),
         );
 
         return $this->tenancy->runAs($tenant, fn () => DB::transaction(function () use ($invitation, $input): User {
@@ -237,7 +237,7 @@ final class InvitationService
     private function findByToken(string $token): Invitation
     {
         $invitation = $this->tenancy->withoutScoping(
-            fn () => Invitation::withoutGlobalScopes()->where('token_hash', hash('sha256', $token))->first()
+            fn () => Invitation::withoutGlobalScopes()->where('token_hash', hash('sha256', $token))->first(),
         );
 
         return $invitation ?? throw ValidationException::withMessages([
@@ -248,7 +248,7 @@ final class InvitationService
     private function send(Invitation $invitation, string $token): void
     {
         $tenant = $this->tenancy->withoutScoping(
-            fn () => Tenant::query()->find($invitation->tenant_id)
+            fn () => Tenant::query()->find($invitation->tenant_id),
         );
 
         Notification::route('mail', $invitation->email)

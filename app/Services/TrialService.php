@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\BillingProfile;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\TrialEndingNotification;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -77,7 +79,7 @@ final class TrialService
 
                 $already[] = $threshold;
                 $this->tenancy->withoutScoping(
-                    fn () => $tenant->update(['trial_reminders_sent' => array_values(array_unique($already))])
+                    fn () => $tenant->update(['trial_reminders_sent' => array_values(array_unique($already))]),
                 );
 
                 $sent++;
@@ -161,14 +163,14 @@ final class TrialService
         });
     }
 
-    /** @return \Illuminate\Support\Collection<int, Tenant> */
-    private function trialTenants(): \Illuminate\Support\Collection
+    /** @return Collection<int, Tenant> */
+    private function trialTenants(): Collection
     {
         return $this->tenancy->withoutScoping(
             fn () => Tenant::query()
                 ->where('status', Tenant::STATUS_TRIAL)
                 ->whereNotNull('trial_ends_at')
-                ->get()
+                ->get(),
         );
     }
 
@@ -179,7 +181,7 @@ final class TrialService
 
             return $subscription !== null
                 && in_array($subscription->status, [Subscription::ACTIVE, Subscription::PAST_DUE], true)
-                && \App\Models\BillingProfile::query()->first()?->hasPaymentMethod() === true;
+                && BillingProfile::query()->first()?->hasPaymentMethod() === true;
         });
     }
 

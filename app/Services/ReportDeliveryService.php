@@ -45,7 +45,7 @@ final class ReportDeliveryService
         }
 
         if (config('signup.require_verification_to_send')
-            && ! app(\App\Services\SignupService::class)->maySendOutbound($this->tenancy->require())) {
+            && ! app(SignupService::class)->maySendOutbound($this->tenancy->require())) {
             throw ValidationException::withMessages([
                 'verification' => 'Confirm your email address before sending reports to families. '
                     .'Check your inbox, or request a new link from your account settings.',

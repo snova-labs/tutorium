@@ -7,10 +7,11 @@ namespace Tests\Feature\Signup;
 use App\Models\AuditLog;
 use App\Models\BillingProfile;
 use App\Models\Branch;
+use App\Models\Brand;
 use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantExport;
+use App\Models\User;
 use App\Notifications\TrialEndingNotification;
 use App\Services\SubscriptionService;
 use App\Services\TenantExportService;
@@ -118,7 +119,7 @@ final class TrialLifecycleTest extends TestCase
     public function converting_changes_nothing_about_the_data(): void
     {
         app(TenantContext::class)->runAs($this->tenant, fn () => Branch::query()->create([
-            'brand_id' => \App\Models\Brand::query()->first()->getKey(),
+            'brand_id' => Brand::query()->first()->getKey(),
             'name' => 'Second location',
             'code' => 'TWO',
             'timezone' => 'Asia/Kathmandu',
@@ -166,7 +167,7 @@ final class TrialLifecycleTest extends TestCase
         app(TrialService::class)->sendDueReminders();
 
         Notification::assertSentTo(
-            app(TenantContext::class)->runAs($this->tenant, fn () => \App\Models\User::query()->first()),
+            app(TenantContext::class)->runAs($this->tenant, fn () => User::query()->first()),
             TrialEndingNotification::class,
             function (TrialEndingNotification $notification) {
                 $mail = $notification->toMail(new \stdClass);

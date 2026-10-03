@@ -26,7 +26,7 @@ final class CreateLearner extends CreateRecord
      * do is create a second record silently — that is how attendance and grades
      * end up split across two rows and the report sent home is wrong.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     protected function handleRecordCreation(array $data): Model
     {
@@ -46,7 +46,7 @@ final class CreateLearner extends CreateRecord
                     ->title('This may already be someone you have on file')
                     ->body($matches->map(
                         fn (DuplicateCandidate $c) => $c->learner->displayName().' ('.$c->learner->number.') — '
-                            .implode(', ', $c->reasons)
+                            .implode(', ', $c->reasons),
                     )->implode('<br>').'<br><br>Save again to add them anyway.')
                     ->persistent()
                     ->send();

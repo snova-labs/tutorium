@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Livewire\Gradebook;
 
 use App\Models\Batch;
+use App\Models\Enrollment;
 use App\Models\SubmissionStatus;
 use App\Services\GradeBookService;
 use App\Support\Grading\GradeBookCalculator;
 use App\Support\Time\PeriodService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -75,9 +77,9 @@ final class Grid extends Component
         );
     }
 
-    /** @return \Illuminate\Support\Collection<int, SubmissionStatus> */
+    /** @return Collection<int, SubmissionStatus> */
     #[Computed(persist: true)]
-    public function submissionStatuses(): \Illuminate\Support\Collection
+    public function submissionStatuses(): Collection
     {
         return SubmissionStatus::query()->orderBy('sort')->get();
     }
@@ -89,7 +91,7 @@ final class Grid extends Component
      */
     public function average(int $enrollmentId): array
     {
-        $enrollment = \App\Models\Enrollment::query()->with('batch.course')->findOrFail($enrollmentId);
+        $enrollment = Enrollment::query()->with('batch.course')->findOrFail($enrollmentId);
         $period = app(PeriodService::class)->forLabel($this->batch(), $this->periodLabel);
 
         return app(GradeBookCalculator::class)->forPeriod($enrollment, $period)->toArray();
