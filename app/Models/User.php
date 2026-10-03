@@ -48,11 +48,12 @@ final class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        return $this->is_active;
         // Teachers have their own screens; the panel is for people who
         // administer the account.
-        return $this->is_active && $this->hasAnyPermission([
-            'learners.view', 'batches.manage', 'settings.manage',
-        ]);
+        // return $this->is_active && $this->hasAnyPermission([
+        //     'learners.view', 'batches.manage', 'settings.manage',
+        // ]);
     }
 
     public function tenant(): BelongsTo

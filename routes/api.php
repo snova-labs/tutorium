@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
+use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CourseController;
@@ -21,26 +22,32 @@ use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Public\SignupController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
+use App\Http\Controllers\Webhook\PaymentWebhookController;
 use Illuminate\Support\Facades\Route;
-
 
 /*
 |--------------------------------------------------------------------------
-| API v1
+| API v1 — canonical
 |--------------------------------------------------------------------------
 |
-| Versioned from the first endpoint, because the future guardian portal,
+| Versioned from the first endpoint, because the future guardian portal, the
 | learner portal and any customer integration consume exactly these routes
-| (SL-ARC-002 §1 "API-first").
+| (SL-ARC-002 §1). Breaking changes get a new version; additive changes ship
+| within one.
 |
-| Middleware order matters: authentication must resolve the user before
-| tenant.resolve can bind their tenant, and every write route sits behind
-| the tenant guard that enforces read-only states.
+| Middleware order is load-bearing. Authentication must resolve the user
+| before `tenant.resolve` can bind their tenant — bound globally instead, it
+| would run first and leave every request with no tenant and, silently, no
+| data. `tenant` then enforces read-only states.
 |
 */
 
+Route::post('/webhooks/payments', [PaymentWebhookController::class, 'handle'])
+    ->name('webhooks.payments');
+
 Route::prefix('v1')->group(function (): void {
 
+    // ── Public ───────────────────────────────────────────────────────────────
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
     Route::get('ping', fn () => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
 
@@ -59,14 +66,15 @@ Route::prefix('v1')->group(function (): void {
     
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
 
+        // ── Session ──────────────────────────────────────────────────────────
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
         Route::get('me', [AuthController::class, 'me'])->name('api.me');
 
-        // Organisation
+        // ── Organisation ─────────────────────────────────────────────────────
         Route::apiResource('brands', BrandController::class)->names('api.brands');
         Route::apiResource('branches', BranchController::class)->names('api.branches');
 
-        // Academic structure
+        // ── Academic structure ───────────────────────────────────────────────
         Route::apiResource('courses', CourseController::class)->names('api.courses');
         Route::apiResource('batches', BatchController::class)
             ->only(['index', 'store', 'show', 'update'])->names('api.batches');
@@ -75,16 +83,21 @@ Route::prefix('v1')->group(function (): void {
         Route::put('batches/{batch}/teachers', [BatchController::class, 'assignTeachers'])
             ->name('api.batches.teachers');
 
-        // Scheduling
-        Route::get('batches/{batch}/sessions', [ScheduleController::class, 'sessions'])->name('api.batches.sessions');
+        // ── Scheduling ───────────────────────────────────────────────────────
+        Route::get('batches/{batch}/sessions', [ScheduleController::class, 'sessions'])
+            ->name('api.batches.sessions');
         Route::post('batches/{batch}/sessions/generate', [ScheduleController::class, 'generate'])
             ->name('api.batches.sessions.generate');
-        Route::get('batches/{batch}/periods', [ScheduleController::class, 'periods'])->name('api.batches.periods');
-        Route::post('sessions/{session}/cancel', [ScheduleController::class, 'cancel'])->name('api.sessions.cancel');
+        Route::get('batches/{batch}/periods', [ScheduleController::class, 'periods'])
+            ->name('api.batches.periods');
+        // Sessions are cancelled or rescheduled, never deleted: what was planned is part of the
+        // history (SL-DAT-003 §13).
+        Route::post('sessions/{session}/cancel', [ScheduleController::class, 'cancel'])
+            ->name('api.sessions.cancel');
         Route::post('sessions/{session}/reschedule', [ScheduleController::class, 'reschedule'])
             ->name('api.sessions.reschedule');
 
-        // People
+        // ── People ───────────────────────────────────────────────────────────
         Route::apiResource('learners', LearnerController::class)->names('api.learners');
         Route::get('guardians', [GuardianController::class, 'index'])->name('api.guardians.index');
         Route::post('learners/{learner}/guardians', [GuardianController::class, 'attach'])
@@ -94,8 +107,7 @@ Route::prefix('v1')->group(function (): void {
         Route::put('learners/{learner}/guardians/{guardian}/recipient', [GuardianController::class, 'setRecipient'])
             ->name('api.learners.guardians.recipient');
 
-        // Enrollment. No destroy route by design — an enrollment is withdrawn, never deleted,
-        // because the record that someone attended for six weeks is what the reports were built on.
+        // No destroy route by design — an enrollment is withdrawn, never deleted.
         Route::apiResource('enrollments', EnrollmentController::class)
             ->only(['index', 'store', 'show'])->names('api.enrollments');
         Route::put('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])
@@ -103,77 +115,83 @@ Route::prefix('v1')->group(function (): void {
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])
             ->name('api.enrollments.transfer');
 
+        // ── Attendance ───────────────────────────────────────────────────────
         Route::get('sessions/{session}/attendance', [AttendanceController::class, 'roster'])
             ->name('api.sessions.attendance.roster');
         Route::put('sessions/{session}/attendance', [AttendanceController::class, 'save'])
             ->name('api.sessions.attendance.save');
         Route::post('sessions/{session}/attendance/remaining', [AttendanceController::class, 'markRemaining'])
             ->name('api.sessions.attendance.remaining');
-
         Route::get('batches/{batch}/attendance', [AttendanceController::class, 'summary'])
             ->name('api.batches.attendance.summary');
         Route::get('enrollments/{enrollment}/attendance', [AttendanceController::class, 'forEnrollment'])
             ->name('api.enrollments.attendance');
+
+        // ── Grading ──────────────────────────────────────────────────────────
         Route::get('grading/vocabularies', [GradeBookController::class, 'vocabularies'])
             ->name('api.grading.vocabularies');
-
         Route::get('batches/{batch}/gradebook', [GradeBookController::class, 'grid'])
             ->name('api.batches.gradebook');
         Route::put('batches/{batch}/gradebook', [GradeBookController::class, 'save'])
             ->name('api.batches.gradebook.save');
         Route::post('batches/{batch}/assessments', [GradeBookController::class, 'storeAssessment'])
             ->name('api.batches.assessments.store');
-
         Route::get('assessments/{assessment}/ungraded', [GradeBookController::class, 'ungraded'])
             ->name('api.assessments.ungraded');
         Route::get('enrollments/{enrollment}/average', [GradeBookController::class, 'average'])
             ->name('api.enrollments.average');
-        // Notes
+
+        // ── Notes ────────────────────────────────────────────────────────────
         Route::get('enrollments/{enrollment}/notes', [NoteController::class, 'index'])->name('api.notes.index');
         Route::post('enrollments/{enrollment}/notes', [NoteController::class, 'store'])->name('api.notes.store');
         Route::post('batches/{batch}/notes', [NoteController::class, 'storeMany'])->name('api.notes.bulk');
+        Route::get('note-categories', [NoteController::class, 'categories'])->name('api.notes.categories');
 
-        // Reporting
+        // ── Reporting ────────────────────────────────────────────────────────
         Route::get('batches/{batch}/reports/readiness', [ReportController::class, 'readiness'])
             ->name('api.reports.readiness');
         Route::post('batches/{batch}/reports', [ReportController::class, 'generateBatch'])
             ->name('api.reports.generate');
         Route::get('report-runs/{run}', [ReportController::class, 'run'])->name('api.reports.run');
-
         Route::get('reports', [ReportController::class, 'index'])->name('api.reports.index');
-        Route::get('reports/{report}/download', [ReportController::class, 'download'])->name('api.reports.download');
+        Route::get('reports/{report}/download', [ReportController::class, 'download'])
+            ->name('api.reports.download');
         Route::post('reports/{report}/send', [ReportController::class, 'send'])->name('api.reports.send');
         Route::post('report-deliveries/{delivery}/retry', [ReportController::class, 'retryDelivery'])
             ->name('api.reports.retry');
-
         Route::get('report-templates/{template}/preview', [ReportController::class, 'preview'])
             ->name('api.reports.preview');
 
+        // ── Onboarding and vocabulary ────────────────────────────────────────
         Route::get('onboarding', [OnboardingController::class, 'status'])->name('api.onboarding.status');
-        Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('api.onboarding.dismiss');
-
+        Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])
+            ->name('api.onboarding.dismiss');
         Route::get('presets', [OnboardingController::class, 'presets'])->name('api.presets.index');
         Route::post('presets/apply', [OnboardingController::class, 'applyPreset'])->name('api.presets.apply');
-
         Route::post('onboarding/sample-data', [OnboardingController::class, 'loadSample'])
             ->name('api.onboarding.sample.load');
         Route::delete('onboarding/sample-data', [OnboardingController::class, 'removeSample'])
             ->name('api.onboarding.sample.remove');
-
         Route::get('terminology', [TerminologyController::class, 'index'])->name('api.terminology.index');
         Route::put('terminology', [TerminologyController::class, 'update'])->name('api.terminology.update');
 
+        // ── Usage and billing ────────────────────────────────────────────────
         Route::get('usage', [UsageController::class, 'meter'])->name('api.usage.meter');
         Route::get('usage/invoices', [UsageController::class, 'invoices'])->name('api.usage.invoices');
-
+        Route::get('billing', [BillingController::class, 'show'])->name('api.billing.show');
+        Route::put('billing/details', [BillingController::class, 'updateDetails'])->name('api.billing.details');
+        Route::post('billing/plan', [BillingController::class, 'changePlan'])->name('api.billing.plan');
+        Route::post('billing/payment-method', [BillingController::class, 'paymentMethodLink'])
+            ->name('api.billing.method');
+        Route::post('billing/cancel', [BillingController::class, 'cancel'])->name('api.billing.cancel');
     });
 
-    Route::get('invitations', [InvitationController::class, 'index'])->name('api.invitations.index');
-    Route::post('invitations', [InvitationController::class, 'store'])->name('api.invitations.store');
-    Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])
-        ->name('api.invitations.resend');
-    Route::delete('invitations/{invitation}', [InvitationController::class, 'revoke'])
-        ->name('api.invitations.revoke');
-    Route::get('trial', [InvitationController::class, 'trial'])->name('api.trial.status');
-        
+        Route::get('invitations', [InvitationController::class, 'index'])->name('api.invitations.index');
+        Route::post('invitations', [InvitationController::class, 'store'])->name('api.invitations.store');
+        Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])
+            ->name('api.invitations.resend');
+        Route::delete('invitations/{invitation}', [InvitationController::class, 'revoke'])
+            ->name('api.invitations.revoke');
+        Route::get('trial', [InvitationController::class, 'trial'])->name('api.trial.status');
+    
 });

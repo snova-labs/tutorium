@@ -37,8 +37,6 @@ final class LearnerResource extends Resource
 {
     protected static ?string $model = Learner::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-users';
-
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
     
     protected static ?int $navigationSort = 10;

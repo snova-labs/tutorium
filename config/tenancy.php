@@ -9,10 +9,12 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceStatus;
 use App\Models\AuditLog;
 use App\Models\Batch;
+use App\Models\BillingProfile;
 use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\ClassSession;
 use App\Models\Course;
+use App\Models\DunningAttempt;
 use App\Models\EmailTemplate;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
@@ -24,13 +26,17 @@ use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
 use App\Models\Impersonation;
+use App\Models\Invitation;
 use App\Models\Invoice;
+use App\Models\InvoiceLine;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
 use App\Models\Operator;
+use App\Models\PaymentEvent;
 use App\Models\Plan;
+use App\Models\PlanChange;
 use App\Models\PlanFeature;
 use App\Models\PresetApplication;
 use App\Models\RelationType;
@@ -43,6 +49,7 @@ use App\Models\RubricCriterion;
 use App\Models\SampleDataSet;
 use App\Models\SessionType;
 use App\Models\Setting;
+use App\Models\SignupAttempt;
 use App\Models\SubmissionStatus;
 use App\Models\Subscription;
 use App\Models\TeacherNote;
@@ -54,22 +61,28 @@ use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
 use App\Models\UsageSnapshot;
 use App\Models\User;
+use App\Models\WebhookEvent;
+
+/*
+|--------------------------------------------------------------------------
+| Tenant resource registry — canonical
+|--------------------------------------------------------------------------
+|
+| Every tenant-owned model MUST be listed under `resources`, and every model
+| that is not tenant-owned MUST be listed under `global_models`. Nothing may
+| be in neither: `platform:verify` and TenantRegistryTest both fail the build
+| for an unclassified model, because an unclassified model is one whose
+| isolation nobody decided.
+|
+| This file replaces every earlier version. Grouped by the layer that
+| introduced each model, so a new one is easy to place.
+|
+*/
 
 return [
 
-    /*
-    |---------------------------------------------------------------------------
-    | Tenant resource registry
-    |---------------------------------------------------------------------------
-    |
-    | Every tenant-owned model MUST be listed here. TenantRegistryTest scans
-    | app/Models, finds every model using BelongsToTenant, and fails the build if
-    | one is missing — so adding a resource without isolation coverage is not an
-    | oversight that can reach production, it is a red pipeline.
-    |
-    */
-
     'resources' => [
+
         // Organisation
         Brand::class,
         Branch::class,
@@ -85,8 +98,14 @@ return [
         LearnerStatus::class,
         EnrollmentStatus::class,
         RelationType::class,
+        
+        AttendanceStatus::class,
+        SubmissionStatus::class,
+        AssessmentType::class,
+        GradingScheme::class,
+        NoteCategory::class,
 
-        // Academic
+        // Academic structure
         Course::class,
         Batch::class,
         TimetableSlot::class,
@@ -99,25 +118,19 @@ return [
         Enrollment::class,
         EnrollmentStatusHistory::class,
 
-        // Cross-cutting
-        AuditLog::class,
-
         // Attendance
-        AttendanceStatus::class,
         AttendancePolicy::class,
         AttendanceRecord::class,
         MakeupLink::class,
 
-        AssessmentType::class,
-        SubmissionStatus::class,
-        GradingScheme::class,
+        // Grading
         Assessment::class,
         RubricCriterion::class,
         Grade::class,
         GradeRubricScore::class,
         TypeWeight::class,
 
-        NoteCategory::class,
+        // Notes and reporting
         TeacherNote::class,
         ReportTemplate::class,
         Report::class,
@@ -125,17 +138,37 @@ return [
         ReportDelivery::class,
         EmailTemplate::class,
 
+        // Onboarding
         TerminologyOverride::class,
         PresetApplication::class,
         SampleDataSet::class,
-
         TenantExport::class,
+
+        // Billing
         Subscription::class,
         UsageSnapshot::class,
         Invoice::class,
+        InvoiceLine::class,
         TenantEntitlementOverride::class,
-        App\Models\Invitation::class
+        BillingProfile::class,
+        DunningAttempt::class,
+        Invitation::class,
+        PlanChange::class,
+
+        // Cross-cutting
+        AuditLog::class,
     ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Models exempt from tenant ownership
+    |---------------------------------------------------------------------------
+    |
+    | Control-plane and platform-wide records. Adding one here is a deliberate
+    | statement that it holds no customer data, and should be reviewed like a
+    | security change — because a mistake here is a leak rather than a bug.
+    |
+    */
 
     'global_models' => [
         Tenant::class,
@@ -143,7 +176,9 @@ return [
         Impersonation::class,
         Plan::class,
         PlanFeature::class,
-        App\Models\SignupAttempt::class
+        WebhookEvent::class,
+        SignupAttempt::class,
+        PaymentEvent::class,
     ],
 
 ];

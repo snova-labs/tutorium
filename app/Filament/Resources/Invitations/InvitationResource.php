@@ -34,7 +34,7 @@ final class InvitationResource extends Resource
 {
     protected static ?string $model = Invitation::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-envelope';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
     protected static ?string $navigationLabel = 'Invitations';
 

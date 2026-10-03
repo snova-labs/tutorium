@@ -22,12 +22,17 @@ use Illuminate\Database\Seeder;
 /**
  * Academic structure for development.
  *
- * Two batches on purpose: one in Kathmandu (+05:45, no daylight saving) and one in Toronto
- * (daylight saving, and a different week structure). A single-timezone development database
- * hides exactly the class of bug that costs the most to find later.
+ * Two batches on purpose: one at the account's own location, and one online in America/Toronto.
+ * A single-timezone development database hides exactly the class of bug that costs the most to
+ * find later, so the second branch is created here if the provisioner did not make one — it
+ * provisions a single location in the account's own timezone (TenantProvisioner), which is
+ * correct for a real signup and insufficient for development.
  */
 final class AcademicSeeder extends Seeder
 {
+    /** Where the online cohort sits. Chosen for daylight saving, not for the city. */
+    private const ONLINE_TIMEZONE = 'America/Toronto';
+
     public function run(?Tenant $tenant = null): void
     {
         $tenant ??= app(TenantContext::class)->get();
@@ -38,10 +43,11 @@ final class AcademicSeeder extends Seeder
 
         app(TenantContext::class)->runAs($tenant, function (): void {
             $types = $this->sessionTypes();
-            $branches = Branch::query()->get()->keyBy('code');
 
-            if ($branches->isEmpty()) {
-                $this->command?->warn('No branches — run DatabaseSeeder first.');
+            $home = Branch::query()->orderBy('id')->first();
+
+            if ($home === null) {
+                $this->command?->warn('No branches — the account was not provisioned properly.');
 
                 return;
             }
@@ -49,7 +55,7 @@ final class AcademicSeeder extends Seeder
             $kids = Course::query()->firstOrCreate(
                 ['code' => 'KIDS-CS'],
                 [
-                    'brand_id' => $branches->first()->brand_id,
+                    'brand_id' => $home->brand_id,
                     'name' => 'Kids Computer Science',
                     'audience' => 'kids',
                     'period_type' => PeriodType::Monthly,
@@ -58,31 +64,61 @@ final class AcademicSeeder extends Seeder
                 ],
             );
 
-            if ($branches->has('KTM')) {
-                $this->batch(
-                    $kids,
-                    $branches['KTM'],
-                    'Saturday Kids — Aug 2026',
-                    'SAT-KIDS-AUG26',
-                    'Asia/Kathmandu',
-                    [[Weekday::Saturday, '10:00:00', 120, $types['CLASS']], [Weekday::Wednesday, '17:00:00', 60, $types['LAB']]],
-                );
+            $created = 0;
+
+            // The account's own location, on its own clock — whatever the provisioner set.
+            $created += $this->batch(
+                $kids,
+                $home,
+                'Saturday Kids — Aug 2026',
+                'SAT-KIDS-AUG26',
+                $home->timezone,
+                [
+                    [Weekday::Saturday, '10:00:00', 120, $types['CLASS']],
+                    [Weekday::Wednesday, '17:00:00', 60, $types['LAB']],
+                ],
+            );
+
+            $created += $this->batch(
+                $kids,
+                $this->onlineBranch($home),
+                'Kids CS — Online Americas',
+                'ONL-KIDS-AUG26',
+                self::ONLINE_TIMEZONE,
+                [[Weekday::Saturday, '09:00:00', 120, $types['CLASS']]],
+                DeliveryMode::Online,
+            );
+
+            if ($created === 0) {
+                $this->command?->warn('No batches were created — nothing downstream will have data.');
+
+                return;
             }
 
-            if ($branches->has('ONL')) {
-                $this->batch(
-                    $kids,
-                    $branches['ONL'],
-                    'Kids CS — Online Americas',
-                    'ONL-KIDS-AUG26',
-                    'America/Toronto',
-                    [[Weekday::Saturday, '09:00:00', 120, $types['CLASS']]],
-                    DeliveryMode::Online,
-                );
-            }
-
-            $this->command?->info('Seeded courses, batches, timetables and August sessions.');
+            $this->command?->info("Seeded courses, {$created} batches, timetables and August sessions.");
         });
+    }
+
+    /**
+     * The online branch, created here rather than by the provisioner.
+     *
+     * A real signup gets one location in one timezone, which is right. Development needs a
+     * daylight-saving clock in the database from the first `migrate:fresh` or the DST paths are
+     * only ever exercised by the test suite.
+     */
+    private function onlineBranch(Branch $home): Branch
+    {
+        return Branch::query()->firstOrCreate(
+            ['code' => 'ONL'],
+            [
+                'brand_id' => $home->brand_id,
+                'name' => 'Online — Americas',
+                'timezone' => self::ONLINE_TIMEZONE,
+                'week_start' => 'sunday',
+                'weekend_days' => ['saturday', 'sunday'],
+                'is_active' => true,
+            ],
+        );
     }
 
     /** @return array<string, int> */
@@ -109,7 +145,10 @@ final class AcademicSeeder extends Seeder
         return $ids;
     }
 
-    /** @param array<int, array{0: Weekday, 1: string, 2: int, 3: int}> $slots */
+    /**
+     * @param array<int, array{0: Weekday, 1: string, 2: int, 3: int}> $slots
+     * @return int 1 if a batch now exists, 0 if it could not be created
+     */
     private function batch(
         Course $course,
         Branch $branch,
@@ -118,7 +157,7 @@ final class AcademicSeeder extends Seeder
         string $timezone,
         array $slots,
         DeliveryMode $mode = DeliveryMode::InPerson,
-    ): void {
+    ): int {
         $batch = Batch::query()->firstOrCreate(
             ['code' => $code],
             [
@@ -146,5 +185,7 @@ final class AcademicSeeder extends Seeder
             CarbonImmutable::parse('2026-08-01', $timezone),
             CarbonImmutable::parse('2026-08-31', $timezone),
         );
+
+        return 1;
     }
 }

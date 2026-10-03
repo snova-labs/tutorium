@@ -66,15 +66,14 @@ return [
     */
 
     'providers' => [
+        // Authentication is the one query that must run before a tenant is bound: the tenant is
+        // derived from the user, so the user must be found first (see TenantAwareUserProvider).
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'tenant-aware',
             'model' => env('AUTH_MODEL', User::class),
         ],
+
         'operators' => ['driver' => 'eloquent', 'model' => Operator::class],
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
