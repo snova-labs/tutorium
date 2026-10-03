@@ -9,10 +9,12 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceStatus;
 use App\Models\AuditLog;
 use App\Models\Batch;
+use App\Models\BillingProfile;
 use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\ClassSession;
 use App\Models\Course;
+use App\Models\DunningAttempt;
 use App\Models\EmailTemplate;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatus;
@@ -56,6 +58,7 @@ use App\Models\TimetableSlot;
 use App\Models\TypeWeight;
 use App\Models\UsageSnapshot;
 use App\Models\User;
+use App\Models\WebhookEvent;
 
 return [
 
@@ -137,6 +140,8 @@ return [
         Invoice::class,
         TenantEntitlementOverride::class,
         Invitation::class,
+        BillingProfile::class,
+        DunningAttempt::class,
     ],
 
     'global_models' => [
@@ -146,6 +151,9 @@ return [
         Plan::class,
         PlanFeature::class,
         SignupAttempt::class,
+        // A provider's event arrives before we know whose it is. The tenant is read from its
+        // payload and every change it causes is applied inside that tenant (WebhookProcessor).
+        WebhookEvent::class,
     ],
 
 ];
