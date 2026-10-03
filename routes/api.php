@@ -12,17 +12,16 @@ use App\Http\Controllers\Api\V1\EnrollmentController;
 use App\Http\Controllers\Api\V1\GradeBookController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\InvitationController;
-use App\Http\Controllers\Public\InvitationController as PublicInvitationController;
 use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
-use App\Http\Controllers\Public\SignupController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
+use App\Http\Controllers\Public\InvitationController as PublicInvitationController;
+use App\Http\Controllers\Public\SignupController;
 use Illuminate\Support\Facades\Route;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +43,6 @@ Route::prefix('v1')->group(function (): void {
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
     Route::get('ping', fn () => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
 
-
     Route::middleware('throttle:20,1')->group(function (): void {
         Route::get('signup/options', [SignupController::class, 'options'])->name('public.signup.options');
         Route::post('signup', [SignupController::class, 'store'])->name('public.signup.store');
@@ -56,7 +54,6 @@ Route::prefix('v1')->group(function (): void {
             ->name('public.invitations.accept');
     });
 
-    
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
 
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
@@ -166,14 +163,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('usage', [UsageController::class, 'meter'])->name('api.usage.meter');
         Route::get('usage/invoices', [UsageController::class, 'invoices'])->name('api.usage.invoices');
 
+        // Team. Inside the authenticated group like everything else: the controller asks the
+        // signed-in user what they may grant, and the trial status belongs to their tenant.
+        Route::get('invitations', [InvitationController::class, 'index'])->name('api.invitations.index');
+        Route::post('invitations', [InvitationController::class, 'store'])->name('api.invitations.store');
+        Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])
+            ->name('api.invitations.resend');
+        Route::delete('invitations/{invitation}', [InvitationController::class, 'revoke'])
+            ->name('api.invitations.revoke');
+        Route::get('trial', [InvitationController::class, 'trial'])->name('api.trial.status');
     });
-
-    Route::get('invitations', [InvitationController::class, 'index'])->name('api.invitations.index');
-    Route::post('invitations', [InvitationController::class, 'store'])->name('api.invitations.store');
-    Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])
-        ->name('api.invitations.resend');
-    Route::delete('invitations/{invitation}', [InvitationController::class, 'revoke'])
-        ->name('api.invitations.revoke');
-    Route::get('trial', [InvitationController::class, 'trial'])->name('api.trial.status');
-        
 });
