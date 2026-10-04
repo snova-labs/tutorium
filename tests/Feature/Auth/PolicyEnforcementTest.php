@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
+use Closure;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -103,7 +104,8 @@ final class PolicyEnforcementTest extends TestCase
         $this->assertFalse($owner->fresh()->can('learners.view'));
     }
 
-    private function inTenant(callable $assertions): void
+    /** @param Closure(): void $assertions */
+    private function inTenant(Closure $assertions): void
     {
         app(TenantContext::class)->runAs($this->tenant, $assertions);
     }

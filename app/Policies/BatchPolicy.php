@@ -6,12 +6,15 @@ namespace App\Policies;
 
 use App\Models\Batch;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Batch access has a third dimension beyond permission and branch: assignment.
  *
  * A teacher holding grades.enter still reaches only the batches they teach. That is the rule the
  * whole teaching side of the product depends on (FR-IAM-3).
+ *
+ * @extends BasePolicy<Batch>
  */
 final class BatchPolicy extends BasePolicy
 {
@@ -25,7 +28,8 @@ final class BatchPolicy extends BasePolicy
         return $user->is_active && ($user->can('batches.manage') || $user->can('learners.view'));
     }
 
-    public function view(User $user, $record): bool
+    /** @param Batch $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user) && $this->reaches($user, $record);
     }
@@ -35,12 +39,14 @@ final class BatchPolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param Batch $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage') && $this->reaches($user, $record);
     }
 
-    public function delete(User $user, $record): bool
+    /** @param Batch $record */
+    public function delete(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage') && $this->reaches($user, $record);
     }

@@ -6,7 +6,6 @@ namespace App\Http\Middleware;
 
 use App\Models\Impersonation;
 use App\Support\Audit\AuditContext;
-use App\Support\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,10 +27,7 @@ final class RestrictImpersonatedAccess
         'api/v1/tenants/*/purge',
     ];
 
-    public function __construct(
-        private readonly AuditContext $audit,
-        private readonly TenantContext $tenancy,
-    ) {}
+    public function __construct(private readonly AuditContext $audit) {}
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\InvoiceLineFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One metered segment of an invoice, with the day its quantity came from. */
 final class InvoiceLine extends Model
 {
+    /** @use HasFactory<InvoiceLineFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -29,11 +31,13 @@ final class InvoiceLine extends Model
         ];
     }
 
+    /** @return BelongsTo<Invoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
 
+    /** @return BelongsTo<UsageSnapshot, $this> */
     public function snapshot(): BelongsTo
     {
         return $this->belongsTo(UsageSnapshot::class, 'quantity_snapshot_id');

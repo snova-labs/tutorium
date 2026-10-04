@@ -12,7 +12,6 @@ final class AuditLogFactory extends Factory
 {
     protected $model = AuditLog::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

@@ -17,7 +17,6 @@ use App\Models\TimetableSlot;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\SessionGenerator;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Seeder;
 
 /**
  * Academic structure for development.
@@ -26,7 +25,7 @@ use Illuminate\Database\Seeder;
  * (daylight saving, and a different week structure). A single-timezone development database
  * hides exactly the class of bug that costs the most to find later.
  */
-final class AcademicSeeder extends Seeder
+final class AcademicSeeder extends ConsoleAwareSeeder
 {
     public function run(?Tenant $tenant = null): void
     {
@@ -41,7 +40,7 @@ final class AcademicSeeder extends Seeder
             $branches = Branch::query()->get()->keyBy('code');
 
             if ($branches->isEmpty()) {
-                $this->command?->warn('No branches — run DatabaseSeeder first.');
+                $this->say('warn', 'No branches — run DatabaseSeeder first.');
 
                 return;
             }
@@ -81,7 +80,7 @@ final class AcademicSeeder extends Seeder
                 );
             }
 
-            $this->command?->info('Seeded courses, batches, timetables and August sessions.');
+            $this->say('info', 'Seeded courses, batches, timetables and August sessions.');
         });
     }
 

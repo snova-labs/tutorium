@@ -38,6 +38,7 @@ final class Grid extends Component
     /** @var array<string, mixed> keyed "enrollmentId:assessmentId" */
     public array $cells = [];
 
+    /** @var array<string, true> keyed "enrollmentId:assessmentId" */
     public array $dirty = [];
 
     public ?string $error = null;

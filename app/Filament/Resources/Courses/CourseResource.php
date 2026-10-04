@@ -16,6 +16,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -48,7 +49,7 @@ final class CourseResource extends Resource
         return app(Terminology::class)->lower('course', plural: true);
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return 'Academic';
     }
@@ -154,7 +155,7 @@ final class CourseResource extends Resource
         return auth()->user()?->can('courses.manage') ?? false;
     }
 
-    /** @return array<string, class-string> */
+    /** @return array<string, PageRegistration> */
     public static function getPages(): array
     {
         return ['index' => ListCourses::route('/')];

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\SubscriptionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class Subscription extends Model
 {
+    /** @use HasFactory<SubscriptionFactory> */
     use BelongsToTenant, HasFactory;
 
     public const TRIALING = 'trialing';
@@ -37,11 +39,13 @@ final class Subscription extends Model
         ];
     }
 
+    /** @return BelongsTo<Plan, $this> */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }
 
+    /** @return BelongsTo<Plan, $this> */
     public function pendingPlan(): BelongsTo
     {
         return $this->belongsTo(Plan::class, 'pending_plan_id');

@@ -16,7 +16,6 @@ final class BatchFactory extends Factory
 {
     protected $model = Batch::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

@@ -243,7 +243,10 @@ final class InvitationService
         }
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /**
+     * @param array<int, int> $branchIds
+     * @return array<int, array<string, mixed>>
+     */
     private function pivotFor(array $branchIds, int $tenantId): array
     {
         $valid = Branch::query()->whereIn('id', $branchIds)->pluck('id');
@@ -269,6 +272,6 @@ final class InvitationService
         );
 
         Notification::route('mail', $invitation->email)
-            ->notify(new StaffInvitationNotification($invitation, $token, $tenant?->name ?? 'your academy'));
+            ->notify(new StaffInvitationNotification($invitation, $token, $tenant->name ?? 'your academy'));
     }
 }

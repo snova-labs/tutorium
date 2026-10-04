@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\ReportRunStatus;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\ReportRunFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /** A bulk generation, and what happened to each report in it. */
 final class ReportRun extends Model
 {
+    /** @use HasFactory<ReportRunFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -32,11 +34,13 @@ final class ReportRun extends Model
         ];
     }
 
+    /** @return BelongsTo<Batch, $this> */
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
     }
 
+    /** @return HasMany<Report, $this> */
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class);

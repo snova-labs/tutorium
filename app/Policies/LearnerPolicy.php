@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Models\Learner;
 use App\Models\User;
 
+/** @extends BasePolicy<Learner> */
 final class LearnerPolicy extends BasePolicy
 {
     protected function prefix(): string

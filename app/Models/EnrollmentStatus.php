@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\EnrollmentStatusFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class EnrollmentStatus extends Model
 {
+    /** @use HasFactory<EnrollmentStatusFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'name', 'code', 'is_active_for_billing', 'is_terminal', 'color', 'sort'];
@@ -32,6 +34,10 @@ final class EnrollmentStatus extends Model
         ];
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeBillable(Builder $query): Builder
     {
         return $query->where('is_active_for_billing', true);

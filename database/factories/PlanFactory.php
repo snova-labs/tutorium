@@ -12,7 +12,6 @@ final class PlanFactory extends Factory
 {
     protected $model = Plan::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

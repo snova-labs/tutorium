@@ -100,14 +100,7 @@ final class TenantController
                 'status' => $tenant->status,
                 'health' => $this->health->for($tenant)->toArray(),
                 'support_access' => app(ImpersonationService::class)->historyFor($tenant),
-                'exports' => $this->tenancy->runAs($tenant, fn () => TenantExport::query()
-                    ->latest('id')->take(5)->get()
-                    ->map(fn (TenantExport $e) => [
-                        'id' => $e->getKey(),
-                        'status' => $e->status,
-                        'size_bytes' => $e->size_bytes,
-                        'expires_at_utc' => $e->expires_at?->toIso8601String(),
-                    ])),
+                'exports' => $this->tenancy->runAs($tenant, fn (): array => $this->recentExports()),
             ],
         ]);
     }
@@ -170,5 +163,19 @@ final class TenantController
         return response()->json([
             'data' => ['export_id' => $export->getKey(), 'message' => 'Building the export. This may take a few minutes.'],
         ], 202);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function recentExports(): array
+    {
+        return TenantExport::query()
+            ->latest('id')->take(5)->get()
+            ->map(fn (TenantExport $e) => [
+                'id' => $e->getKey(),
+                'status' => $e->status,
+                'size_bytes' => $e->size_bytes,
+                'expires_at_utc' => $e->expires_at?->toIso8601String(),
+            ])
+            ->all();
     }
 }

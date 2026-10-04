@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\AssessmentTypeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class AssessmentType extends Model
 {
+    /** @use HasFactory<AssessmentTypeFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -34,11 +36,13 @@ final class AssessmentType extends Model
         ];
     }
 
+    /** @return HasMany<Assessment, $this> */
     public function assessments(): HasMany
     {
         return $this->hasMany(Assessment::class);
     }
 
+    /** @return HasMany<TypeWeight, $this> */
     public function weights(): HasMany
     {
         return $this->hasMany(TypeWeight::class);

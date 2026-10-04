@@ -14,7 +14,6 @@ final class ReportingPeriodFactory extends Factory
 {
     protected $model = ReportingPeriod::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

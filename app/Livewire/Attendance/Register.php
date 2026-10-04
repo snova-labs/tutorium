@@ -29,6 +29,8 @@ use Livewire\Component;
  *  - The policy in force is printed above the grid, because a teacher choosing
  *    between Late and Absent should be able to see what the system will make of
  *    either (FR-ATT-5).
+ *
+ * @property-read array<int, array<string, mixed>> $roster from the #[Computed] roster()
  */
 final class Register extends Component
 {
@@ -78,7 +80,7 @@ final class Register extends Component
     #[Computed(persist: true)]
     public function roster(): array
     {
-        return app(AttendanceService::class)->roster($this->session())->all();
+        return app(AttendanceService::class)->roster($this->session());
     }
 
     /** @return Collection<int, AttendanceStatus> */

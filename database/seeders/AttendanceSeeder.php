@@ -12,7 +12,6 @@ use App\Models\Enrollment;
 use App\Models\Tenant;
 use App\Services\AttendanceService;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 
 /**
  * Attendance vocabulary and a partly-marked month.
@@ -20,7 +19,7 @@ use Illuminate\Database\Seeder;
  * Deliberately leaves the most recent session unmarked, so the "unmarked sessions" path is
  * visible in development rather than only in a test.
  */
-final class AttendanceSeeder extends Seeder
+final class AttendanceSeeder extends ConsoleAwareSeeder
 {
     public function run(?Tenant $tenant = null): void
     {
@@ -35,7 +34,7 @@ final class AttendanceSeeder extends Seeder
             $batch = Batch::query()->orderBy('id')->first();
 
             if ($batch === null) {
-                $this->command?->warn('No batches — run AcademicSeeder first.');
+                $this->say('warn', 'No batches — run AcademicSeeder first.');
 
                 return;
             }
@@ -43,7 +42,7 @@ final class AttendanceSeeder extends Seeder
             $enrollments = Enrollment::query()->where('batch_id', $batch->getKey())->get();
 
             if ($enrollments->isEmpty()) {
-                $this->command?->warn('No enrollments — run PeopleSeeder first.');
+                $this->say('warn', 'No enrollments — run PeopleSeeder first.');
 
                 return;
             }
@@ -83,7 +82,7 @@ final class AttendanceSeeder extends Seeder
                 ->whereIn('id', $sessions->slice(0, $marked)->modelKeys())
                 ->update(['status' => SessionStatus::Held]);
 
-            $this->command?->info("Seeded attendance statuses and marked {$marked} sessions "
+            $this->say('info', "Seeded attendance statuses and marked {$marked} sessions "
                 .'(the latest is left unmarked on purpose).');
         });
     }

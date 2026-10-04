@@ -22,8 +22,6 @@ final class WebhookTest extends TestCase
 
     private Tenant $tenant;
 
-    private Invoice $invoice;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,7 +49,7 @@ final class WebhookTest extends TestCase
                 'current_period_end' => now()->endOfMonth()->toDateString(),
             ]);
 
-            $this->invoice = Invoice::query()->create([
+            Invoice::query()->create([
                 'number' => 'INV-00042',
                 'period_start' => now()->startOfMonth()->toDateString(),
                 'period_end' => now()->endOfMonth()->toDateString(),

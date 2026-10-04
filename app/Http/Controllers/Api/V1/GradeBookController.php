@@ -16,6 +16,7 @@ use App\Support\Grading\GradeBookCalculator;
 use App\Support\Time\PeriodService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 final class GradeBookController
 {
@@ -129,7 +130,7 @@ final class GradeBookController
 
         $assessment = $this->assessments->create(
             $batch,
-            collect($validated)->except(['criteria', 'publish'])->all(),
+            Arr::except($validated, ['criteria', 'publish']),
             $validated['criteria'] ?? [],
         );
 

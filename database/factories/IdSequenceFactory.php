@@ -12,7 +12,6 @@ final class IdSequenceFactory extends Factory
 {
     protected $model = IdSequence::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

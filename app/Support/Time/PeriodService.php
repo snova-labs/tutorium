@@ -49,7 +49,7 @@ final class PeriodService
         if ($type === PeriodType::Monthly) {
             $anchor = CarbonImmutable::createFromFormat('Y-m-d H:i:s', $label.'-01 00:00:00', $batch->timezone);
 
-            if ($anchor === false) {
+            if ($anchor === null) {
                 throw new RuntimeException("[{$label}] is not a valid monthly period label.");
             }
 

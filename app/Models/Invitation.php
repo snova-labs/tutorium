@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\InvitationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class Invitation extends Model
 {
+    /** @use HasFactory<InvitationFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -41,6 +43,7 @@ final class Invitation extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
@@ -68,12 +71,16 @@ final class Invitation extends Model
         return 'People';
     }
 
-    public function auditLabel(): ?string
+    public function auditLabel(): string
     {
         return $this->email;
     }
 
-    /** A token in the activity log would be a working invitation in the activity log. */
+    /**
+     * A token in the activity log would be a working invitation in the activity log.
+     *
+     * @return array<int, string>
+     */
     public function auditExcluded(): array
     {
         return ['token_hash', 'created_at', 'updated_at'];

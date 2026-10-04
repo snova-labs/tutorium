@@ -9,6 +9,7 @@ use App\Support\Audit\Auditable;
 use App\Support\Grading\GradingRegistry;
 use App\Support\Grading\GradingStrategy;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\GradingSchemeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class GradingScheme extends Model
 {
+    /** @use HasFactory<GradingSchemeFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'name', 'code', 'kind', 'config', 'is_active'];

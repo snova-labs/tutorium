@@ -17,7 +17,6 @@ use App\Support\Time\PeriodService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ReportController
 {
@@ -147,21 +146,21 @@ final class ReportController
                 'number' => $report->number,
                 'learner' => $report->enrollment->learner->displayName(),
                 'period' => $report->period->label,
-                'generated_at_utc' => $report->generated_at?->toIso8601String(),
+                'generated_at_utc' => $report->generated_at->toIso8601String(),
                 'deliveries' => $report->deliveries->map(fn (ReportDelivery $d) => [
                     'to' => $d->to_address,
                     'name' => $d->recipient_name,
                     'status' => $d->status->value,
                     'error' => $d->error,
                     'sent_at_utc' => $d->sent_at?->toIso8601String(),
-                ]),
+                ])->all(),
             ])->items(),
             'meta' => ['total' => $reports->total(), 'per_page' => $reports->perPage()],
         ]);
     }
 
     /** Download exactly what was sent, rebuilt from the snapshot rather than from live records. */
-    public function download(Request $request, Report $report): StreamedResponse|Response
+    public function download(Request $request, Report $report): Response
     {
         abort_unless($request->user()->can('reports.view_archive'), 403);
 

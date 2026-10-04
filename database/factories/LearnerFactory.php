@@ -13,7 +13,6 @@ final class LearnerFactory extends Factory
 {
     protected $model = Learner::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         $n = fake()->unique()->numberBetween(1, 9999);

@@ -14,7 +14,6 @@ final class TypeWeightFactory extends Factory
 {
     protected $model = TypeWeight::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

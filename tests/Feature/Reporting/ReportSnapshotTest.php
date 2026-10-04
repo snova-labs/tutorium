@@ -10,6 +10,7 @@ use App\Services\ReportService;
 use App\Support\Reporting\ReportRenderer;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\PeriodService;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -177,6 +178,7 @@ final class ReportSnapshotTest extends TestCase
         });
     }
 
+    /** @param array<string, mixed> $options */
     private function generate(array $options = []): Report
     {
         $period = app(PeriodService::class)->forLabel($this->batch->load('course'), '2026-08');
@@ -188,7 +190,8 @@ final class ReportSnapshotTest extends TestCase
         );
     }
 
-    private function inTenant(callable $callback): void
+    /** @param Closure(): void $callback */
+    private function inTenant(Closure $callback): void
     {
         app(TenantContext::class)->runAs($this->tenant, $callback);
     }

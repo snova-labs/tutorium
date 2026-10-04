@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Models\Brand;
 use PHPUnit\Framework\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_that_true_is_true(): void
+    public function test_tenant_owned_models_name_their_tenant_column(): void
     {
-        $this->assertTrue(true);
+        $this->assertSame('tenant_id', (new Brand)->getTenantColumn());
     }
 }

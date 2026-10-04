@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\OperatorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,6 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 final class Operator extends Authenticatable
 {
+    /** @use HasFactory<OperatorFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
@@ -38,6 +40,7 @@ final class Operator extends Authenticatable
         ];
     }
 
+    /** @return HasMany<Impersonation, $this> */
     public function impersonations(): HasMany
     {
         return $this->hasMany(Impersonation::class);

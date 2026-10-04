@@ -14,7 +14,6 @@ final class CourseFactory extends Factory
 {
     protected $model = Course::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

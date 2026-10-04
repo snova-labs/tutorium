@@ -14,7 +14,6 @@ final class EnrollmentStatusHistoryFactory extends Factory
 {
     protected $model = EnrollmentStatusHistory::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

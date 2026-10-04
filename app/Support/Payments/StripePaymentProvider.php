@@ -136,8 +136,8 @@ final class StripePaymentProvider implements PaymentProvider
 
             return PaymentResult::failed(
                 $this->name(),
-                $error?->code ?? 'stripe_error',
-                $error?->message ?? $e->getMessage(),
+                $error->code ?? 'stripe_error',
+                $error->message ?? $e->getMessage(),
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($this->name(), 'stripe_error', $e->getMessage());

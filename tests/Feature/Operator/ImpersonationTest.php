@@ -159,8 +159,8 @@ final class ImpersonationTest extends TestCase
         $history = app(ImpersonationService::class)->historyFor($this->tenant);
 
         $this->assertCount(2, $history);
-        $this->assertSame('Sample Operator', $history->first()['operator']);
-        $this->assertTrue($history->first()['active']);
+        $this->assertSame('Sample Operator', $history[0]['operator']);
+        $this->assertTrue($history[0]['active']);
     }
 
     private function provision(): Tenant

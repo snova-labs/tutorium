@@ -13,7 +13,6 @@ final class SubscriptionFactory extends Factory
 {
     protected $model = Subscription::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

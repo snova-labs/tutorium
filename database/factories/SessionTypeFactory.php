@@ -12,7 +12,6 @@ final class SessionTypeFactory extends Factory
 {
     protected $model = SessionType::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

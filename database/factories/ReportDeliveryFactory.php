@@ -15,7 +15,6 @@ final class ReportDeliveryFactory extends Factory
 {
     protected $model = ReportDelivery::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

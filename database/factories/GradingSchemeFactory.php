@@ -13,7 +13,6 @@ final class GradingSchemeFactory extends Factory
 {
     protected $model = GradingScheme::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

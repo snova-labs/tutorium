@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Models\Plan;
 use App\Models\PlanFeature;
-use Illuminate\Database\Seeder;
 
 /**
  * The plan catalogue.
@@ -15,7 +14,7 @@ use Illuminate\Database\Seeder;
  * is what matters at this point: per active learner, with a minimum that makes a very small
  * academy viable to serve.
  */
-final class PlanSeeder extends Seeder
+final class PlanSeeder extends ConsoleAwareSeeder
 {
     public function run(): void
     {
@@ -92,6 +91,6 @@ final class PlanSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Seeded '.count($plans).' plans. Prices are placeholders.');
+        $this->say('info', 'Seeded '.count($plans).' plans. Prices are placeholders.');
     }
 }

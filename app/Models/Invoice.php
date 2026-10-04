@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class Invoice extends Model
 {
+    /** @use HasFactory<InvoiceFactory> */
     use BelongsToTenant, HasFactory;
 
     public const DRAFT = 'draft';
@@ -48,17 +50,23 @@ final class Invoice extends Model
         ];
     }
 
+    /** @return BelongsTo<UsageSnapshot, $this> */
     public function snapshot(): BelongsTo
     {
         return $this->belongsTo(UsageSnapshot::class, 'quantity_snapshot_id');
     }
 
+    /** @return BelongsTo<Subscription, $this> */
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
     }
 
-    /** One line per metered segment; more than one when the plan changed inside the period. */
+    /**
+     * One line per metered segment; more than one when the plan changed inside the period.
+     *
+     * @return HasMany<InvoiceLine, $this>
+     */
     public function lines(): HasMany
     {
         return $this->hasMany(InvoiceLine::class);

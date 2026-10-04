@@ -12,7 +12,6 @@ final class InvoiceFactory extends Factory
 {
     protected $model = Invoice::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

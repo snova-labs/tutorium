@@ -12,7 +12,6 @@ final class UsageSnapshotFactory extends Factory
 {
     protected $model = UsageSnapshot::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

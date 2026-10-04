@@ -15,7 +15,6 @@ final class TimetableSlotFactory extends Factory
 {
     protected $model = TimetableSlot::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

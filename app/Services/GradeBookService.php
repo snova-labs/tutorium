@@ -67,7 +67,7 @@ final class GradeBookService
                 'due_local_date' => $a->due_local_date?->toDateString(),
                 'criteria' => $a->rubricCriteria->map(fn ($c) => [
                     'id' => $c->getKey(), 'name' => $c->name, 'max_points' => $c->max_points,
-                ]),
+                ])->all(),
             ])->values(),
 
             'rows' => $enrollments->map(function (Enrollment $enrollment) use ($grades, $assessments): array {
@@ -90,7 +90,7 @@ final class GradeBookService
                             'normalized_pct' => $grade->normalized_pct,
                             'feedback' => $grade->feedback,
                         ]];
-                    }),
+                    })->all(),
                 ];
             })->values(),
         ];
@@ -158,7 +158,7 @@ final class GradeBookService
                 $grade->submission_status_id = $status->getKey();
                 $grade->feedback = $cell['feedback'] ?? $grade->feedback;
                 $grade->graded_by = Auth::id();
-                $grade->graded_at = now();
+                $grade->graded_at = now()->toImmutable();
 
                 $strategy->apply($grade, $assessment, $cell);
 

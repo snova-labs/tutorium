@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** One limit or flag on a plan. */
 final class PlanFeature extends Model
 {
-    use HasFactory;
-
     public const HARD = 'hard';
 
     public const SOFT = 'soft';
@@ -24,6 +21,7 @@ final class PlanFeature extends Model
         return ['value' => 'array'];
     }
 
+    /** @return BelongsTo<Plan, $this> */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);

@@ -29,7 +29,7 @@ final class BatchResource extends JsonResource
                 : 'set on this batch',
 
             'runs' => [
-                'starts_on' => $this->starts_on?->toDateString(),
+                'starts_on' => $this->starts_on->toDateString(),
                 'ends_on' => $this->ends_on?->toDateString(),
             ],
             'capacity' => $this->capacity,

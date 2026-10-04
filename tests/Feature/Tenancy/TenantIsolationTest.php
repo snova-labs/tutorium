@@ -74,6 +74,7 @@ final class TenantIsolationTest extends TestCase
 
         $record = $this->makeFor($tenantA, $model);
 
+        $this->assertTrue(method_exists($record, 'getTenantColumn'), "{$model} does not use BelongsToTenant.");
         $this->assertSame(
             $tenantA->getKey(),
             $record->getAttribute($record->getTenantColumn()),

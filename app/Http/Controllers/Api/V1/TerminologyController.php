@@ -28,13 +28,13 @@ final class TerminologyController
     {
         abort_unless($request->user()->can('settings.manage'), 403);
 
-        $validated = $request->validate([
+        $request->validate([
             'terms' => ['required', 'array', 'min:1'],
             'terms.*.singular' => ['required', 'string', 'max:60'],
             'terms.*.plural' => ['required', 'string', 'max:60'],
         ]);
 
-        $this->terms->set(collect($validated['terms'])
+        $this->terms->set($request->collect('terms')
             ->map(fn (array $t) => [$t['singular'], $t['plural']])
             ->all());
 

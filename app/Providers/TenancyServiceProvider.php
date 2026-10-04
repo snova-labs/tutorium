@@ -87,7 +87,6 @@ final class TenancyServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! $this->app->isProduction());
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
-        // $this->keepPermissionsInStepWithTenant();
         $this->grantOwnerEverything();
 
         Gate::policy(ClassSession::class, ClassSessionPolicy::class);
@@ -103,24 +102,6 @@ final class TenancyServiceProvider extends ServiceProvider
             $registrar->setPermissionsTeamId($tenant?->getKey());
             $registrar->clearClassPermissions();
         };
-    }
-
-    /**
-     * Roles and permissions are per tenant, so the permission package keeps its own notion of the
-     * current tenant. Rather than remembering to set it at every entry point — middleware, jobs,
-     * console commands, tests — it is bound to the one place the tenant actually changes.
-     */
-    private function keepPermissionsInStepWithTenant(): void
-    {
-        $this->app->make(TenantContext::class)->onChange(
-            function (?Tenant $tenant): void {
-                $registrar = $this->app->make(PermissionRegistrar::class);
-                $registrar->setPermissionsTeamId($tenant?->getKey());
-                // The cached permission map belongs to the previous tenant; keeping it would let
-                // one account's roles answer another account's questions.
-                $registrar->forgetCachedPermissions();
-            },
-        );
     }
 
     /**

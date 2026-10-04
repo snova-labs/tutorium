@@ -100,7 +100,8 @@ final class SampleDataService
                         continue;
                     }
 
-                    method_exists($model, 'forceDelete') ? $model->forceDelete() : $model->delete();
+                    // Removes soft-deleting models outright too; on others it is a plain delete.
+                    $model->forceDelete();
                     $removed++;
                 }
 

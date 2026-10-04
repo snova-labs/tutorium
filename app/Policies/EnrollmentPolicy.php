@@ -6,7 +6,9 @@ namespace App\Policies;
 
 use App\Models\Enrollment;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
+/** @extends BasePolicy<Enrollment> */
 final class EnrollmentPolicy extends BasePolicy
 {
     protected function prefix(): string
@@ -19,7 +21,8 @@ final class EnrollmentPolicy extends BasePolicy
         return $user->is_active && $user->can('learners.view');
     }
 
-    public function view(User $user, $record): bool
+    /** @param Enrollment $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user) && $user->can('view', $record->batch);
     }
@@ -29,12 +32,14 @@ final class EnrollmentPolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param Enrollment $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage') && $user->canAccessBranch((int) $record->batch->branch_id);
     }
 
-    public function delete(User $user, $record): bool
+    /** @param Enrollment $record */
+    public function delete(User $user, Model $record): bool
     {
         // Enrollments are withdrawn, never deleted. The record that someone attended for six weeks
         // is exactly what the reports were built on.

@@ -13,7 +13,6 @@ final class OperatorFactory extends Factory
 {
     protected $model = Operator::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

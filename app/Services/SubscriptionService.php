@@ -298,7 +298,7 @@ final class SubscriptionService
         foreach ($target->features as $feature) {
             $key = $feature->feature_key;
             $newValue = $feature->value['value'] ?? $feature->value;
-            $oldValue = $current[$key]?->value ?? null;
+            $oldValue = $current[$key]->value ?? null;
 
             if (is_bool($oldValue) && $oldValue === true && $newValue === false) {
                 $losses[] = str_replace('_', ' ', $key).' will no longer be available.';

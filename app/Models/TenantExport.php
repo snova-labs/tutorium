@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TenantExportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class TenantExport extends Model
 {
+    /** @use HasFactory<TenantExportFactory> */
     use BelongsToTenant, HasFactory;
 
     public const STATUS_QUEUED = 'queued';

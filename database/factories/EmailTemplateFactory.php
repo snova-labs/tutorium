@@ -12,7 +12,6 @@ final class EmailTemplateFactory extends Factory
 {
     protected $model = EmailTemplate::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

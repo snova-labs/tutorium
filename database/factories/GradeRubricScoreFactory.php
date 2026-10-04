@@ -14,7 +14,6 @@ final class GradeRubricScoreFactory extends Factory
 {
     protected $model = GradeRubricScore::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

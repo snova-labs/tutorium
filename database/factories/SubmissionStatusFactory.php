@@ -12,7 +12,6 @@ final class SubmissionStatusFactory extends Factory
 {
     protected $model = SubmissionStatus::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

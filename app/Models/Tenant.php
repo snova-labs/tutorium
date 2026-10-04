@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\TenantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class Tenant extends Model
 {
+    /** @use HasFactory<TenantFactory> */
     use HasFactory, SoftDeletes;
 
     public const STATUS_TRIAL = 'trial';
@@ -49,11 +51,13 @@ final class Tenant extends Model
         ];
     }
 
+    /** @return HasMany<Brand, $this> */
     public function brands(): HasMany
     {
         return $this->hasMany(Brand::class);
     }
 
+    /** @return HasMany<User, $this> */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

@@ -9,7 +9,7 @@ use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\TypeWeight;
 use App\Support\Time\PeriodBoundary;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /**
  * The period average.
@@ -167,8 +167,8 @@ final class GradeBookCalculator
         );
     }
 
-    /** @return Collection<int, Assessment> */
-    private function assessmentsIn(Enrollment $enrollment, PeriodBoundary $period): Collection
+    /** @return EloquentCollection<int, Assessment> */
+    private function assessmentsIn(Enrollment $enrollment, PeriodBoundary $period): EloquentCollection
     {
         return Assessment::query()
             ->with('assessmentType')
@@ -179,10 +179,7 @@ final class GradeBookCalculator
                 $period->endsLocalDate->toDateString(),
             ])
             // Work due before a learner joined is not theirs to answer for.
-            ->when(
-                $enrollment->enrolled_on !== null,
-                fn ($q) => $q->where('due_local_date', '>=', $enrollment->enrolled_on->toDateString()),
-            )
+            ->where('due_local_date', '>=', $enrollment->enrolled_on->toDateString())
             ->get();
     }
 

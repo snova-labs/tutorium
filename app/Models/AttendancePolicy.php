@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\AttendancePolicyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class AttendancePolicy extends Model
 {
+    /** @use HasFactory<AttendancePolicyFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $table = 'attendance_policies';

@@ -12,7 +12,6 @@ final class ReportTemplateFactory extends Factory
 {
     protected $model = ReportTemplate::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

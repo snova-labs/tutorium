@@ -13,9 +13,8 @@ use App\Models\ReportTemplate;
 use App\Models\Tenant;
 use App\Services\TeacherNoteService;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 
-final class ReportingSeeder extends Seeder
+final class ReportingSeeder extends ConsoleAwareSeeder
 {
     public function run(?Tenant $tenant = null): void
     {
@@ -32,7 +31,7 @@ final class ReportingSeeder extends Seeder
             $this->emailTemplate();
             $this->notes();
 
-            $this->command?->info('Seeded note categories, a report template, an email template and notes.');
+            $this->say('info', 'Seeded note categories, a report template, an email template and notes.');
         });
     }
 

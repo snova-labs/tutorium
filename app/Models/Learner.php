@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\LearnerFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ use Illuminate\Support\Collection;
  */
 final class Learner extends Model
 {
+    /** @use HasFactory<LearnerFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -41,11 +43,13 @@ final class Learner extends Model
         ];
     }
 
+    /** @return BelongsTo<LearnerStatus, $this> */
     public function status(): BelongsTo
     {
         return $this->belongsTo(LearnerStatus::class, 'status_id');
     }
 
+    /** @return BelongsToMany<Guardian, $this> */
     public function guardians(): BelongsToMany
     {
         return $this->belongsToMany(Guardian::class, 'guardian_learner')
@@ -53,6 +57,7 @@ final class Learner extends Model
             ->withTimestamps();
     }
 
+    /** @return HasMany<Enrollment, $this> */
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
@@ -74,6 +79,10 @@ final class Learner extends Model
         return $this->guardians()->wherePivot('receives_reports', true)->get();
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeSearch(Builder $query, string $term): Builder
     {
         $like = '%'.str_replace('%', '\%', $term).'%';
@@ -91,7 +100,7 @@ final class Learner extends Model
         return 'People';
     }
 
-    public function auditLabel(): ?string
+    public function auditLabel(): string
     {
         return $this->displayName();
     }

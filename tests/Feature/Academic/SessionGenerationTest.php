@@ -17,6 +17,7 @@ use App\Models\TimetableSlot;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\SessionGenerator;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -268,7 +269,8 @@ final class SessionGenerationTest extends TestCase
         });
     }
 
-    private function inTenant(callable $callback): void
+    /** @param Closure(): void $callback */
+    private function inTenant(Closure $callback): void
     {
         app(TenantContext::class)->runAs($this->tenant, $callback);
     }

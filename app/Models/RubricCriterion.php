@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\RubricCriterionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One line of a rubric: what is being judged, and out of how much. */
 final class RubricCriterion extends Model
 {
+    /** @use HasFactory<RubricCriterionFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'assessment_id', 'name', 'descriptor', 'max_points', 'sort'];
@@ -22,6 +24,7 @@ final class RubricCriterion extends Model
         return ['max_points' => 'decimal:2', 'sort' => 'integer'];
     }
 
+    /** @return BelongsTo<Assessment, $this> */
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class);

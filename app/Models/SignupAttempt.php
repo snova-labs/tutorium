@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -15,8 +14,6 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class SignupAttempt extends Model
 {
-    use HasFactory;
-
     public const CREATED = 'created';
 
     public const RATE_LIMITED = 'rate_limited';

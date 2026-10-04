@@ -15,7 +15,6 @@ final class AttendanceRecordFactory extends Factory
 {
     protected $model = AttendanceRecord::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

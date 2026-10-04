@@ -12,7 +12,6 @@ final class TenantEntitlementOverrideFactory extends Factory
 {
     protected $model = TenantEntitlementOverride::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

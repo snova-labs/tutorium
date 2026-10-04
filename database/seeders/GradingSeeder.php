@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\GradingSchemeKind;
+use App\Models\Assessment;
 use App\Models\AssessmentType;
 use App\Models\Batch;
 use App\Models\Enrollment;
@@ -15,7 +16,6 @@ use App\Models\TypeWeight;
 use App\Services\AssessmentService;
 use App\Services\GradeBookService;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 
 /**
  * Grading vocabularies, schemes, and a month of mixed-scheme results.
@@ -23,7 +23,7 @@ use Illuminate\Database\Seeder;
  * Seeds all three scheme kinds in one batch on purpose, so the weighted average is exercised in
  * development rather than only in a test.
  */
-final class GradingSeeder extends Seeder
+final class GradingSeeder extends ConsoleAwareSeeder
 {
     public function run(?Tenant $tenant = null): void
     {
@@ -41,7 +41,7 @@ final class GradingSeeder extends Seeder
             $batch = Batch::query()->orderBy('id')->first();
 
             if ($batch === null) {
-                $this->command?->warn('No batches — run AcademicSeeder first.');
+                $this->say('warn', 'No batches — run AcademicSeeder first.');
 
                 return;
             }
@@ -81,7 +81,7 @@ final class GradingSeeder extends Seeder
 
             $this->grades($batch, $homework, $project, $quiz, $statuses);
 
-            $this->command?->info('Seeded assessment types, six grading schemes, three assessments '
+            $this->say('info', 'Seeded assessment types, six grading schemes, three assessments '
                 .'and a month of mixed-scheme results.');
         });
     }
@@ -180,12 +180,12 @@ final class GradingSeeder extends Seeder
     }
 
     /** @param array<string, SubmissionStatus> $statuses */
-    private function grades(Batch $batch, $homework, $project, $quiz, array $statuses): void
+    private function grades(Batch $batch, Assessment $homework, Assessment $project, Assessment $quiz, array $statuses): void
     {
         $enrollments = Enrollment::query()->where('batch_id', $batch->getKey())->get();
 
         if ($enrollments->isEmpty()) {
-            $this->command?->warn('No enrollments — run PeopleSeeder first.');
+            $this->say('warn', 'No enrollments — run PeopleSeeder first.');
 
             return;
         }

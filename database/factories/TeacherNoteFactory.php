@@ -14,7 +14,6 @@ final class TeacherNoteFactory extends Factory
 {
     protected $model = TeacherNote::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

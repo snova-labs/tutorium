@@ -16,7 +16,6 @@ final class ClassSessionFactory extends Factory
 {
     protected $model = ClassSession::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         $starts = CarbonImmutable::parse('2026-08-01 09:00:00', 'UTC');

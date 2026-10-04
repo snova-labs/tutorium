@@ -164,7 +164,7 @@ final class TenantLifecycleService
         $from = $tenant->status;
 
         return DB::transaction(function () use ($tenant, $operator, $status, $reason, $attributes, $from): Tenant {
-            $this->tenancy->withoutScoping(fn () => $tenant->update(['status' => $status] + $attributes));
+            $this->tenancy->withoutScoping(fn () => $tenant->fill(['status' => $status] + $attributes)->save());
 
             // Written into the customer's own log, not only ours. An account that goes read-only
             // should be able to see who did it and why without asking.

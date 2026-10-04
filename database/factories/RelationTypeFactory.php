@@ -12,7 +12,6 @@ final class RelationTypeFactory extends Factory
 {
     protected $model = RelationType::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

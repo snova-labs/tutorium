@@ -6,7 +6,9 @@ namespace App\Policies;
 
 use App\Models\ClassSession;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
+/** @extends BasePolicy<ClassSession> */
 final class ClassSessionPolicy extends BasePolicy
 {
     protected function prefix(): string
@@ -19,7 +21,8 @@ final class ClassSessionPolicy extends BasePolicy
         return $user->is_active && ($user->can('sessions.manage') || $user->can('attendance.view'));
     }
 
-    public function view(User $user, $record): bool
+    /** @param ClassSession $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user) && $user->can('view', $record->batch);
     }
@@ -29,12 +32,14 @@ final class ClassSessionPolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param ClassSession $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage') && $user->can('schedule', $record->batch);
     }
 
-    public function delete(User $user, $record): bool
+    /** @param ClassSession $record */
+    public function delete(User $user, Model $record): bool
     {
         return false; // Sessions are cancelled, never deleted — see SchedulingService::cancel().
     }

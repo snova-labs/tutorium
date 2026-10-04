@@ -14,7 +14,6 @@ final class PlanChangeFactory extends Factory
 {
     protected $model = PlanChange::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

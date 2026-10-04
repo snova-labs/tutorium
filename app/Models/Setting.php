@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\SettingFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class Setting extends Model
 {
+    /** @use HasFactory<SettingFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'key', 'value', 'scope_type', 'scope_id', 'updated_by'];

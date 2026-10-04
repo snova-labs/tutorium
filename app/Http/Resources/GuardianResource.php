@@ -29,8 +29,9 @@ final class GuardianResource extends JsonResource
             // Present only when read through a learner, because these describe the link rather
             // than the person.
             'link' => $this->whenPivotLoaded('guardian_learner', fn () => [
-                'is_primary' => (bool) $this->pivot->is_primary,
-                'receives_reports' => (bool) $this->pivot->receives_reports,
+                // The pivot is a relation set by the learner's guardians(), not an attribute.
+                'is_primary' => (bool) $this->resource->getRelation('pivot')->is_primary,
+                'receives_reports' => (bool) $this->resource->getRelation('pivot')->receives_reports,
             ]),
             'children_count' => $this->whenCounted('learners'),
         ];

@@ -19,7 +19,7 @@ final class EnrollmentResource extends JsonResource
             'number' => $this->number,
             'learner_id' => $this->learner_id,
             'batch_id' => $this->batch_id,
-            'enrolled_on' => $this->enrolled_on?->toDateString(),
+            'enrolled_on' => $this->enrolled_on->toDateString(),
             'ended_on' => $this->ended_on?->toDateString(),
             'status' => [
                 'id' => $this->status_id,
@@ -36,7 +36,7 @@ final class EnrollmentResource extends JsonResource
                 'from' => $h->fromStatus?->name,
                 'to' => $h->toStatus?->name,
                 'reason' => $h->reason,
-                'changed_at_utc' => $h->changed_at?->toIso8601String(),
+                'changed_at_utc' => $h->changed_at->toIso8601String(),
             ])),
         ];
     }

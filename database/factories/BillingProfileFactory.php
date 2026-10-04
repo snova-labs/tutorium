@@ -12,7 +12,6 @@ final class BillingProfileFactory extends Factory
 {
     protected $model = BillingProfile::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
