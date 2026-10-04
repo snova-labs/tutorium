@@ -107,6 +107,9 @@ final class TenantIsolationTest extends TestCase
             try {
                 $record->update(['tenant_id' => $tenantB->getKey()]);
             } catch (TenancyException|\LogicException) {
+                // Refused, which is the contract.
+                $this->addToAssertionCount(1);
+
                 return;
             }
 
