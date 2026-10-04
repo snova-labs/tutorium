@@ -30,6 +30,7 @@ final class WebhookProcessor
         private readonly TenantContext $tenancy,
         private readonly InvoiceComposer $invoices,
         private readonly DunningService $dunning,
+        private readonly TrialService $trials,
     ) {}
 
     /** @param array<string, mixed> $event */
@@ -146,6 +147,14 @@ final class WebhookProcessor
             'method_exp_month' => $card['exp_month'] ?? null,
             'method_exp_year' => $card['exp_year'] ?? null,
         ]));
+
+        // The second half of converting a trial: the plan was chosen before the customer went to
+        // the hosted page, and the card arriving is what they were waiting on.
+        $tenant = $this->tenancy->withoutScoping(fn () => Tenant::query()->find($profile->tenant_id));
+
+        if ($tenant !== null) {
+            $this->trials->convertIfReady($tenant);
+        }
     }
 
     /** @param array<string, mixed> $object */

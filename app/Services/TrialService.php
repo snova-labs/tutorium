@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\BillingProfile;
+use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -52,7 +53,7 @@ final class TrialService
                 'Your account becomes read-only.',
                 'Everything you have entered stays exactly as it is.',
                 'You can still read, download and export all of it.',
-                'Adding a payment method restores full access immediately — nothing is rebuilt.',
+                'Choosing a plan and how to pay restores full access immediately — nothing is rebuilt.',
             ],
         ];
     }
@@ -142,10 +143,73 @@ final class TrialService
         return ['expired' => $expired];
     }
 
+    /** A trial still running, or one that ended without anyone paying. */
+    public function isConvertible(Tenant $tenant): bool
+    {
+        return $tenant->status === Tenant::STATUS_TRIAL
+            || ($tenant->status === Tenant::STATUS_SUSPENDED && $tenant->trial_expired_at !== null);
+    }
+
+    /**
+     * Choose the plan a trial becomes. The subscription waits as "trialing" until there is a way to
+     * pay; nothing is charged and nothing changes for the account until then.
+     */
+    public function choosePlan(Tenant $tenant, Plan $plan, string $provider): Subscription
+    {
+        return $this->tenancy->runAs($tenant, function () use ($plan, $provider): Subscription {
+            $subscription = Subscription::query()->latest('id')->first();
+
+            $attributes = [
+                'plan_id' => $plan->getKey(),
+                'provider' => $provider,
+                'status' => Subscription::TRIALING,
+                'current_period_start' => now()->toDateString(),
+                'current_period_end' => now()->endOfMonth()->toDateString(),
+            ];
+
+            if ($subscription === null || $subscription->status === Subscription::CANCELLED) {
+                return Subscription::query()->create($attributes);
+            }
+
+            $subscription->update($attributes);
+
+            return $subscription;
+        });
+    }
+
+    /**
+     * Convert a trial whose plan is chosen, once a way to pay exists (a card arriving by webhook,
+     * or the customer choosing invoicing). False when this tenant is not waiting on that.
+     */
+    public function convertIfReady(Tenant $tenant): bool
+    {
+        if (! $this->isConvertible($tenant)) {
+            return false;
+        }
+
+        $ready = $this->tenancy->runAs($tenant, function (): bool {
+            $subscription = Subscription::query()->latest('id')->first();
+            $profile = BillingProfile::query()->first();
+
+            return $subscription !== null
+                && $subscription->status !== Subscription::CANCELLED
+                && $profile !== null
+                && ($profile->prefers_invoicing || $profile->hasUsablePaymentMethod());
+        });
+
+        if ($ready) {
+            $this->convert($tenant);
+        }
+
+        return $ready;
+    }
+
     /** Turn a trial into a paying account. Nothing about the data changes. */
     public function convert(Tenant $tenant): Tenant
     {
-        return DB::transaction(function () use ($tenant): Tenant {
+        $before = $tenant->status;
+
+        return DB::transaction(function () use ($tenant, $before): Tenant {
             $this->tenancy->withoutScoping(fn () => $tenant->update([
                 'status' => Tenant::STATUS_ACTIVE,
                 'trial_ends_at' => null,
@@ -158,6 +222,18 @@ final class TrialService
                     'status' => Subscription::ACTIVE,
                 ]);
             });
+
+            $this->tenancy->withoutScoping(fn () => AuditLog::query()->create([
+                'tenant_id' => $tenant->getKey(),
+                'actor_type' => AuditLog::ACTOR_SYSTEM,
+                'actor_name' => 'Billing',
+                'module' => 'Account',
+                'action' => 'status_changed',
+                'target_label' => $tenant->name,
+                'before' => ['status' => $before],
+                'after' => ['status' => Tenant::STATUS_ACTIVE, 'reason' => 'Trial converted to a paying account.'],
+                'occurred_at' => now(),
+            ]));
 
             return $tenant->refresh();
         });
@@ -180,7 +256,7 @@ final class TrialService
             $subscription = Subscription::query()->latest('id')->first();
 
             return $subscription !== null
-                && in_array($subscription->status, [Subscription::ACTIVE, Subscription::PAST_DUE], true)
+                && in_array($subscription->status, [Subscription::TRIALING, Subscription::ACTIVE, Subscription::PAST_DUE], true)
                 && BillingProfile::query()->first()?->hasPaymentMethod() === true;
         });
     }
