@@ -10,6 +10,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\DunningService;
 use App\Services\SubscriptionService;
+use App\Services\TrialService;
 use App\Support\Payments\PaymentProvider;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ final class BillingController
         private readonly SubscriptionService $subscriptions,
         private readonly DunningService $dunning,
         private readonly TenantContext $tenancy,
+        private readonly TrialService $trials,
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -47,6 +49,11 @@ final class BillingController
                     'changing_on' => $subscription?->pending_plan_starts_on?->toDateString(),
                 ],
                 'payment_method' => $this->paymentMethod($profile),
+                'trial' => $this->trials->isConvertible($tenant) ? [
+                    'ends_on' => $tenant->trial_ends_at?->toDateString(),
+                    'ended' => $tenant->trial_expired_at !== null,
+                    'convert' => 'POST /api/v1/billing/convert with a plan_code and method (card or invoice).',
+                ] : null,
                 'billing_details' => [
                     'legal_name' => $profile->legal_name,
                     'billing_email' => $profile->billing_email,
@@ -101,21 +108,8 @@ final class BillingController
         $profile = $this->profile();
 
         if ($validated['method'] === 'invoice') {
-            $profile->fill(array_filter([
-                'legal_name' => $validated['legal_name'] ?? null,
-                'billing_email' => $validated['billing_email'] ?? null,
-            ]));
-
-            $missing = array_filter([
-                'legal_name' => $profile->legal_name === null ? 'Invoices need the legal name to address them to.' : null,
-                'billing_email' => $profile->billing_email === null ? 'Invoices need an email address to be sent to.' : null,
-            ]);
-
-            if ($missing !== []) {
-                throw ValidationException::withMessages($missing);
-            }
-
-            $profile->forceFill(['prefers_invoicing' => true])->save();
+            $this->switchToInvoicing($profile, $validated);
+            $this->trials->convertIfReady($this->tenancy->require());
 
             return response()->json(['data' => [
                 'payment_method' => $this->paymentMethod($profile),
@@ -137,6 +131,7 @@ final class BillingController
         }
 
         $profile->forceFill(['prefers_invoicing' => false])->save();
+        $this->trials->convertIfReady($this->tenancy->require());
 
         return response()->json(['data' => [
             'payment_method' => $this->paymentMethod($profile),
@@ -162,6 +157,72 @@ final class BillingController
         return response()->json([
             'data' => ['effective' => $result['effective'], 'message' => $result['message']],
         ]);
+    }
+
+    /**
+     * From trial to paying in one step: pick a plan and how to pay, and everything entered during
+     * the trial carries on untouched. Also works after a trial has lapsed into read-only.
+     *
+     * Invoicing, or a card already on file, converts at once. Otherwise the response carries the
+     * hosted card page, and the account converts when the provider reports the card.
+     */
+    public function convert(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('billing.manage'), 403);
+
+        $validated = $request->validate([
+            'plan_code' => ['required', 'string'],
+            'method' => ['required', 'in:card,invoice'],
+            'legal_name' => ['nullable', 'string', 'max:190'],
+            'billing_email' => ['nullable', 'email', 'max:190'],
+            'return_url' => ['nullable', 'url', 'max:2048'],
+        ]);
+
+        $tenant = $this->tenancy->require();
+
+        if (! $this->trials->isConvertible($tenant)) {
+            throw ValidationException::withMessages([
+                'account' => 'This account is not on a trial. Change plan or payment method from billing instead.',
+            ]);
+        }
+
+        $plan = Plan::query()->where('code', $validated['plan_code'])->where('is_public', true)->first();
+
+        if ($plan === null) {
+            throw ValidationException::withMessages(['plan_code' => 'Choose one of the plans on offer.']);
+        }
+
+        $profile = $this->profile();
+
+        if ($validated['method'] === 'invoice') {
+            $this->switchToInvoicing($profile, $validated);
+        } elseif (! $this->payments->collectsAutomatically()) {
+            throw ValidationException::withMessages([
+                'method' => 'This account is set up for invoicing only. Choose invoice instead.',
+            ]);
+        } else {
+            $profile->forceFill(['prefers_invoicing' => false])->save();
+        }
+
+        $this->trials->choosePlan($tenant, $plan, $this->payments->name());
+
+        if ($this->trials->convertIfReady($tenant)) {
+            return response()->json(['data' => [
+                'converted' => true,
+                'checkout_url' => null,
+                'message' => "You are on {$plan->name}. Everything you set up during the trial is exactly as you left it.",
+            ]]);
+        }
+
+        if ($profile->customer_ref === null) {
+            $profile->update(['customer_ref' => $this->payments->syncCustomer($tenant, $profile)]);
+        }
+
+        return response()->json(['data' => [
+            'converted' => false,
+            'checkout_url' => $this->payments->checkoutUrl($tenant, $profile, $this->returnUrl($validated['return_url'] ?? null)),
+            'message' => "Add a card to start {$plan->name}. Your account switches over the moment the card is saved.",
+        ]]);
     }
 
     /**
@@ -239,6 +300,30 @@ final class BillingController
             // Kept for clients written against the earlier shape.
             'prefers_invoicing' => $profile->prefers_invoicing,
         ];
+    }
+
+    /**
+     * Invoices need someone to address them to, so the legal name and billing email must be known.
+     *
+     * @param array<string, mixed> $validated
+     */
+    private function switchToInvoicing(BillingProfile $profile, array $validated): void
+    {
+        $profile->fill(array_filter([
+            'legal_name' => $validated['legal_name'] ?? null,
+            'billing_email' => $validated['billing_email'] ?? null,
+        ]));
+
+        $missing = array_filter([
+            'legal_name' => $profile->legal_name === null ? 'Invoices need the legal name to address them to.' : null,
+            'billing_email' => $profile->billing_email === null ? 'Invoices need an email address to be sent to.' : null,
+        ]);
+
+        if ($missing !== []) {
+            throw ValidationException::withMessages($missing);
+        }
+
+        $profile->forceFill(['prefers_invoicing' => true])->save();
     }
 
     private function profile(): BillingProfile

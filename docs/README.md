@@ -25,7 +25,7 @@ invalidates no reference.
   documents stay versioned rather than becoming untracked binaries that drift
 - `adr/` — architecture decision records, dated and numbered
 - `SIGN-IN.md` — emailed sign-in codes for operators and academy staff, the optional authenticator app and recovery codes
-- `BILLING-PAYMENT-METHOD.md` — how an academy adds a card, sees what it pays with, and switches to invoicing
+- `BILLING-PAYMENT-METHOD.md` — how an academy adds a card, sees what it pays with, switches to invoicing, and converts a trial in one step
 
 ## Regenerating
 

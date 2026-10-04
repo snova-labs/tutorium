@@ -64,6 +64,8 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('throttle:10,1')->name('api.billing.payment-method');
         Route::put('billing/collection', [BillingController::class, 'setCollection'])
             ->name('api.billing.collection');
+        Route::post('billing/convert', [BillingController::class, 'convert'])
+            ->middleware('throttle:10,1')->name('api.billing.convert');
     });
 
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
