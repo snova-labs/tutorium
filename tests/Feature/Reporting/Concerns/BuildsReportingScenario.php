@@ -27,6 +27,7 @@ use App\Models\SessionType;
 use App\Models\SubmissionStatus;
 use App\Models\Tenant;
 use App\Models\TimetableSlot;
+use App\Models\User;
 use App\Services\AssessmentService;
 use App\Services\GradeBookService;
 use App\Services\TeacherNoteService;
@@ -119,6 +120,9 @@ trait BuildsReportingScenario
 
     private function scenario(): void
     {
+        // A verified address, as every real account has before it may email families.
+        User::factory()->create(['is_active' => true, 'email_verified_at' => now()]);
+
         $brand = Brand::factory()->create(['sender_email' => 'reports@sample.test', 'sender_name' => 'Sample Brand']);
         $branch = Branch::factory()->create(['brand_id' => $brand->getKey(), 'timezone' => 'Asia/Kathmandu']);
         $course = Course::factory()->create(['brand_id' => $brand->getKey()]);

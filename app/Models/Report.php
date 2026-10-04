@@ -34,6 +34,18 @@ final class Report extends Model
         ];
     }
 
+    /**
+     * The snapshot is what a parent was sent, so its numbers keep their type: an average of 80.0
+     * must not come back as the integer 80.
+     *
+     * @param mixed $value
+     * @param int $flags
+     */
+    protected function asJson($value, $flags = 0): string|false
+    {
+        return json_encode($value, $flags | JSON_PRESERVE_ZERO_FRACTION);
+    }
+
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);

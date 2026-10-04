@@ -27,6 +27,31 @@ final class AttendancePolicy extends Model
         'late_grace_min', 'counted_session_type_ids', 'low_threshold_pct',
     ];
 
+    /**
+     * What a course policy holds for anything it does not set. A course policy is a complete
+     * rulebook; a batch policy overrides only the values it names and inherits the rest
+     * (AttendancePolicyResolver), so its unset values stay NULL.
+     */
+    public const COURSE_DEFAULTS = [
+        'is_compulsory' => true,
+        'allow_late_join' => true,
+        'late_grace_min' => 10,
+        'low_threshold_pct' => 75,
+    ];
+
+    protected static function booted(): void
+    {
+        self::creating(function (self $policy): void {
+            if ($policy->scope_type !== 'course') {
+                return;
+            }
+
+            foreach (self::COURSE_DEFAULTS as $key => $value) {
+                $policy->setAttribute($key, $policy->getAttribute($key) ?? $value);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

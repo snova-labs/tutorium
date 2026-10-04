@@ -39,11 +39,13 @@ final class PolicyEnforcementTest extends TestCase
     {
         $user = $this->userWithRole('Front desk');
 
-        $this->assertTrue($user->can('learners.create'), 'Front desk should be able to add learners.');
-        $this->assertTrue($user->can('learners.update'));
-        $this->assertFalse($user->can('settings.manage'), 'Front desk must not reach settings.');
-        $this->assertFalse($user->can('billing.manage'));
-        $this->assertFalse($user->can('organisation.manage'));
+        $this->inTenant(function () use ($user): void {
+            $this->assertTrue($user->can('learners.create'), 'Front desk should be able to add learners.');
+            $this->assertTrue($user->can('learners.update'));
+            $this->assertFalse($user->can('settings.manage'), 'Front desk must not reach settings.');
+            $this->assertFalse($user->can('billing.manage'));
+            $this->assertFalse($user->can('organisation.manage'));
+        });
     }
 
     #[Test]
@@ -59,10 +61,12 @@ final class PolicyEnforcementTest extends TestCase
     {
         $user = $this->userWithRole('Teacher');
 
-        $this->assertTrue($user->can('grades.enter'));
-        $this->assertTrue($user->can('attendance.record'));
-        $this->assertFalse($user->can('users.manage'));
-        $this->assertFalse($user->can('reports.send'), 'Sending to guardians is a separate permission.');
+        $this->inTenant(function () use ($user): void {
+            $this->assertTrue($user->can('grades.enter'));
+            $this->assertTrue($user->can('attendance.record'));
+            $this->assertFalse($user->can('users.manage'));
+            $this->assertFalse($user->can('reports.send'), 'Sending to guardians is a separate permission.');
+        });
     }
 
     #[Test]
@@ -70,11 +74,23 @@ final class PolicyEnforcementTest extends TestCase
     {
         $owner = $this->userWithRole('Owner');
 
-        $this->assertTrue($owner->can('settings.manage'));
-        $this->assertTrue($owner->can('billing.manage'));
-        // Including a permission that does not exist yet — which is the point of the Gate rule.
-        $this->assertTrue($owner->can('some.future.permission'));
-        $this->assertSame(0, $owner->getDirectPermissions()->count());
+        $this->inTenant(function () use ($owner): void {
+            $this->assertTrue($owner->can('settings.manage'));
+            $this->assertTrue($owner->can('billing.manage'));
+            // Including a permission that does not exist yet — which is the point of the Gate rule.
+            $this->assertTrue($owner->can('some.future.permission'));
+            $this->assertSame(0, $owner->getDirectPermissions()->count());
+        });
+    }
+
+    #[Test]
+    public function permissions_fail_closed_when_no_tenant_is_bound(): void
+    {
+        $user = $this->userWithRole('Front desk');
+
+        // Roles are stored per tenant. With none bound there is nothing to grant from, and the
+        // answer is no rather than whatever another tenant's role happens to say.
+        $this->assertFalse($user->can('learners.create'));
     }
 
     #[Test]
@@ -85,6 +101,11 @@ final class PolicyEnforcementTest extends TestCase
 
         $this->assertFalse($owner->fresh()->can('settings.manage'));
         $this->assertFalse($owner->fresh()->can('learners.view'));
+    }
+
+    private function inTenant(callable $assertions): void
+    {
+        app(TenantContext::class)->runAs($this->tenant, $assertions);
     }
 
     private function userWithRole(string $role): User

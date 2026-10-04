@@ -137,8 +137,9 @@ return [
      * (view the latest version of this package's migration file)
      */
 
+    // Teams are tenants: the team column (column_names.team_foreign_key) holds the tenant id, and
+    // TenancyServiceProvider sets the current team whenever a tenant is bound.
     'teams' => true,
-    'team_foreign_key' => 'tenant_id',
 
     /*
      * The class to use to resolve the permissions team id

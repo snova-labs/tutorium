@@ -62,9 +62,9 @@ final class BatchPolicy extends BasePolicy
             return false;
         }
 
-        // Anyone who can administer batches sees every batch in their branches; anyone who cannot
-        // sees only their own.
-        if ($user->can('batches.manage')) {
+        // Anyone who administers batches, or enrols learners into them, sees every batch in their
+        // branches; anyone else (a teacher) sees only their own.
+        if ($user->can('batches.manage') || $user->can('enrollments.manage')) {
             return true;
         }
 

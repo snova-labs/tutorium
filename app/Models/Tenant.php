@@ -33,13 +33,17 @@ final class Tenant extends Model
     protected $fillable = [
         'name', 'slug', 'region_code', 'preset_code', 'status',
         'deployment_mode', 'contact_name', 'contact_email', 'locale',
-        'trial_ends_at', 'suspended_at', 'purge_after',
+        'trial_ends_at', 'trial_reminders_sent', 'trial_expired_at', 'suspended_at', 'purge_after',
+        'onboarding_dismissed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'trial_ends_at' => 'immutable_datetime',
+            'trial_reminders_sent' => 'array',
+            'trial_expired_at' => 'immutable_datetime',
+            'onboarding_dismissed_at' => 'immutable_datetime',
             'suspended_at' => 'immutable_datetime',
             'purge_after' => 'immutable_datetime',
         ];

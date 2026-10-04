@@ -103,9 +103,11 @@ final class ImpersonationService
         return DB::transaction(function () use ($impersonation): Impersonation {
             $impersonation->update(['ended_at' => now()]);
 
-            $impersonation->user->tokens()
+            // Called from the operator side and the scheduled sweep, where no tenant is bound; the
+            // support user and their token live in the tenant being accessed.
+            $this->tenancy->runAs($impersonation->tenant, fn () => $impersonation->user()->first()?->tokens()
                 ->where('name', 'support-access-'.$impersonation->getKey())
-                ->delete();
+                ->delete());
 
             $this->writeToTenantLog(
                 $impersonation->tenant,

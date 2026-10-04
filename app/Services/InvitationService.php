@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Bringing colleagues in.
@@ -37,10 +38,22 @@ final class InvitationService
         $email = strtolower(trim($input['email']));
         $roleName = $input['role_name'];
 
-        $this->guardEscalation($inviter, $roleName);
-        $this->guardAlreadyStaff($email);
-        $this->guardBranchScope($inviter, $input);
+        // Always in the inviter's own tenant, whatever is bound: the escalation guard compares
+        // their permissions, and those only exist for the tenant they belong to.
+        $tenant = $this->tenancy->withoutScoping(fn () => Tenant::query()->findOrFail($inviter->tenant_id));
 
+        return $this->tenancy->runAs($tenant, function () use ($inviter, $input, $email, $roleName): Invitation {
+            $this->guardEscalation($inviter, $roleName);
+            $this->guardAlreadyStaff($email);
+            $this->guardBranchScope($inviter, $input);
+
+            return $this->createOrRenew($inviter, $input, $email, $roleName);
+        });
+    }
+
+    /** @param array<string, mixed> $input */
+    private function createOrRenew(User $inviter, array $input, string $email, string $roleName): Invitation
+    {
         return DB::transaction(function () use ($inviter, $input, $email, $roleName): Invitation {
             $existing = Invitation::query()->where('email', $email)->first();
             $token = Str::random(48);
@@ -174,7 +187,11 @@ final class InvitationService
             return;
         }
 
-        $role = Role::query()->where('name', $roleName)->first();
+        // Roles are per tenant; an unfiltered lookup by name would find another account's role.
+        $role = Role::query()
+            ->where('name', $roleName)
+            ->where(app(PermissionRegistrar::class)->teamsKey, $inviter->tenant_id)
+            ->first();
 
         if ($role === null) {
             throw ValidationException::withMessages([

@@ -13,6 +13,7 @@ use App\Models\Report;
 use App\Models\ReportDelivery;
 use App\Support\Mail\MailMessage;
 use App\Support\Mail\MailProvider;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,10 @@ use Illuminate\Validation\ValidationException;
  */
 final class ReportDeliveryService
 {
-    public function __construct(private readonly MailProvider $mailer) {}
+    public function __construct(
+        private readonly MailProvider $mailer,
+        private readonly TenantContext $tenancy,
+    ) {}
 
     /**
      * Create a delivery row per intended recipient and queue each one.

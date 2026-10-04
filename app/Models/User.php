@@ -31,9 +31,10 @@ final class User extends Authenticatable implements FilamentUser
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'timezone', 'locale',
         'is_active', 'scope_all_branches', 'last_login_at',
+        'email_verified_at', 'verification_token_hash', 'verification_sent_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'verification_token_hash'];
 
     protected function casts(): array
     {
@@ -41,6 +42,7 @@ final class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'email_verified_at' => 'immutable_datetime',
             'last_login_at' => 'immutable_datetime',
+            'verification_sent_at' => 'immutable_datetime',
             'is_active' => 'boolean',
             'scope_all_branches' => 'boolean',
         ];
