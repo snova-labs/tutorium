@@ -19,6 +19,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -51,7 +52,7 @@ final class BatchResource extends Resource
         return app(Terminology::class)->lower('batch', plural: true);
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return 'Academic';
     }
@@ -155,11 +156,11 @@ final class BatchResource extends Resource
                     // The provenance device, in a table column: grey when it came
                     // from the location, amber when this batch set its own.
                     ->badge()
-                    ->color(fn (Batch $record): string => $record->timezone === $record->branch?->timezone
+                    ->color(fn (Batch $record): string => $record->timezone === $record->branch->timezone
                         ? 'gray'
                         : 'warning')
-                    ->tooltip(fn (Batch $record): string => $record->timezone === $record->branch?->timezone
-                        ? 'Inherited from '.$record->branch?->name
+                    ->tooltip(fn (Batch $record): string => $record->timezone === $record->branch->timezone
+                        ? 'Inherited from '.$record->branch->name
                         : 'Set on this '.app(Terminology::class)->lower('batch')),
 
                 TextColumn::make('enrollments_count')
@@ -216,7 +217,7 @@ final class BatchResource extends Resource
                             // it, so it is persistent rather than a toast that
                             // disappears while they are reading it.
                             ->body($clockChanges === [] ? null : $clockChanges[0]['detail'])
-                            ->persistent($clockChanges !== [])
+                            ->duration($clockChanges === [] ? 6000 : 'persistent')
                             ->color($clockChanges === [] ? 'success' : 'warning')
                             ->send();
                     }),
@@ -229,7 +230,7 @@ final class BatchResource extends Resource
         return auth()->user()?->can('batches.manage') ?? false;
     }
 
-    /** @return array<string, class-string> */
+    /** @return array<string, PageRegistration> */
     public static function getPages(): array
     {
         return [

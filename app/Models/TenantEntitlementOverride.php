@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TenantEntitlementOverrideFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /** A negotiated exception, with the reason it was granted and when it lapses. */
 final class TenantEntitlementOverride extends Model
 {
+    /** @use HasFactory<TenantEntitlementOverrideFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = [

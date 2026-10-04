@@ -13,7 +13,6 @@ final class TenantFactory extends Factory
 {
     protected $model = Tenant::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         $name = 'Sample Academy '.fake()->unique()->numberBetween(1, 9999);

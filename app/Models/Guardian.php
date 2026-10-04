@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\GuardianFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class Guardian extends Model
 {
+    /** @use HasFactory<GuardianFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -27,11 +29,13 @@ final class Guardian extends Model
         'phone', 'preferred_channel', 'locale', 'timezone',
     ];
 
+    /** @return BelongsTo<RelationType, $this> */
     public function relationType(): BelongsTo
     {
         return $this->belongsTo(RelationType::class);
     }
 
+    /** @return BelongsToMany<Learner, $this> */
     public function learners(): BelongsToMany
     {
         return $this->belongsToMany(Learner::class, 'guardian_learner')

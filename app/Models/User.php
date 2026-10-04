@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,14 +27,16 @@ use Spatie\Permission\Traits\HasRoles;
  */
 final class User extends Authenticatable implements FilamentUser
 {
+    /** @use HasFactory<UserFactory> */
     use Auditable, BelongsToTenant, HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'timezone', 'locale',
         'is_active', 'scope_all_branches', 'last_login_at',
+        'email_verified_at', 'verification_token_hash', 'verification_sent_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'verification_token_hash'];
 
     protected function casts(): array
     {
@@ -41,6 +44,7 @@ final class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'email_verified_at' => 'immutable_datetime',
             'last_login_at' => 'immutable_datetime',
+            'verification_sent_at' => 'immutable_datetime',
             'is_active' => 'boolean',
             'scope_all_branches' => 'boolean',
         ];
@@ -55,12 +59,17 @@ final class User extends Authenticatable implements FilamentUser
         ]);
     }
 
+    /** @return BelongsTo<Tenant, $this> */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
-    /** Branch scope. Empty with scope_all_branches = true means every branch. */
+    /**
+     * Branch scope. Empty with scope_all_branches = true means every branch.
+     *
+     * @return BelongsToMany<Branch, $this>
+     */
     public function branches(): BelongsToMany
     {
         return $this->belongsToMany(Branch::class)->withTimestamps();

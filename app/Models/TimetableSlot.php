@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\Weekday;
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TimetableSlotFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class TimetableSlot extends Model
 {
+    /** @use HasFactory<TimetableSlotFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -33,11 +35,13 @@ final class TimetableSlot extends Model
         ];
     }
 
+    /** @return BelongsTo<Batch, $this> */
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
     }
 
+    /** @return BelongsTo<SessionType, $this> */
     public function sessionType(): BelongsTo
     {
         return $this->belongsTo(SessionType::class);

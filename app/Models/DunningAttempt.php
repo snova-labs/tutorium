@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\DunningAttemptFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One attempt to collect one invoice. */
 final class DunningAttempt extends Model
 {
+    /** @use HasFactory<DunningAttemptFactory> */
     use BelongsToTenant, HasFactory;
 
     public const SUCCEEDED = 'succeeded';
@@ -35,6 +37,7 @@ final class DunningAttempt extends Model
         ];
     }
 
+    /** @return BelongsTo<Invoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);

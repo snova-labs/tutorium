@@ -9,6 +9,7 @@ use App\Models\Brand;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\OnboardingChecklist;
 use App\Services\SampleDataService;
 use App\Services\TenantProvisioner;
@@ -149,7 +150,10 @@ final class ProvisioningTest extends TestCase
         app(SampleDataService::class)->load($tenant);
     }
 
-    /** @param array<string, mixed> $overrides */
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array{tenant: Tenant, owner: User, brand: Brand, branch: Branch, preset: array<string, int>}
+     */
     private function provision(array $overrides = []): array
     {
         return app(TenantProvisioner::class)->provision(array_merge([

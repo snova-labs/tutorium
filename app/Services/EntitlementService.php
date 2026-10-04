@@ -105,6 +105,7 @@ final class EntitlementService
     /**
      * Whether an account is over a soft limit — worth telling someone about, never worth blocking.
      *
+     * @param array<string, int> $counts
      * @return array<int, array{key: string, limit: int, current: int}>
      */
     public function softBreaches(array $counts, ?Tenant $tenant = null): array

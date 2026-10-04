@@ -16,6 +16,8 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+            <!-- Already its own suite above; listing it twice is a runner warning, which fails. -->
+            <exclude>tests/Feature/Tenancy</exclude>
         </testsuite>
     </testsuites>
     <source>

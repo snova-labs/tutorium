@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\GradeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class Grade extends Model
 {
+    /** @use HasFactory<GradeFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -37,21 +39,25 @@ final class Grade extends Model
         ];
     }
 
+    /** @return BelongsTo<Assessment, $this> */
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class);
     }
 
+    /** @return BelongsTo<Enrollment, $this> */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
     }
 
+    /** @return BelongsTo<SubmissionStatus, $this> */
     public function submissionStatus(): BelongsTo
     {
         return $this->belongsTo(SubmissionStatus::class);
     }
 
+    /** @return HasMany<GradeRubricScore, $this> */
     public function rubricScores(): HasMany
     {
         return $this->hasMany(GradeRubricScore::class);

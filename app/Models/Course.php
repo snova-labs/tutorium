@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\PeriodType;
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class Course extends Model
 {
+    /** @use HasFactory<CourseFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -37,21 +39,25 @@ final class Course extends Model
         ];
     }
 
+    /** @return BelongsTo<Brand, $this> */
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
+    /** @return HasMany<Batch, $this> */
     public function batches(): HasMany
     {
         return $this->hasMany(Batch::class);
     }
 
+    /** @return HasMany<SessionType, $this> */
     public function sessionTypes(): HasMany
     {
         return $this->hasMany(SessionType::class);
     }
 
+    /** @return HasMany<ReportingPeriod, $this> */
     public function reportingPeriods(): HasMany
     {
         return $this->hasMany(ReportingPeriod::class);

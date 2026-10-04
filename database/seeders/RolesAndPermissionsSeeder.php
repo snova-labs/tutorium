@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Models\Tenant;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -17,7 +16,7 @@ use Spatie\Permission\PermissionRegistrar;
  * Safe to re-run: permissions are matched by name, and roles keep any customisation the tenant
  * has made to them — this seeder grants what is missing rather than resetting what is there.
  */
-final class RolesAndPermissionsSeeder extends Seeder
+final class RolesAndPermissionsSeeder extends ConsoleAwareSeeder
 {
     public function __construct(private readonly TenantContext $tenancy) {}
 
@@ -26,7 +25,7 @@ final class RolesAndPermissionsSeeder extends Seeder
         $tenant ??= $this->tenancy->get();
 
         if ($tenant === null) {
-            $this->command?->warn('No tenant bound — skipping roles and permissions.');
+            $this->say('warn', 'No tenant bound — skipping roles and permissions.');
 
             return;
         }
@@ -51,7 +50,7 @@ final class RolesAndPermissionsSeeder extends Seeder
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            $this->command?->info(sprintf(
+            $this->say('info', sprintf(
                 'Synced %d permissions and %d roles for %s.',
                 count($names),
                 count(config('permissions.roles', [])) + 1,

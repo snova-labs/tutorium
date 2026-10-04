@@ -13,7 +13,6 @@ final class DunningAttemptFactory extends Factory
 {
     protected $model = DunningAttempt::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

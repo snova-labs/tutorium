@@ -12,6 +12,7 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -36,7 +37,7 @@ final class BranchResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return 'Administration';
     }
@@ -140,7 +141,7 @@ final class BranchResource extends Resource
         return auth()->user()?->can('organisation.manage') ?? false;
     }
 
-    /** @return array<string, class-string> */
+    /** @return array<string, PageRegistration> */
     public static function getPages(): array
     {
         return ['index' => ListBranches::route('/')];

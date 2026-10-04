@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
  * Two checks, always both: does the user hold the named permission, and is the record inside the
  * branches they may reach. Queries are already tenant-scoped underneath — this is the second
  * layer, not the only one (SL-SEC-004 §3.1).
+ *
+ * @template TModel of Model
  */
 abstract class BasePolicy
 {
@@ -25,6 +27,7 @@ abstract class BasePolicy
         return $this->allows($user, 'view');
     }
 
+    /** @param TModel $record */
     public function view(User $user, Model $record): bool
     {
         return $this->allows($user, 'view') && $this->inScope($user, $record);
@@ -35,11 +38,13 @@ abstract class BasePolicy
         return $this->allows($user, 'create');
     }
 
+    /** @param TModel $record */
     public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'update') && $this->inScope($user, $record);
     }
 
+    /** @param TModel $record */
     public function delete(User $user, Model $record): bool
     {
         return $this->allows($user, 'delete') && $this->inScope($user, $record);
@@ -59,6 +64,7 @@ abstract class BasePolicy
      * Branch visibility. Records with no branch of their own are visible to anyone who cleared
      * the permission check; records that belong to a branch require access to that branch.
      */
+    /** @param TModel $record */
     protected function inScope(User $user, Model $record): bool
     {
         $branchId = $record->getAttribute('branch_id')

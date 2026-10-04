@@ -16,6 +16,7 @@ use App\Support\Payments\FakePaymentProvider;
 use App\Support\Payments\PaymentProvider;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Response;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -25,8 +26,6 @@ final class PaymentWebhookTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
-
-    private Invoice $invoice;
 
     protected function setUp(): void
     {
@@ -62,7 +61,7 @@ final class PaymentWebhookTest extends TestCase
 
             BillingProfile::query()->create(['provider' => 'fake', 'customer_ref' => 'fake_cus_1']);
 
-            $this->invoice = Invoice::query()->create([
+            Invoice::query()->create([
                 'number' => 'INV-00001',
                 'period_start' => now()->startOfMonth()->toDateString(),
                 'period_end' => now()->endOfMonth()->toDateString(),
@@ -157,7 +156,10 @@ final class PaymentWebhookTest extends TestCase
         ];
     }
 
-    /** @param array<string, mixed> $event */
+    /**
+     * @param array<string, mixed> $event
+     * @return TestResponse<Response>
+     */
     private function send(array $event): TestResponse
     {
         return $this->call(

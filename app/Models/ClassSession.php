@@ -8,6 +8,7 @@ use App\Enums\SessionStatus;
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
+use Database\Factories\ClassSessionFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class ClassSession extends Model
 {
+    /** @use HasFactory<ClassSessionFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $table = 'class_sessions';
@@ -42,16 +44,19 @@ final class ClassSession extends Model
         ];
     }
 
+    /** @return BelongsTo<Batch, $this> */
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
     }
 
+    /** @return BelongsTo<SessionType, $this> */
     public function sessionType(): BelongsTo
     {
         return $this->belongsTo(SessionType::class);
     }
 
+    /** @return BelongsTo<TimetableSlot, $this> */
     public function slot(): BelongsTo
     {
         return $this->belongsTo(TimetableSlot::class, 'generated_from_slot_id');
@@ -63,11 +68,19 @@ final class ClassSession extends Model
         return $this->starts_at_utc->setTimezone($timezone);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeBetweenUtc(Builder $query, CarbonImmutable $from, CarbonImmutable $to): Builder
     {
         return $query->whereBetween('starts_at_utc', [$from, $to]);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeCountingTowardAttendance(Builder $query): Builder
     {
         return $query->where('status', SessionStatus::Held)
@@ -79,8 +92,8 @@ final class ClassSession extends Model
         return 'Scheduling';
     }
 
-    public function auditLabel(): ?string
+    public function auditLabel(): string
     {
-        return $this->session_local_date?->toDateString().' '.substr((string) $this->start_time_local, 0, 5);
+        return $this->session_local_date->toDateString().' '.substr((string) $this->start_time_local, 0, 5);
     }
 }

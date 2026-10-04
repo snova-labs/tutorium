@@ -12,7 +12,6 @@ final class TenantExportFactory extends Factory
 {
     protected $model = TenantExport::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

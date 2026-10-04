@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\AuditLogFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 final class AuditLog extends Model
 {
+    /** @use HasFactory<AuditLogFactory> */
     use BelongsToTenant, HasFactory;
 
     public $timestamps = false;
@@ -44,6 +46,7 @@ final class AuditLog extends Model
         ];
     }
 
+    /** @return MorphTo<Model, $this> */
     public function auditable(): MorphTo
     {
         return $this->morphTo();

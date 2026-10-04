@@ -8,8 +8,12 @@ use App\Models\AuditLog;
 use App\Models\Brand;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Tenancy\TenancyException;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -96,7 +100,7 @@ final class AuditTrailTest extends TestCase
             Brand::factory()->create();
             $entry = AuditLog::query()->latest('id')->first();
 
-            $this->expectException(\LogicException::class);
+            $this->expectException(LogicException::class);
             $entry->update(['action' => 'something-else']);
         });
     }
@@ -127,10 +131,45 @@ final class AuditTrailTest extends TestCase
             try {
                 $record->update(['tenant_id' => $tenantB->getKey()]);
             } catch (TenancyException|LogicException) {
+                $this->addToAssertionCount(1);
+
                 return;   // refused, which is the contract
             }
 
             $this->fail($record::class.' allowed its tenant_id to be reassigned.');
         });
+    }
+
+    /** @return array<string, array{0: class-string<Model>}> */
+    public static function tenantResources(): array
+    {
+        $config = require __DIR__.'/../../../config/tenancy.php';
+
+        $cases = [];
+
+        foreach ($config['resources'] as $model) {
+            $cases[class_basename($model)] = [$model];
+        }
+
+        return $cases;
+    }
+
+    /** @return array{0: Tenant, 1: Tenant} */
+    private function twoTenants(): array
+    {
+        return $this->context()->withoutScoping(fn () => [
+            Tenant::factory()->create(['name' => 'Sample Academy One', 'slug' => 'audit-move-one']),
+            Tenant::factory()->create(['name' => 'Sample Academy Two', 'slug' => 'audit-move-two']),
+        ]);
+    }
+
+    private function makeFor(Tenant $tenant, string $model): Model
+    {
+        return $this->context()->runAs($tenant, fn () => $model::factory()->create());
+    }
+
+    private function context(): TenantContext
+    {
+        return app(TenantContext::class);
     }
 }

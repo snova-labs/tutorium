@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Webhook\PaymentWebhookController;
 use App\Http\Middleware\EnsureOperator;
+use App\Http\Middleware\PreserveFloatTypes;
 use App\Http\Middleware\RestrictImpersonatedAccess;
 use App\Support\Tenancy\RequiresTenant;
 use App\Support\Tenancy\ResolveTenant;
@@ -12,6 +13,7 @@ use App\Support\Tenancy\TenancyException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -48,7 +50,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => RequiresTenant::class,
             'operator' => EnsureOperator::class,
         ]);
-        $middleware->api(append: [RestrictImpersonatedAccess::class]);
+        $middleware->api(append: [RestrictImpersonatedAccess::class, PreserveFloatTypes::class]);
+
+        // The tenant must be bound before route model binding runs: a {session} or {batch} looked
+        // up with no tenant bound fails closed and the request becomes a 404. Placing it just
+        // before SubstituteBindings keeps it after authentication, which it needs for the user.
+        $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
+
+        // The sign-in route is called sign-in; the framework's default redirect looks for "login"
+        // and turned every guest visit to a signed-in page into a 500.
+        $middleware->redirectGuestsTo(fn () => route('sign-in'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // A tenancy failure is a programming error, not something to explain to a caller: loud

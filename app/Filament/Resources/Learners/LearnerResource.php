@@ -18,6 +18,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -26,6 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Learners.
@@ -54,7 +56,7 @@ final class LearnerResource extends Resource
         return app(Terminology::class)->lower('learner', plural: true);
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return 'People';
     }
@@ -223,17 +225,17 @@ final class LearnerResource extends Resource
         return auth()->user()?->can('learners.create') ?? false;
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         return auth()->user()?->can('learners.update') ?? false;
     }
 
-    public static function canDelete($record): bool
+    public static function canDelete(Model $record): bool
     {
         return auth()->user()?->can('learners.archive') ?? false;
     }
 
-    /** @return array<string, class-string> */
+    /** @return array<string, PageRegistration> */
     public static function getPages(): array
     {
         return [

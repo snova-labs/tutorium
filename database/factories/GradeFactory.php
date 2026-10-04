@@ -15,7 +15,6 @@ final class GradeFactory extends Factory
 {
     protected $model = Grade::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

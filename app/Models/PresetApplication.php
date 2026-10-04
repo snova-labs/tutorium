@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\PresetApplicationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /** A record of which preset shaped a tenant, and at which version. */
 final class PresetApplication extends Model
 {
+    /** @use HasFactory<PresetApplicationFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'preset_code', 'version', 'summary', 'applied_by', 'applied_at'];

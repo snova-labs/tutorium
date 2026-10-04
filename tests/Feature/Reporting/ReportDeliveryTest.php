@@ -15,6 +15,7 @@ use App\Support\Mail\MailProvider;
 use App\Support\Mail\MailResult;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Time\PeriodService;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -78,19 +79,22 @@ final class ReportDeliveryTest extends TestCase
     public function a_failed_delivery_can_be_retried_after_the_address_is_fixed(): void
     {
         Storage::fake('local');
-        $failing = true;
-        $this->useMailer(function () use (&$failing) {
-            return $failing ? MailResult::failed('smtp', 'Domain not found') : MailResult::sent('smtp', 'msg-1');
-        });
+        $mailbox = new class
+        {
+            public bool $failing = true;
+        };
+        $this->useMailer(fn () => $mailbox->failing
+            ? MailResult::failed('smtp', 'Domain not found')
+            : MailResult::sent('smtp', 'msg-1'));
 
-        $this->inTenant(function () use (&$failing): void {
+        $this->inTenant(function () use ($mailbox): void {
             $report = $this->readyReport();
             $delivery = app(ReportDeliveryService::class)->queue($report)->first();
 
             app(ReportDeliveryService::class)->send($delivery);
             $this->assertSame(DeliveryStatus::Failed, $delivery->refresh()->status);
 
-            $failing = false;
+            $mailbox->failing = false;
             app(ReportDeliveryService::class)->retry($delivery);
             app(ReportDeliveryService::class)->send($delivery->refresh());
 
@@ -190,11 +194,11 @@ final class ReportDeliveryTest extends TestCase
         );
     }
 
-    private function useMailer(callable $handler): void
+    private function useMailer(Closure $handler): void
     {
         $this->app->instance(MailProvider::class, new class($handler) implements MailProvider
         {
-            public function __construct(private $handler) {}
+            public function __construct(private Closure $handler) {}
 
             public function send(MailMessage $message): MailResult
             {
@@ -208,7 +212,8 @@ final class ReportDeliveryTest extends TestCase
         });
     }
 
-    private function inTenant(callable $callback): void
+    /** @param Closure(): void $callback */
+    private function inTenant(Closure $callback): void
     {
         app(TenantContext::class)->runAs($this->tenant, $callback);
     }

@@ -12,7 +12,6 @@ final class NoteCategoryFactory extends Factory
 {
     protected $model = NoteCategory::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\BrandFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class Brand extends Model
 {
+    /** @use HasFactory<BrandFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -35,6 +37,7 @@ final class Brand extends Model
         ];
     }
 
+    /** @return HasMany<Branch, $this> */
     public function branches(): HasMany
     {
         return $this->hasMany(Branch::class);

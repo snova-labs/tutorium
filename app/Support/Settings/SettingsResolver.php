@@ -26,7 +26,7 @@ final class SettingsResolver
 
     public function get(string $key, ?ResolutionScope $scope = null, mixed $default = null): mixed
     {
-        return $this->resolve($key, $scope)?->value ?? $default ?? $this->systemDefault($key);
+        return $this->resolve($key, $scope)->value ?? $default ?? $this->systemDefault($key);
     }
 
     /**

@@ -12,7 +12,6 @@ final class LearnerStatusFactory extends Factory
 {
     protected $model = LearnerStatus::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

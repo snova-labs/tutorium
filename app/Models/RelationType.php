@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\RelationTypeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class RelationType extends Model
 {
+    /** @use HasFactory<RelationTypeFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'name', 'code', 'sort'];

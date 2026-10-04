@@ -28,12 +28,14 @@ use App\Models\IdSequence;
 use App\Models\Impersonation;
 use App\Models\Invitation;
 use App\Models\Invoice;
+use App\Models\InvoiceLine;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
 use App\Models\Operator;
 use App\Models\Plan;
+use App\Models\PlanChange;
 use App\Models\PlanFeature;
 use App\Models\PresetApplication;
 use App\Models\RelationType;
@@ -142,6 +144,8 @@ return [
         Invitation::class,
         BillingProfile::class,
         DunningAttempt::class,
+        InvoiceLine::class,
+        PlanChange::class,
     ],
 
     'global_models' => [

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\SessionTypeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class SessionType extends Model
 {
+    /** @use HasFactory<SessionTypeFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -33,6 +35,7 @@ final class SessionType extends Model
         ];
     }
 
+    /** @return BelongsTo<Course, $this> */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);

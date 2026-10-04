@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\AttendancePolicyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class AttendancePolicy extends Model
 {
+    /** @use HasFactory<AttendancePolicyFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $table = 'attendance_policies';
@@ -26,6 +28,31 @@ final class AttendancePolicy extends Model
         'tenant_id', 'scope_type', 'scope_id', 'is_compulsory', 'allow_late_join',
         'late_grace_min', 'counted_session_type_ids', 'low_threshold_pct',
     ];
+
+    /**
+     * What a course policy holds for anything it does not set. A course policy is a complete
+     * rulebook; a batch policy overrides only the values it names and inherits the rest
+     * (AttendancePolicyResolver), so its unset values stay NULL.
+     */
+    public const COURSE_DEFAULTS = [
+        'is_compulsory' => true,
+        'allow_late_join' => true,
+        'late_grace_min' => 10,
+        'low_threshold_pct' => 75,
+    ];
+
+    protected static function booted(): void
+    {
+        self::creating(function (self $policy): void {
+            if ($policy->scope_type !== 'course') {
+                return;
+            }
+
+            foreach (self::COURSE_DEFAULTS as $key => $value) {
+                $policy->setAttribute($key, $policy->getAttribute($key) ?? $value);
+            }
+        });
+    }
 
     protected function casts(): array
     {

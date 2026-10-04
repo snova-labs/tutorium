@@ -74,6 +74,7 @@ final class TenantIsolationTest extends TestCase
 
         $record = $this->makeFor($tenantA, $model);
 
+        $this->assertTrue(method_exists($record, 'getTenantColumn'), "{$model} does not use BelongsToTenant.");
         $this->assertSame(
             $tenantA->getKey(),
             $record->getAttribute($record->getTenantColumn()),
@@ -106,6 +107,9 @@ final class TenantIsolationTest extends TestCase
             try {
                 $record->update(['tenant_id' => $tenantB->getKey()]);
             } catch (TenancyException|\LogicException) {
+                // Refused, which is the contract.
+                $this->addToAssertionCount(1);
+
                 return;
             }
 

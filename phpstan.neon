@@ -7,8 +7,8 @@ parameters:
         - app
         - database
         - tests
-    ignoreErrors:
-        # Eloquent's dynamic factory() is resolved by larastan, but model states are not.
-        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory::#'
     checkModelProperties: true
+    # Models declare casts in a casts() method; without this Larastan reads only its `array`
+    # return type and treats every cast column (dates, enums) as its raw database type.
+    parseModelCastsMethod: true
     checkOctaneCompatibility: false

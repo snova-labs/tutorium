@@ -15,7 +15,6 @@ final class AssessmentFactory extends Factory
 {
     protected $model = Assessment::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

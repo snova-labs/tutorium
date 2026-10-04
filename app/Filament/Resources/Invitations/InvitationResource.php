@@ -16,6 +16,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -42,7 +43,7 @@ final class InvitationResource extends Resource
 
     protected static ?int $navigationSort = 32;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return 'Administration';
     }
@@ -71,8 +72,8 @@ final class InvitationResource extends Resource
                     Toggle::make('scope_all_branches')
                         ->label('Every location')
                         ->live()
-                        ->disabled(fn (): bool => ! (auth()->user()?->scope_all_branches ?? false))
-                        ->helperText(fn (): ?string => (auth()->user()?->scope_all_branches ?? false)
+                        ->disabled(fn (): bool => ! (auth()->user()->scope_all_branches ?? false))
+                        ->helperText(fn (): ?string => (auth()->user()->scope_all_branches ?? false)
                             ? null
                             : 'You can only invite people to the locations you can reach yourself.'),
 
@@ -191,7 +192,7 @@ final class InvitationResource extends Resource
             ->all();
     }
 
-    /** @return array<string, class-string> */
+    /** @return array<string, PageRegistration> */
     public static function getPages(): array
     {
         return ['index' => ListInvitations::route('/')];

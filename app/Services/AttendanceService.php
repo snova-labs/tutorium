@@ -11,7 +11,6 @@ use App\Models\ClassSession;
 use App\Models\Enrollment;
 use App\Models\MakeupLink;
 use App\Support\Attendance\AttendancePolicyResolver;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -30,9 +29,9 @@ final class AttendanceService
     /**
      * The roster a register screen renders: every enrolled learner, with any mark already made.
      *
-     * @return Collection<int, array<string, mixed>>
+     * @return array<int, array{enrollment_id: int, learner_id: int, number: string, name: string, status_id: int|null, minutes_late: int|null, note: string|null, marked: bool}>
      */
-    public function roster(ClassSession $session): Collection
+    public function roster(ClassSession $session): array
     {
         $enrollments = Enrollment::query()
             ->with(['learner'])
@@ -53,7 +52,7 @@ final class AttendanceService
             $record = $records->get($enrollment->getKey());
 
             return [
-                'enrollment_id' => $enrollment->getKey(),
+                'enrollment_id' => $enrollment->id,
                 'learner_id' => $enrollment->learner_id,
                 'number' => $enrollment->learner->number,
                 'name' => $enrollment->learner->displayName(),
@@ -62,7 +61,7 @@ final class AttendanceService
                 'note' => $record?->note,
                 'marked' => $record !== null,
             ];
-        });
+        })->all();
     }
 
     /**
@@ -143,10 +142,14 @@ final class AttendanceService
         });
     }
 
-    /** Mark every unmarked learner in one action — the "all present" button. */
+    /**
+     * Mark every unmarked learner in one action — the "all present" button.
+     *
+     * @return array{saved: int, updated: int, session_id: int}
+     */
     public function markRemaining(ClassSession $session, AttendanceStatus $status): array
     {
-        $marks = $this->roster($session)
+        $marks = collect($this->roster($session))
             ->reject(fn (array $row) => $row['marked'])
             ->map(fn (array $row) => ['enrollment_id' => $row['enrollment_id'], 'status_id' => $status->getKey()])
             ->values()

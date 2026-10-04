@@ -17,6 +17,7 @@ use App\Support\People\DuplicateDetector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 final class LearnerController
@@ -87,7 +88,7 @@ final class LearnerController
             if (! empty($data['guardian'])) {
                 $this->guardians->attachOrCreate(
                     $learner,
-                    collect($data['guardian'])->except('receives_reports')->all(),
+                    Arr::except(Arr::wrap($data['guardian']), 'receives_reports'),
                     isPrimary: true,
                     receivesReports: $data['guardian']['receives_reports'] ?? true,
                 );

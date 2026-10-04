@@ -156,7 +156,7 @@ final class SessionGenerator
 
         $local = CarbonImmutable::createFromFormat('Y-m-d H:i:s', "{$date} {$normalised}", $timezone);
 
-        if ($local === false) {
+        if ($local === null) {
             return null;
         }
 

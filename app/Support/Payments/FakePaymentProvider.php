@@ -57,12 +57,12 @@ final class FakePaymentProvider implements PaymentProvider
         return 'fake_cus_'.$tenant->getKey();
     }
 
-    public function checkoutUrl(Tenant $tenant, BillingProfile $profile, string $returnUrl): ?string
+    public function checkoutUrl(Tenant $tenant, BillingProfile $profile, string $returnUrl): string
     {
         return 'https://payments.test/checkout/'.$tenant->slug;
     }
 
-    public function portalUrl(BillingProfile $profile, string $returnUrl): ?string
+    public function portalUrl(BillingProfile $profile, string $returnUrl): string
     {
         return 'https://payments.test/portal/'.$profile->customer_ref;
     }

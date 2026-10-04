@@ -114,7 +114,7 @@ final class BatchService
 
             $copy->teachers()->sync(
                 $batch->teachers->mapWithKeys(fn ($t) => [
-                    $t->getKey() => ['tenant_id' => $batch->tenant_id, 'role' => $t->pivot->role],
+                    $t->getKey() => ['tenant_id' => $batch->tenant_id, 'role' => $t->getRelation('pivot')->role],
                 ])->all(),
             );
 

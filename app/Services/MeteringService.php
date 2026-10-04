@@ -91,7 +91,7 @@ final class MeteringService
             $peak = $snapshots->sortByDesc('active_learners')->first();
 
             return [
-                'quantity' => $peak?->active_learners ?? 0,
+                'quantity' => $peak->active_learners ?? 0,
                 'snapshot' => $peak,
                 'days_measured' => $snapshots->count(),
                 'missing_days' => $this->missingDays($snapshots, $from, $to),
@@ -117,7 +117,7 @@ final class MeteringService
                 ->where('changed_at', '<=', $date->endOfDay())
                 ->groupBy('enrollment_id')
                 ->get()
-                ->filter(fn ($row) => $billableIds->contains((int) $row->status_at_date))
+                ->filter(fn ($row) => $billableIds->contains((int) $row->getAttribute('status_at_date')))
                 ->pluck('enrollment_id');
 
             $learners = Enrollment::query()
@@ -188,9 +188,9 @@ final class MeteringService
 
             return [
                 'today' => $today,
-                'peak' => max($peak?->active_learners ?? 0, $today),
+                'peak' => max($peak->active_learners ?? 0, $today),
                 'peak_on' => $peak?->snapshot_date->toDateString(),
-                'will_be_billed_for' => max($peak?->active_learners ?? 0, $today),
+                'will_be_billed_for' => max($peak->active_learners ?? 0, $today),
                 'basis' => 'The highest daily count in the period, not the average and not the closing figure.',
                 'period' => ['start' => $from->toDateString(), 'end' => $to->toDateString()],
                 'daily' => $snapshots->map(fn (UsageSnapshot $s) => [
@@ -245,7 +245,9 @@ final class MeteringService
             }
 
             $seen[$row->learner_id] = true;
-            $counted[$row->code] = ($counted[$row->code] ?? 0) + 1;
+            // The branch code arrives through the join, not as an enrollment attribute.
+            $code = (string) $row->getAttribute('code');
+            $counted[$code] = ($counted[$code] ?? 0) + 1;
         }
 
         return $counted;

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TypeWeightFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class TypeWeight extends Model
 {
+    /** @use HasFactory<TypeWeightFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'course_id', 'assessment_type_id', 'weight_pct'];
@@ -27,11 +29,13 @@ final class TypeWeight extends Model
         return ['weight_pct' => 'decimal:2'];
     }
 
+    /** @return BelongsTo<Course, $this> */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
+    /** @return BelongsTo<AssessmentType, $this> */
     public function assessmentType(): BelongsTo
     {
         return $this->belongsTo(AssessmentType::class);

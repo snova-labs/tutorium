@@ -190,7 +190,7 @@ final class ReportService
             ->orderByPivot('is_primary', 'desc')
             ->first();
 
-        return $primary?->name ?? $enrollment->learner->displayName();
+        return $primary->name ?? $enrollment->learner->displayName();
     }
 
     private function templateFor(Enrollment $enrollment): ReportTemplate

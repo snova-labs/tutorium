@@ -24,7 +24,10 @@ final class LearnerService
             $attributes['status_id'] ??= $this->defaultStatus()->getKey();
             $attributes['status_changed_on'] ??= now()->toDateString();
 
-            return Learner::query()->create($attributes);
+            $learner = new Learner;
+            $learner->fill($attributes)->save();
+
+            return $learner;
         });
     }
 

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TerminologyOverrideFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class TerminologyOverride extends Model
 {
+    /** @use HasFactory<TerminologyOverrideFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'term_key', 'singular', 'plural', 'locale'];

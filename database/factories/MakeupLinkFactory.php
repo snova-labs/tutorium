@@ -14,7 +14,6 @@ final class MakeupLinkFactory extends Factory
 {
     protected $model = MakeupLink::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

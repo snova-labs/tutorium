@@ -12,7 +12,6 @@ final class InvitationFactory extends Factory
 {
     protected $model = Invitation::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

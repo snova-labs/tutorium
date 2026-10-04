@@ -20,13 +20,20 @@ final class PresetRepository
     /** @return Collection<string, PresetDefinition> */
     public function all(): Collection
     {
-        $defaults = config('presets.defaults', []);
+        $defaults = config()->array('presets.defaults', []);
 
-        return collect(config('presets.catalogue', []))
-            ->map(fn (array $payload, string $code) => new PresetDefinition(
-                $code,
-                $this->merge($defaults, $payload),
-            ));
+        $presets = [];
+
+        foreach (config()->array('presets.catalogue', []) as $code => $payload) {
+            // Each catalogue entry is a keyed array; anything else is a mistake in config.
+            if (! is_string($code) || ! is_array($payload)) {
+                throw new RuntimeException('config/presets.php catalogue entries must be keyed arrays.');
+            }
+
+            $presets[$code] = new PresetDefinition($code, $this->merge($defaults, $payload));
+        }
+
+        return collect($presets);
     }
 
     public function find(string $code): PresetDefinition
@@ -47,9 +54,9 @@ final class PresetRepository
      * school that declares Speaking, Writing, Listening and Reading should not silently also get
      * Homework and Quiz. Only the keyed sections merge.
      *
-     * @param array<string, mixed> $defaults
-     * @param array<string, mixed> $payload
-     * @return array<string, mixed>
+     * @param array<array-key, mixed> $defaults
+     * @param array<array-key, mixed> $payload
+     * @return array<array-key, mixed>
      */
     private function merge(array $defaults, array $payload): array
     {

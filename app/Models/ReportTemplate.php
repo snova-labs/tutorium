@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\ReportTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class ReportTemplate extends Model
 {
+    /** @use HasFactory<ReportTemplateFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -29,11 +31,13 @@ final class ReportTemplate extends Model
         return ['blocks' => 'array', 'is_default' => 'boolean'];
     }
 
+    /** @return BelongsTo<Brand, $this> */
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
+    /** @return BelongsTo<Course, $this> */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);

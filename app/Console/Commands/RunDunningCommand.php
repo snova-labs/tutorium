@@ -22,7 +22,7 @@ final class RunDunningCommand extends Command
             return self::SUCCESS;
         }
 
-        $applied = $subscriptions->applyPendingChanges();
+        $applied = $subscriptions->applyScheduledChanges();
         $summary = $dunning->run();
 
         $this->table(

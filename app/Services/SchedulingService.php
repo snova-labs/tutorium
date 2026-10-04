@@ -70,7 +70,7 @@ final class SchedulingService
 
         $local = CarbonImmutable::createFromFormat('Y-m-d H:i:s', "{$localDate} {$normalised}", $batch->timezone);
 
-        if ($local === false || $local->format('Y-m-d H:i') !== substr("{$localDate} {$normalised}", 0, 16)) {
+        if ($local === null || $local->format('Y-m-d H:i') !== substr("{$localDate} {$normalised}", 0, 16)) {
             throw ValidationException::withMessages([
                 'starts_at' => "{$localTime} does not exist on {$localDate} in {$batch->timezone}. "
                     .'The clocks change that day — choose another time.',

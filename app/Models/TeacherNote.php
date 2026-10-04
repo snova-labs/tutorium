@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\TeacherNoteFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class TeacherNote extends Model
 {
+    /** @use HasFactory<TeacherNoteFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -32,26 +34,34 @@ final class TeacherNote extends Model
         return ['is_report_visible' => 'boolean'];
     }
 
+    /** @return BelongsTo<Enrollment, $this> */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
     }
 
+    /** @return BelongsTo<ReportingPeriod, $this> */
     public function period(): BelongsTo
     {
         return $this->belongsTo(ReportingPeriod::class, 'reporting_period_id');
     }
 
+    /** @return BelongsTo<NoteCategory, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(NoteCategory::class, 'note_category_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeVisibleOnReports(Builder $query): Builder
     {
         return $query->where('is_report_visible', true);
@@ -70,6 +80,8 @@ final class TeacherNote extends Model
     /**
      * Note bodies are personal opinion about a child. The audit log records that a note changed
      * and who changed it, never the text itself.
+     *
+     * @return array<int, string>
      */
     public function auditExcluded(): array
     {

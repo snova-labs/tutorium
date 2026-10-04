@@ -66,6 +66,7 @@ trait BelongsToTenant
         return 'tenant_id';
     }
 
+    /** @return BelongsTo<Tenant, $this> */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

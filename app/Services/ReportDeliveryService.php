@@ -7,12 +7,14 @@ namespace App\Services;
 use App\Enums\DeliveryStatus;
 use App\Enums\RecipientType;
 use App\Jobs\SendReportJob;
+use App\Models\Brand;
 use App\Models\EmailTemplate;
 use App\Models\Guardian;
 use App\Models\Report;
 use App\Models\ReportDelivery;
 use App\Support\Mail\MailMessage;
 use App\Support\Mail\MailProvider;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +24,10 @@ use Illuminate\Validation\ValidationException;
  */
 final class ReportDeliveryService
 {
-    public function __construct(private readonly MailProvider $mailer) {}
+    public function __construct(
+        private readonly MailProvider $mailer,
+        private readonly TenantContext $tenancy,
+    ) {}
 
     /**
      * Create a delivery row per intended recipient and queue each one.
@@ -35,7 +40,7 @@ final class ReportDeliveryService
 
         $recipients = $this->recipientsFor($report);
 
-        if ($recipients->isEmpty()) {
+        if ($recipients === []) {
             throw ValidationException::withMessages([
                 'recipients' => sprintf(
                     'Nobody is set to receive reports for %s. Add a guardian, or mark an existing one as a recipient.',
@@ -52,7 +57,7 @@ final class ReportDeliveryService
             ]);
         }
 
-        return $recipients->map(function (array $recipient) use ($report): ReportDelivery {
+        return collect($recipients)->map(function (array $recipient) use ($report): ReportDelivery {
             $delivery = ReportDelivery::query()->updateOrCreate(
                 [
                     'report_id' => $report->getKey(),
@@ -120,8 +125,8 @@ final class ReportDeliveryService
         return $delivery->refresh();
     }
 
-    /** @return Collection<int, array{type: RecipientType, id: ?int, name: string, address: string}> */
-    private function recipientsFor(Report $report): Collection
+    /** @return array<int, array{type: RecipientType, id: ?int, name: string, address: string}> */
+    private function recipientsFor(Report $report): array
     {
         $learner = $report->enrollment->learner;
 
@@ -129,25 +134,19 @@ final class ReportDeliveryService
             ->wherePivot('receives_reports', true)
             ->get()
             ->filter(fn (Guardian $g) => $g->deliveryAddress() !== null)
-            ->map(fn (Guardian $g) => [
-                'type' => RecipientType::Guardian,
-                'id' => $g->getKey(),
-                'name' => $g->name,
-                'address' => (string) $g->deliveryAddress(),
-            ]);
+            ->map(fn (Guardian $g) => $this->recipient(
+                RecipientType::Guardian, $g->id, $g->name, (string) $g->deliveryAddress(),
+            ));
 
         // Adult learners in language schools and skills institutes receive their own reports, so
         // an academy with guardians switched off is not left with nobody to send to.
         if ($guardians->isEmpty() && $learner->email !== null) {
-            return collect([[
-                'type' => RecipientType::Learner,
-                'id' => $learner->getKey(),
-                'name' => $learner->displayName(),
-                'address' => $learner->email,
-            ]]);
+            return [
+                $this->recipient(RecipientType::Learner, $learner->id, $learner->displayName(), $learner->email),
+            ];
         }
 
-        return $guardians->values();
+        return $guardians->values()->all();
     }
 
     /** @return array<int, array{name: string, content: string, mime: string}> */
@@ -174,8 +173,14 @@ final class ReportDeliveryService
         ]];
     }
 
+    /** @return array{type: RecipientType, id: ?int, name: string, address: string} */
+    private function recipient(RecipientType $type, ?int $id, string $name, string $address): array
+    {
+        return ['type' => $type, 'id' => $id, 'name' => $name, 'address' => $address];
+    }
+
     /** @return array{subject: string, body: string} */
-    private function email(Report $report, ReportDelivery $delivery, $brand): array
+    private function email(Report $report, ReportDelivery $delivery, Brand $brand): array
     {
         $values = [
             'recipient_name' => (string) $delivery->recipient_name,

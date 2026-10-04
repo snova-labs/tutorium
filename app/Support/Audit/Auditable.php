@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Audit;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -17,16 +18,14 @@ trait Auditable
 {
     public static function bootAuditable(): void
     {
-        $events = [
-            'retrieved', 'creating', 'created', 'updating', 'updated',
-            'saving', 'saved', 'restoring', 'restored', 'replicating',
-            'deleting', 'deleted', 'forceDeleting', 'forceDeleted',
-        ];
+        // Registered one by one rather than with observe(), which instantiates the model and may
+        // not run while the model is booting. These are the events AuditObserver handles.
+        static::created(fn (Model $model) => app(AuditObserver::class)->created($model));
+        static::updated(fn (Model $model) => app(AuditObserver::class)->updated($model));
+        static::deleted(fn (Model $model) => app(AuditObserver::class)->deleted($model));
 
-        foreach ($events as $event) {
-            if (method_exists(AuditObserver::class, $event)) {
-                static::registerModelEvent($event, AuditObserver::class.'@'.$event);
-            }
+        if (method_exists(static::class, 'restored')) {
+            static::restored(fn (Model $model) => app(AuditObserver::class)->restored($model));
         }
     }
 

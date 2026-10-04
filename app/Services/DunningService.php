@@ -102,32 +102,36 @@ final class DunningService
      */
     public function scheduleFor(Tenant $tenant, Invoice $invoice): array
     {
-        return $this->tenancy->runAs($tenant, function () use ($invoice): array {
-            $attempts = DunningAttempt::query()
-                ->where('invoice_id', $invoice->getKey())
-                ->orderBy('attempt')
-                ->get();
+        return $this->tenancy->runAs($tenant, fn (): array => $this->schedule($invoice));
+    }
 
-            $last = $attempts->last();
+    /** @return array<string, mixed> */
+    private function schedule(Invoice $invoice): array
+    {
+        $attempts = DunningAttempt::query()
+            ->where('invoice_id', $invoice->getKey())
+            ->orderBy('attempt')
+            ->get();
 
-            return [
-                'attempts_made' => $attempts->count(),
-                'attempts_remaining' => max(0, count(self::SCHEDULE) - $attempts->where('outcome', DunningAttempt::FAILED)->count()),
-                'next_attempt' => $last?->next_attempt_at?->toDateString(),
-                'what_happens_next' => [
-                    'We try again on days '.implode(', ', self::SCHEDULE).' after the first failure, and email you each time.',
-                    'Your account keeps working throughout, with a notice on screen.',
-                    'After the final attempt the account becomes read-only.',
-                    'Read-only means you can still read, download and export everything. Only entering new data stops.',
-                ],
-                'history' => $attempts->map(fn (DunningAttempt $a) => [
-                    'attempt' => $a->attempt,
-                    'at' => $a->attempted_at->toDateString(),
-                    'outcome' => $a->outcome,
-                    'reason' => $a->failure_message,
-                ]),
-            ];
-        });
+        $last = $attempts->last();
+
+        return [
+            'attempts_made' => $attempts->count(),
+            'attempts_remaining' => max(0, count(self::SCHEDULE) - $attempts->where('outcome', DunningAttempt::FAILED)->count()),
+            'next_attempt' => $last?->next_attempt_at?->toDateString(),
+            'what_happens_next' => [
+                'We try again on days '.implode(', ', self::SCHEDULE).' after the first failure, and email you each time.',
+                'Your account keeps working throughout, with a notice on screen.',
+                'After the final attempt the account becomes read-only.',
+                'Read-only means you can still read, download and export everything. Only entering new data stops.',
+            ],
+            'history' => $attempts->map(fn (DunningAttempt $a) => [
+                'attempt' => $a->attempt,
+                'at' => $a->attempted_at->toDateString(),
+                'outcome' => $a->outcome,
+                'reason' => $a->failure_message,
+            ]),
+        ];
     }
 
     private function onSuccess(Tenant $tenant, Invoice $invoice, int $attempt, PaymentResult $result): DunningAttempt

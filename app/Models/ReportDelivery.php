@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\DeliveryStatus;
 use App\Enums\RecipientType;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\ReportDeliveryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class ReportDelivery extends Model
 {
+    /** @use HasFactory<ReportDeliveryFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -36,6 +38,7 @@ final class ReportDelivery extends Model
         ];
     }
 
+    /** @return BelongsTo<Report, $this> */
     public function report(): BelongsTo
     {
         return $this->belongsTo(Report::class);

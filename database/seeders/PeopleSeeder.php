@@ -14,7 +14,6 @@ use App\Services\EnrollmentService;
 use App\Services\GuardianService;
 use App\Services\LearnerService;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 
 /**
  * Vocabularies and a sample roster.
@@ -22,7 +21,7 @@ use Illuminate\Database\Seeder;
  * The status sets seeded here are examples a tenant edits, not a fixed taxonomy — which is why
  * `is_active_for_billing` sits on the row rather than in code.
  */
-final class PeopleSeeder extends Seeder
+final class PeopleSeeder extends ConsoleAwareSeeder
 {
     public function run(?Tenant $tenant = null): void
     {
@@ -82,7 +81,7 @@ final class PeopleSeeder extends Seeder
         $batch = Batch::query()->orderBy('id')->first();
 
         if ($batch === null) {
-            $this->command?->warn('No batches — run AcademicSeeder first.');
+            $this->say('warn', 'No batches — run AcademicSeeder first.');
 
             return;
         }
@@ -114,6 +113,6 @@ final class PeopleSeeder extends Seeder
             $enrollments->enroll($learner, $batch);
         }
 
-        $this->command?->info('Seeded 8 learners, 7 guardians (two siblings share one) and 8 enrollments.');
+        $this->say('info', 'Seeded 8 learners, 7 guardians (two siblings share one) and 8 enrollments.');
     }
 }

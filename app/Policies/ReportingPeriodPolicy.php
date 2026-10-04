@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\ReportingPeriod;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
+/** @extends BasePolicy<ReportingPeriod> */
 final class ReportingPeriodPolicy extends BasePolicy
 {
     protected function prefix(): string
@@ -18,7 +21,8 @@ final class ReportingPeriodPolicy extends BasePolicy
         return $user->is_active && ($user->can('reports.generate') || $user->can('settings.manage'));
     }
 
-    public function view(User $user, $record): bool
+    /** @param ReportingPeriod $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user);
     }
@@ -28,7 +32,8 @@ final class ReportingPeriodPolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param ReportingPeriod $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage');
     }

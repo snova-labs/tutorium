@@ -92,11 +92,15 @@ final class BillingController
     {
         abort_unless($request->user()->can('billing.manage'), 403);
 
-        $validated = $request->validate(['plan_code' => ['required', 'string', 'exists:plans,code']]);
+        $validated = $request->validate([
+            'plan_code' => ['required', 'string', 'exists:plans,code'],
+            'acknowledge_losses' => ['sometimes', 'boolean'],
+        ]);
 
         $result = $this->subscriptions->changePlan(
             $this->tenancy->require(),
             Plan::query()->where('code', $validated['plan_code'])->firstOrFail(),
+            (bool) ($validated['acknowledge_losses'] ?? false),
         );
 
         return response()->json([
@@ -134,7 +138,9 @@ final class BillingController
     {
         abort_unless($request->user()->can('billing.manage'), 403);
 
-        $subscription = $this->subscriptions->cancel($this->tenancy->require());
+        $validated = $request->validate(['reason' => ['nullable', 'string', 'max:255']]);
+
+        $subscription = $this->subscriptions->cancel($this->tenancy->require(), $validated['reason'] ?? null);
 
         return response()->json([
             'data' => [

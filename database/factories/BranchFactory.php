@@ -13,7 +13,6 @@ final class BranchFactory extends Factory
 {
     protected $model = Branch::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

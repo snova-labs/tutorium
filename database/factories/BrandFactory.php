@@ -12,7 +12,6 @@ final class BrandFactory extends Factory
 {
     protected $model = Brand::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

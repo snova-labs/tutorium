@@ -6,12 +6,14 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\EmailTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /** An editable transactional email. */
 final class EmailTemplate extends Model
 {
+    /** @use HasFactory<EmailTemplateFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'brand_id', 'code', 'subject', 'body_html', 'variables', 'locale'];
@@ -21,7 +23,10 @@ final class EmailTemplate extends Model
         return ['variables' => 'array'];
     }
 
-    /** @param array<string, string> $values */
+    /**
+     * @param array<string, string> $values
+     * @return array{subject: string, body: string}
+     */
     public function render(array $values): array
     {
         $replace = static function (string $text) use ($values): string {

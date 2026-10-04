@@ -39,6 +39,19 @@ final class PresetDefinition implements Arrayable
         return $this->payload['vertical'] ?? 'any';
     }
 
+    /**
+     * The rows of a list-shaped section (statuses, types), each one a positional list.
+     *
+     * @return array<int, list<mixed>>
+     */
+    public function rows(string $key): array
+    {
+        return array_values(array_map(
+            static fn (array $row): array => array_values($row),
+            array_filter($this->section($key), is_array(...)),
+        ));
+    }
+
     /** @return array<string, mixed> */
     public function section(string $key): array
     {

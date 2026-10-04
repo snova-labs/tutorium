@@ -54,7 +54,7 @@ final class TeacherNoteService
 
         DB::transaction(function () use ($notes, $period, &$written, &$skipped): void {
             foreach ($notes as $note) {
-                if (trim((string) ($note['body'] ?? '')) === '') {
+                if (trim($note['body']) === '') {
                     // An empty box is a teacher who has not got to that learner yet, not a note
                     // saying nothing.
                     $skipped++;

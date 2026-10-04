@@ -67,11 +67,13 @@ final class IdSequenceService
      *
      * LAST_INSERT_ID(expr) lets a single UPDATE both increment and return the value it used,
      * which is race-free without locking the row for the length of the surrounding transaction.
+     * next_number is the number to issue next, so the value captured is the one before the
+     * increment; capturing the one after would skip the first number of every sequence.
      */
     private function increment(IdSequence $sequence): int
     {
         $affected = $this->db->update(
-            'UPDATE id_sequences SET next_number = LAST_INSERT_ID(next_number + 1), updated_at = ? WHERE id = ?',
+            'UPDATE id_sequences SET next_number = LAST_INSERT_ID(next_number) + 1, updated_at = ? WHERE id = ?',
             [now(), $sequence->getKey()],
         );
 

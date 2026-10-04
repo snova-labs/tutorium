@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class Report extends Model
 {
+    /** @use HasFactory<ReportFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -34,21 +36,37 @@ final class Report extends Model
         ];
     }
 
+    /**
+     * The snapshot is what a parent was sent, so its numbers keep their type: an average of 80.0
+     * must not come back as the integer 80.
+     *
+     * @param mixed $value
+     * @param int $flags
+     */
+    protected function asJson($value, $flags = 0): string|false
+    {
+        return json_encode($value, $flags | JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    /** @return BelongsTo<Enrollment, $this> */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
     }
 
+    /** @return BelongsTo<ReportingPeriod, $this> */
     public function period(): BelongsTo
     {
         return $this->belongsTo(ReportingPeriod::class, 'reporting_period_id');
     }
 
+    /** @return BelongsTo<ReportTemplate, $this> */
     public function template(): BelongsTo
     {
         return $this->belongsTo(ReportTemplate::class, 'report_template_id');
     }
 
+    /** @return HasMany<ReportDelivery, $this> */
     public function deliveries(): HasMany
     {
         return $this->hasMany(ReportDelivery::class);
@@ -64,7 +82,7 @@ final class Report extends Model
         return 'Reporting';
     }
 
-    public function auditLabel(): ?string
+    public function auditLabel(): string
     {
         return $this->number;
     }

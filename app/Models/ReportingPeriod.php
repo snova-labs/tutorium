@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\PeriodType;
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\ReportingPeriodFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 final class ReportingPeriod extends Model
 {
+    /** @use HasFactory<ReportingPeriodFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     public const STATUS_OPEN = 'open';
@@ -43,11 +45,13 @@ final class ReportingPeriod extends Model
         ];
     }
 
+    /** @return BelongsTo<Batch, $this> */
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
     }
 
+    /** @return BelongsTo<Course, $this> */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);

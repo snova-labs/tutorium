@@ -129,7 +129,7 @@ final class PresetApplier
 
     private function sessionTypes(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('session_types'), fn (array $row) => [
+        return $this->seed($preset->rows('session_types'), fn (array $row) => [
             SessionType::class,
             ['code' => $row[1]],
             ['name' => $row[0], 'counts_in_attendance' => $row[2]],
@@ -138,7 +138,7 @@ final class PresetApplier
 
     private function attendanceStatuses(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('attendance_statuses'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('attendance_statuses'), fn (array $row, int $i) => [
             AttendanceStatus::class,
             ['code' => $row[1]],
             [
@@ -150,7 +150,7 @@ final class PresetApplier
 
     private function submissionStatuses(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('submission_statuses'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('submission_statuses'), fn (array $row, int $i) => [
             SubmissionStatus::class,
             ['code' => $row[1]],
             [
@@ -162,7 +162,7 @@ final class PresetApplier
 
     private function learnerStatuses(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('learner_statuses'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('learner_statuses'), fn (array $row, int $i) => [
             LearnerStatus::class,
             ['code' => $row[1]],
             ['name' => $row[0], 'is_terminal' => $row[2], 'sort' => $i],
@@ -171,7 +171,7 @@ final class PresetApplier
 
     private function enrollmentStatuses(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('enrollment_statuses'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('enrollment_statuses'), fn (array $row, int $i) => [
             EnrollmentStatus::class,
             ['code' => $row[1]],
             [
@@ -183,14 +183,14 @@ final class PresetApplier
 
     private function relationTypes(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('relation_types'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('relation_types'), fn (array $row, int $i) => [
             RelationType::class, ['code' => $row[1]], ['name' => $row[0], 'sort' => $i],
         ]);
     }
 
     private function noteCategories(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('note_categories'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('note_categories'), fn (array $row, int $i) => [
             NoteCategory::class,
             ['code' => $row[1]],
             ['name' => $row[0], 'report_visible_default' => $row[2], 'sort' => $i],
@@ -199,7 +199,7 @@ final class PresetApplier
 
     private function assessmentTypes(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('assessment_types'), fn (array $row, int $i) => [
+        return $this->seed($preset->rows('assessment_types'), fn (array $row, int $i) => [
             AssessmentType::class,
             ['code' => $row[1]],
             ['name' => $row[0], 'counts_in_submission_rate' => $row[2], 'sort' => $i],
@@ -208,7 +208,7 @@ final class PresetApplier
 
     private function gradingSchemes(PresetDefinition $preset): int
     {
-        return $this->seed($preset->section('grading_schemes'), fn (array $row) => [
+        return $this->seed($preset->rows('grading_schemes'), fn (array $row) => [
             GradingScheme::class,
             ['code' => $row[1]],
             ['name' => $row[0], 'kind' => $row[2], 'config' => $row[3], 'is_active' => true],

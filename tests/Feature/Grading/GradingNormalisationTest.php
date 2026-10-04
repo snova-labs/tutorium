@@ -22,6 +22,7 @@ use App\Models\Tenant;
 use App\Services\AssessmentService;
 use App\Services\GradeBookService;
 use App\Support\Tenancy\TenantContext;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
@@ -210,7 +211,8 @@ final class GradingNormalisationTest extends TestCase
 
     // ── fixtures ─────────────────────────────────────────────────────────────
 
-    private function inTenant(callable $callback): void
+    /** @param Closure(): void $callback */
+    private function inTenant(Closure $callback): void
     {
         app(TenantContext::class)->runAs($this->tenant, function () use ($callback): void {
             $this->lookups();

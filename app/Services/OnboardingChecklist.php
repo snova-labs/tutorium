@@ -30,7 +30,9 @@ final class OnboardingChecklist
         private readonly Terminology $terms,
     ) {}
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array{dismissed: bool, complete: bool, done: int, total: int, can_record_attendance: bool, steps: array<int, array<string, mixed>>}
+     */
     public function for(Tenant $tenant): array
     {
         return $this->tenancy->runAs($tenant, function () use ($tenant): array {

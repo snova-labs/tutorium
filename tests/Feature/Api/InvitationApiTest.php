@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,8 +19,6 @@ use Tests\TestCase;
 final class InvitationApiTest extends TestCase
 {
     use RefreshDatabase;
-
-    private Tenant $tenant;
 
     private User $owner;
 
@@ -39,7 +36,6 @@ final class InvitationApiTest extends TestCase
             'preset_code' => 'blank',
         ]);
 
-        $this->tenant = $result['tenant'];
         $this->owner = $result['owner'];
     }
 

@@ -6,10 +6,13 @@ namespace App\Policies;
 
 use App\Models\Brand;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Brands are account-wide identity, so they sit behind a single administrative permission rather
  * than a create/update/delete family — a role either runs the organisation or it does not.
+ *
+ * @extends BasePolicy<Brand>
  */
 final class BrandPolicy extends BasePolicy
 {
@@ -24,7 +27,8 @@ final class BrandPolicy extends BasePolicy
         return $user->is_active && ($user->can('organisation.manage') || $user->can('learners.view'));
     }
 
-    public function view(User $user, $record): bool
+    /** @param Brand $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user);
     }
@@ -34,12 +38,14 @@ final class BrandPolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param Brand $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage');
     }
 
-    public function delete(User $user, $record): bool
+    /** @param Brand $record */
+    public function delete(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage');
     }

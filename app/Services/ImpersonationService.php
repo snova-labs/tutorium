@@ -9,9 +9,7 @@ use App\Models\Impersonation;
 use App\Models\Operator;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Support\Audit\AuditContext;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Validation\ValidationException;
@@ -29,10 +27,7 @@ final class ImpersonationService
     /** Support work is short. Anything longer is a conversation, not a look. */
     private const MAX_MINUTES = 60;
 
-    public function __construct(
-        private readonly TenantContext $tenancy,
-        private readonly AuditContext $audit,
-    ) {}
+    public function __construct(private readonly TenantContext $tenancy) {}
 
     /** @return array{impersonation: Impersonation, token: string} */
     public function start(Operator $operator, Tenant $tenant, string $reason, int $minutes = 15): array
@@ -103,9 +98,11 @@ final class ImpersonationService
         return DB::transaction(function () use ($impersonation): Impersonation {
             $impersonation->update(['ended_at' => now()]);
 
-            $impersonation->user->tokens()
+            // Called from the operator side and the scheduled sweep, where no tenant is bound; the
+            // support user and their token live in the tenant being accessed.
+            $this->tenancy->runAs($impersonation->tenant, fn () => $impersonation->user()->first()?->tokens()
                 ->where('name', 'support-access-'.$impersonation->getKey())
-                ->delete();
+                ->delete());
 
             $this->writeToTenantLog(
                 $impersonation->tenant,
@@ -122,9 +119,9 @@ final class ImpersonationService
     /**
      * Everything a customer can see about our access to their account.
      *
-     * @return Collection<int, array<string, mixed>>
+     * @return array<int, array{operator: string, reason: string, started_at_utc: string, ended_at_utc: string|null, minutes: int, active: bool}>
      */
-    public function historyFor(Tenant $tenant): Collection
+    public function historyFor(Tenant $tenant): array
     {
         return Impersonation::query()
             ->with('operator')
@@ -138,7 +135,8 @@ final class ImpersonationService
                 'ended_at_utc' => $i->ended_at?->toIso8601String(),
                 'minutes' => $i->minutesUsed(),
                 'active' => $i->isActive(),
-            ]);
+            ])
+            ->all();
     }
 
     /** Closes anything that ran past its expiry — belt and braces alongside token expiry. */

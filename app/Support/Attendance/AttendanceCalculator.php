@@ -11,6 +11,7 @@ use App\Models\ClassSession;
 use App\Models\Enrollment;
 use App\Models\MakeupLink;
 use App\Support\Time\PeriodBoundary;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 /**
@@ -102,26 +103,26 @@ final class AttendanceCalculator
     /**
      * The sessions this learner could actually have attended.
      *
-     * @return Collection<int, ClassSession>
+     * @return EloquentCollection<int, ClassSession>
      */
     private function opportunities(
         Batch $batch,
         Enrollment $enrollment,
         PeriodBoundary $period,
         ResolvedAttendancePolicy $policy,
-    ): Collection {
+    ): EloquentCollection {
         $from = $period->startsLocalDate->toDateString();
         $to = $period->endsLocalDate->toDateString();
 
         // A learner is not answerable for sessions before they joined or after they left.
-        $enrolledFrom = $enrollment->enrolled_on?->toDateString();
+        $enrolledFrom = $enrollment->enrolled_on->toDateString();
         $enrolledTo = $enrollment->ended_on?->toDateString();
 
         return ClassSession::query()
             ->where('batch_id', $batch->getKey())
             ->where('status', SessionStatus::Held)
             ->whereBetween('session_local_date', [$from, $to])
-            ->when($enrolledFrom !== null, fn ($q) => $q->where('session_local_date', '>=', $enrolledFrom))
+            ->where('session_local_date', '>=', $enrolledFrom)
             ->when($enrolledTo !== null, fn ($q) => $q->where('session_local_date', '<=', $enrolledTo))
             ->when(
                 $policy->countedSessionTypeIds !== null,
@@ -130,8 +131,8 @@ final class AttendanceCalculator
             ->get();
     }
 
-    /** @param Collection<int, ClassSession> $sessions */
-    private function madeUpCount(Enrollment $enrollment, Collection $sessions): int
+    /** @param EloquentCollection<int, ClassSession> $sessions */
+    private function madeUpCount(Enrollment $enrollment, EloquentCollection $sessions): int
     {
         return MakeupLink::query()
             ->where('enrollment_id', $enrollment->getKey())

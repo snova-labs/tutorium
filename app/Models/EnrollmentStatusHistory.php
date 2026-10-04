@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\EnrollmentStatusHistoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class EnrollmentStatusHistory extends Model
 {
+    /** @use HasFactory<EnrollmentStatusHistoryFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $table = 'enrollment_status_history';
@@ -32,16 +34,19 @@ final class EnrollmentStatusHistory extends Model
         return ['changed_at' => 'immutable_datetime'];
     }
 
+    /** @return BelongsTo<Enrollment, $this> */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
     }
 
+    /** @return BelongsTo<EnrollmentStatus, $this> */
     public function fromStatus(): BelongsTo
     {
         return $this->belongsTo(EnrollmentStatus::class, 'from_status_id');
     }
 
+    /** @return BelongsTo<EnrollmentStatus, $this> */
     public function toStatus(): BelongsTo
     {
         return $this->belongsTo(EnrollmentStatus::class, 'to_status_id');

@@ -15,7 +15,6 @@ final class ReportRunFactory extends Factory
 {
     protected $model = ReportRun::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

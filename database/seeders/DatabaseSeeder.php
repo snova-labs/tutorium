@@ -10,7 +10,6 @@ use App\Models\IdSequence;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -20,7 +19,7 @@ use Illuminate\Support\Facades\Hash;
  * architecture exists to prevent. Names are neutral by policy: no customer or learner name ever
  * appears in code, seeds or fixtures.
  */
-final class DatabaseSeeder extends Seeder
+final class DatabaseSeeder extends ConsoleAwareSeeder
 {
     public function run(): void
     {
@@ -55,8 +54,8 @@ final class DatabaseSeeder extends Seeder
         $this->seedTenantOne($one);
         $this->seedTenantTwo($two);
 
-        $this->command?->newLine();
-        $this->command?->info('Sign in with owner@sample-one.test or owner@sample-two.test — password: password');
+        $this->say('newLine');
+        $this->say('info', 'Sign in with owner@sample-one.test or owner@sample-two.test — password: password');
         $this->call(AcademicSeeder::class);
         $this->call(PeopleSeeder::class);
         $this->call(AttendanceSeeder::class);

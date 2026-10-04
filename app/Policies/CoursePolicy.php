@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Course;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
+/** @extends BasePolicy<Course> */
 final class CoursePolicy extends BasePolicy
 {
     protected function prefix(): string
@@ -19,7 +22,8 @@ final class CoursePolicy extends BasePolicy
         return $user->is_active && ($user->can('courses.manage') || $user->can('learners.view'));
     }
 
-    public function view(User $user, $record): bool
+    /** @param Course $record */
+    public function view(User $user, Model $record): bool
     {
         return $this->viewAny($user);
     }
@@ -29,12 +33,14 @@ final class CoursePolicy extends BasePolicy
         return $this->allows($user, 'manage');
     }
 
-    public function update(User $user, $record): bool
+    /** @param Course $record */
+    public function update(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage');
     }
 
-    public function delete(User $user, $record): bool
+    /** @param Course $record */
+    public function delete(User $user, Model $record): bool
     {
         return $this->allows($user, 'manage');
     }

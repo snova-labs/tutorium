@@ -13,7 +13,6 @@ final class HolidayFactory extends Factory
 {
     protected $model = Holiday::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

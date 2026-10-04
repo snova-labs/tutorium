@@ -11,6 +11,7 @@ use App\Services\GuardianService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 
 final class GuardianController
 {
@@ -56,7 +57,7 @@ final class GuardianController
         } else {
             $guardian = $this->guardians->attachOrCreate(
                 $learner,
-                collect($validated)->only(['name', 'email', 'phone', 'relation_type_id'])->all(),
+                Arr::only($validated, ['name', 'email', 'phone', 'relation_type_id']),
                 $request->boolean('is_primary'),
                 $request->boolean('receives_reports', true),
             );

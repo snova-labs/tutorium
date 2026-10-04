@@ -10,6 +10,7 @@ use App\Enums\PeriodType;
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
+use Database\Factories\BatchFactory;
 use DateTimeZone;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,7 @@ use Illuminate\Support\Collection;
  */
 final class Batch extends Model
 {
+    /** @use HasFactory<BatchFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -45,16 +47,19 @@ final class Batch extends Model
         ];
     }
 
+    /** @return BelongsTo<Course, $this> */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
+    /** @return BelongsTo<Branch, $this> */
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
 
+    /** @return BelongsToMany<User, $this> */
     public function teachers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'batch_teacher')
@@ -62,16 +67,19 @@ final class Batch extends Model
             ->withTimestamps();
     }
 
+    /** @return HasMany<TimetableSlot, $this> */
     public function timetableSlots(): HasMany
     {
         return $this->hasMany(TimetableSlot::class);
     }
 
+    /** @return HasMany<ClassSession, $this> */
     public function sessions(): HasMany
     {
         return $this->hasMany(ClassSession::class);
     }
 
+    /** @return HasMany<ReportingPeriod, $this> */
     public function reportingPeriods(): HasMany
     {
         return $this->hasMany(ReportingPeriod::class);
@@ -98,7 +106,11 @@ final class Batch extends Model
         return 'Academic';
     }
 
-    /** Enrollments that should appear on a register or a summary. */
+    /**
+     * Enrollments that should appear on a register or a summary.
+     *
+     * @return Collection<int, Enrollment>
+     */
     public function enrollmentsForAttendance(): Collection
     {
         return $this->hasMany(Enrollment::class)->with('learner')->active()->get();

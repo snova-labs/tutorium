@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\AttendanceStatusFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class AttendanceStatus extends Model
 {
+    /** @use HasFactory<AttendanceStatusFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [

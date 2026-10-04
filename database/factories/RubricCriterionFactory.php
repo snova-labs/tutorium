@@ -13,7 +13,6 @@ final class RubricCriterionFactory extends Factory
 {
     protected $model = RubricCriterion::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

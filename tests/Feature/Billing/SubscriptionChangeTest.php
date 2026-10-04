@@ -50,11 +50,10 @@ final class SubscriptionChangeTest extends TestCase
     {
         $result = app(SubscriptionService::class)->changePlan($this->tenant, $this->growth);
 
-        $this->assertSame('immediately', $result['effective']);
+        $this->assertSame(now()->toDateString(), $result['effective']);
         $this->assertTrue(app(EntitlementService::class)->allows('sso', $this->tenant));
-        // A few days of the better plan at the old rate, which removes an entire category of
-        // billing dispute for very little money.
-        $this->assertStringContainsString('rest of this period is at your old rate', $result['message']);
+        // The invoice for the period is split at the change, so each part is billed at its own rate.
+        $this->assertStringContainsString('split at today', $result['message']);
     }
 
     #[Test]
@@ -65,7 +64,7 @@ final class SubscriptionChangeTest extends TestCase
 
         $result = app(SubscriptionService::class)->changePlan($this->tenant, $this->starter);
 
-        $this->assertNotSame('immediately', $result['effective']);
+        $this->assertNotSame(now()->toDateString(), $result['effective']);
 
         // Nobody loses access they have already paid for.
         app(EntitlementService::class)->forget();

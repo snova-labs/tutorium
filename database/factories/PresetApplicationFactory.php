@@ -12,7 +12,6 @@ final class PresetApplicationFactory extends Factory
 {
     protected $model = PresetApplication::class;
 
-    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

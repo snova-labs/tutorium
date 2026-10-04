@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Database\Factories\BillingProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class BillingProfile extends Model
 {
+    /** @use HasFactory<BillingProfileFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
@@ -53,7 +55,11 @@ final class BillingProfile extends Model
         return 'Billing';
     }
 
-    /** Nothing about a payment method belongs in an activity log. */
+    /**
+     * Nothing about a payment method belongs in an activity log.
+     *
+     * @return array<int, string>
+     */
     public function auditExcluded(): array
     {
         return [
