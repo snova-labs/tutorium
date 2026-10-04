@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace Tests\Feature\Operator;
 
 use App\Models\Operator;
+use App\Notifications\SignInCodeNotification;
 use App\Services\OperatorTwoFactor;
 use App\Support\Security\Totp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
  * An operator account reaches every customer's data, so the console is closed to anyone who has
- * not proved a second factor, at enrolment and at every sign-in.
+ * not proved a second factor at sign-in: an emailed code, or an authenticator app once set up.
  */
 final class OperatorTwoFactorTest extends TestCase
 {
@@ -26,54 +28,105 @@ final class OperatorTwoFactorTest extends TestCase
     private const PASSWORD = 'a-long-enough-password';
 
     #[Test]
-    public function an_operator_without_two_factor_gets_only_an_enrolment_token(): void
+    public function without_an_app_the_password_alone_only_sends_an_email_code(): void
     {
-        $this->operator(enrolled: false);
+        Notification::fake();
+        $operator = $this->operator(enrolled: false);
 
-        $response = $this->login()->assertOk()->assertJsonPath('data.two_factor', 'enrolment_required');
-        $token = $response->json('data.token');
+        $this->login()->assertStatus(422)->assertJsonValidationErrors('code')->assertJsonMissingPath('data.token');
 
-        // The password alone opens nothing but the enrolment screen.
-        $this->withToken($token)->getJson('/operator/v1/tenants')->assertForbidden();
+        $code = $this->emailedCode($operator);
+
+        $token = $this->login($code)->assertOk()->json('data.token');
+        $this->withToken($token)->getJson('/operator/v1/tenants')->assertOk();
+        $this->assertNotNull($operator->refresh()->last_login_at);
     }
 
     #[Test]
-    public function enrolment_confirmed_with_a_real_code_issues_recovery_codes_and_a_console_token(): void
+    public function an_emailed_code_works_once_and_dies_after_too_many_wrong_guesses(): void
     {
+        Notification::fake();
         $operator = $this->operator(enrolled: false);
-        $enrolToken = $this->login()->json('data.token');
 
-        $enrolment = $this->withToken($enrolToken)->postJson('/operator/v1/auth/two-factor/enrol')->assertOk();
+        $this->login();
+        $code = $this->emailedCode($operator);
+        $this->login($code)->assertOk();
+        $this->login($code)->assertStatus(422)->assertJsonValidationErrors('email');
+
+        $this->travel(2)->minutes();
+        $this->login();
+        $code = $this->emailedCode($operator);
+        $wrong = $code === '000000' ? '111111' : '000000';
+
+        foreach (range(1, 5) as $ignored) {
+            $this->login($wrong)->assertStatus(422);
+        }
+
+        // Burnt: even the right code is refused now.
+        $this->login($code)->assertStatus(422);
+    }
+
+    #[Test]
+    public function an_emailed_code_expires_and_asking_again_soon_does_not_flood_the_inbox(): void
+    {
+        Notification::fake();
+        $operator = $this->operator(enrolled: false);
+
+        $this->login();
+        $this->login();
+        Notification::assertSentToTimes($operator, SignInCodeNotification::class, 1);
+
+        $code = $this->emailedCode($operator);
+        $this->travel(11)->minutes();
+        $this->login($code)->assertStatus(422);
+    }
+
+    #[Test]
+    public function an_operator_can_upgrade_to_an_authenticator_app_and_then_email_codes_stop(): void
+    {
+        Notification::fake();
+        $operator = $this->operator(enrolled: false);
+        $this->login();
+        $token = $this->login($this->emailedCode($operator))->json('data.token');
+
+        $enrolment = $this->withToken($token)->postJson('/operator/v1/auth/two-factor/enrol')->assertOk();
         $secret = $enrolment->json('data.secret');
         $this->assertStringStartsWith('otpauth://totp/', $enrolment->json('data.otpauth_uri'));
 
-        $confirmed = $this->withToken($enrolToken)
+        $confirmed = $this->withToken($token)
             ->postJson('/operator/v1/auth/two-factor/confirm', ['code' => $this->codeFor($secret)])
             ->assertOk();
 
         $this->assertCount(10, $confirmed->json('data.recovery_codes'));
         $this->assertTrue($operator->refresh()->hasTwoFactor());
 
-        $this->resetAuth();
-        $this->withToken($confirmed->json('data.token'))->getJson('/operator/v1/tenants')->assertOk();
-
-        // The enrolment token is spent; it does not linger as a second way in.
-        $this->resetAuth();
-        $this->withToken($enrolToken)->postJson('/operator/v1/auth/two-factor/enrol')->assertUnauthorized();
+        // From now on the password alone sends no email: the app is the only way in.
+        Notification::fake();
+        $this->login()->assertStatus(422)->assertJsonValidationErrors('code');
+        Notification::assertNothingSent();
     }
 
     #[Test]
     public function a_wrong_code_does_not_confirm_enrolment(): void
     {
         $operator = $this->operator(enrolled: false);
-        $enrolToken = $this->login()->json('data.token');
-        $this->withToken($enrolToken)->postJson('/operator/v1/auth/two-factor/enrol')->assertOk();
+        $token = $operator->createToken('console', ['console'])->plainTextToken;
+        $this->withToken($token)->postJson('/operator/v1/auth/two-factor/enrol')->assertOk();
 
-        $this->withToken($enrolToken)
+        $this->withToken($token)
             ->postJson('/operator/v1/auth/two-factor/confirm', ['code' => '000000'])
             ->assertStatus(422);
 
         $this->assertFalse($operator->refresh()->hasTwoFactor());
+    }
+
+    #[Test]
+    public function a_token_without_the_console_ability_opens_nothing(): void
+    {
+        $operator = $this->operator();
+        $token = $operator->createToken('other', ['something-else'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/operator/v1/tenants')->assertForbidden();
     }
 
     #[Test]
@@ -146,9 +199,9 @@ final class OperatorTwoFactorTest extends TestCase
     public function an_enrolled_operator_cannot_quietly_re_enrol(): void
     {
         $operator = $this->operator();
-        $enrolToken = $operator->createToken('enrol', ['two-factor:enrol'])->plainTextToken;
+        $token = $operator->createToken('console', ['console'])->plainTextToken;
 
-        $this->withToken($enrolToken)->postJson('/operator/v1/auth/two-factor/enrol')->assertStatus(422);
+        $this->withToken($token)->postJson('/operator/v1/auth/two-factor/enrol')->assertStatus(422);
     }
 
     #[Test]
@@ -212,6 +265,19 @@ final class OperatorTwoFactorTest extends TestCase
             : $secretOrOperator;
 
         return $totp->codeAt($secret, $totp->currentStep());
+    }
+
+    private function emailedCode(Operator $operator): string
+    {
+        $code = null;
+
+        Notification::assertSentTo($operator, SignInCodeNotification::class, function (SignInCodeNotification $n) use (&$code): bool {
+            $code = $n->code;
+
+            return true;
+        });
+
+        return (string) $code;
     }
 
     /** @return array<int, string> */

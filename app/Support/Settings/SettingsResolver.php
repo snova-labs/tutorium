@@ -121,6 +121,10 @@ final class SettingsResolver
 
     private function systemDefault(string $key): mixed
     {
-        return config("settings.defaults.{$key}");
+        // Keys contain dots themselves ("attendance.compulsory"), so they are read from the array
+        // directly: config()'s dot notation would look for a nested "attendance" entry and miss.
+        $defaults = config('settings.defaults', []);
+
+        return is_array($defaults) ? ($defaults[$key] ?? null) : null;
     }
 }

@@ -11,11 +11,10 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Two-factor for operators: enrolment, verification and recovery codes.
+ * Authenticator-app two-factor for operators: enrolment, verification and recovery codes.
  *
- * Not optional. An operator account reaches every customer's data, so the console refuses an
- * operator who has not confirmed a second factor (EnsureOperator), and sign-in asks for a code
- * every time.
+ * Optional on top of the emailed sign-in code every operator gets (SignInCodes). Once confirmed it
+ * replaces the email route entirely, so an operator who has an app is never asked for less.
  */
 final class OperatorTwoFactor
 {
@@ -25,7 +24,7 @@ final class OperatorTwoFactor
 
     /**
      * Start (or restart) enrolment with a fresh secret. Nothing is enforced until it is confirmed,
-     * so an abandoned enrolment leaves the operator exactly where they were: unable to sign in.
+     * so an abandoned enrolment leaves the operator exactly where they were: on emailed codes.
      *
      * @return array{secret: string, otpauth_uri: string}
      */

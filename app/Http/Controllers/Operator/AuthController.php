@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Operator;
 
 use App\Models\Operator;
 use App\Services\OperatorTwoFactor;
+use App\Services\SignInCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,21 +17,20 @@ use Laravel\Sanctum\PersonalAccessToken;
 /**
  * Operator sign-in, with a second factor every time.
  *
- * A token carries one of two abilities. "console" is a signed-in operator. "two-factor:enrol" is
- * an operator who has the password but no second factor yet: it can set one up and do nothing
- * else, because the console middleware refuses anything without "console".
+ * The second factor is a code emailed at sign-in. An operator who has set up an authenticator app
+ * uses that instead (or a recovery code), and is then never offered the weaker email route.
+ * Only a token with the "console" ability opens the console.
  */
 final class AuthController
 {
     public const ABILITY_CONSOLE = 'console';
 
-    public const ABILITY_ENROL = 'two-factor:enrol';
-
     private const CONSOLE_TOKEN_HOURS = 12;
 
-    private const ENROL_TOKEN_MINUTES = 15;
-
-    public function __construct(private readonly OperatorTwoFactor $twoFactor) {}
+    public function __construct(
+        private readonly OperatorTwoFactor $twoFactor,
+        private readonly SignInCodes $signInCodes,
+    ) {}
 
     public function login(Request $request): JsonResponse
     {
@@ -50,23 +50,34 @@ final class AuthController
             throw $this->refused();
         }
 
+        $code = $validated['code'] ?? null;
+
         if (! $operator->hasTwoFactor()) {
-            return response()->json(['data' => [
-                'two_factor' => 'enrolment_required',
-                'token' => $this->token($operator, self::ABILITY_ENROL, now()->addMinutes(self::ENROL_TOKEN_MINUTES)),
-            ]]);
-        }
+            if ($code === null) {
+                $this->signInCodes->send($operator);
 
-        if (($validated['code'] ?? null) === null) {
-            throw ValidationException::withMessages([
-                'code' => 'Enter the code from your authenticator app, or a recovery code.',
-            ]);
-        }
+                throw ValidationException::withMessages([
+                    'code' => 'We have emailed you a sign-in code. Enter it to finish signing in.',
+                ]);
+            }
 
-        $method = $this->twoFactor->verify($operator, $validated['code']);
+            if (! $this->signInCodes->verify($operator, $code)) {
+                throw $this->refused();
+            }
 
-        if ($method === null) {
-            throw $this->refused();
+            $method = 'email';
+        } else {
+            if ($code === null) {
+                throw ValidationException::withMessages([
+                    'code' => 'Enter the code from your authenticator app, or a recovery code.',
+                ]);
+            }
+
+            $method = $this->twoFactor->verify($operator, $code);
+
+            if ($method === null) {
+                throw $this->refused();
+            }
         }
 
         $operator->forceFill(['last_login_at' => now()])->save();
@@ -92,13 +103,10 @@ final class AuthController
 
         $codes = $this->twoFactor->confirmEnrolment($operator, $validated['code']);
 
-        // The enrolment token has done its job; it never becomes a console token.
-        $this->currentToken($request)->delete();
-
         return response()->json(['data' => [
             'recovery_codes' => $codes,
-            'message' => 'Store these somewhere safe. Each works once, and they will not be shown again.',
-            'token' => $this->token($operator, self::ABILITY_CONSOLE, now()->addHours(self::CONSOLE_TOKEN_HOURS)),
+            'message' => 'Store these somewhere safe. Each works once, and they will not be shown again. '
+                .'From now on, sign in with your authenticator app instead of an emailed code.',
         ]]);
     }
 

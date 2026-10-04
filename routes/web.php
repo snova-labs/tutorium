@@ -29,6 +29,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function (): void {
     Route::get('/sign-in', [SessionController::class, 'show'])->name('sign-in');
     Route::post('/sign-in', [SessionController::class, 'store'])->name('sign-in.store');
+    Route::get('/sign-in/code', [SessionController::class, 'showCode'])->name('sign-in.code');
+    Route::post('/sign-in/code', [SessionController::class, 'verifyCode'])
+        ->middleware('throttle:10,1')->name('sign-in.code.verify');
+    Route::post('/sign-in/code/resend', [SessionController::class, 'resendCode'])
+        ->middleware('throttle:5,1')->name('sign-in.code.resend');
 });
 
 Route::middleware(['auth', 'tenant'])->group(function (): void {

@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\SignInCodePolicy;
+use App\Services\SignInCodes;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,11 +17,17 @@ use Illuminate\Validation\ValidationException;
 
 final class AuthController
 {
+    public function __construct(
+        private readonly SignInCodes $signInCodes,
+        private readonly SignInCodePolicy $signInCodePolicy,
+    ) {}
+
     public function login(Request $request, TenantContext $tenancy): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'code' => ['nullable', 'string', 'max:16'],
             'device' => ['nullable', 'string', 'max:60'],
         ]);
 
@@ -46,6 +54,28 @@ final class AuthController
             throw ValidationException::withMessages([
                 'email' => 'Those details do not match an active account.',
             ]);
+        }
+
+        // The second step, for the roles the academy has chosen: sign in again with the same
+        // details plus the code just emailed.
+        if ($this->signInCodePolicy->requiresCode($user)) {
+            $code = $credentials['code'] ?? null;
+
+            if ($code === null) {
+                $this->signInCodes->send($user);
+
+                throw ValidationException::withMessages([
+                    'code' => 'We have emailed you a sign-in code. Enter it to finish signing in.',
+                ]);
+            }
+
+            if (! $this->signInCodes->verify($user, $code)) {
+                RateLimiter::hit($throttleKey, 900);
+
+                throw ValidationException::withMessages([
+                    'code' => 'That code is not right, or it has expired. Sign in again for a new one.',
+                ]);
+            }
         }
 
         RateLimiter::clear($throttleKey);

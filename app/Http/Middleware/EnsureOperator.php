@@ -12,8 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * The control plane's door.
  *
- * Separate from tenant authentication entirely, and closed to any operator who has not completed
- * two-factor setup — this account can reach every customer's data.
+ * Separate from tenant authentication entirely, and closed to any token that was not issued after
+ * a second factor at sign-in — this account can reach every customer's data.
  */
 final class EnsureOperator
 {
@@ -29,8 +29,9 @@ final class EnsureOperator
             abort(403, 'This operator account is disabled.');
         }
 
-        // A token issued before the second factor (enrolment only) never opens the console.
-        if (! $operator->hasTwoFactor() || ! $operator->tokenCan(AuthController::ABILITY_CONSOLE)) {
+        // Console tokens are only issued once a second factor (emailed code, authenticator app or
+        // recovery code) has been proved; nothing else opens the console.
+        if (! $operator->tokenCan(AuthController::ABILITY_CONSOLE)) {
             abort(403, 'Sign in with two-factor authentication before using the console.');
         }
 
