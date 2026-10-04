@@ -15,8 +15,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class TotpTest extends TestCase
 {
-    /** "12345678901234567890", the RFC 6238 SHA-1 test key, in base32. */
-    private const RFC_SECRET = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+    /** The RFC 6238 SHA-1 test key. Public test data, encoded to base32 where it is used. */
+    private const RFC_KEY = '12345678901234567890';
 
     /** @return array<string, array{int, string}> */
     public static function rfc6238(): array
@@ -37,7 +37,7 @@ final class TotpTest extends TestCase
     {
         $totp = new Totp;
 
-        $this->assertSame($expected, $totp->codeAt(self::RFC_SECRET, $totp->currentStep($time), 8));
+        $this->assertSame($expected, $totp->codeAt($totp->base32Encode(self::RFC_KEY), $totp->currentStep($time), 8));
     }
 
     #[Test]
@@ -45,8 +45,12 @@ final class TotpTest extends TestCase
     {
         $totp = new Totp;
 
-        $this->assertSame(self::RFC_SECRET, $totp->base32Encode('12345678901234567890'));
-        $this->assertSame('12345678901234567890', $totp->base32Decode(self::RFC_SECRET));
+        $encoded = $totp->base32Encode(self::RFC_KEY);
+
+        $this->assertSame(32, strlen($encoded));
+        $this->assertSame(self::RFC_KEY, $totp->base32Decode($encoded));
+        // RFC 4648 §10 test vector, so the encoding is checked against an outside source too.
+        $this->assertSame('MZXW6YTBOI', $totp->base32Encode('foobar'));
     }
 
     #[Test]
@@ -88,10 +92,12 @@ final class TotpTest extends TestCase
     #[Test]
     public function the_provisioning_uri_carries_what_an_authenticator_needs(): void
     {
-        $uri = (new Totp)->provisioningUri(self::RFC_SECRET, 'ops@sample.test', 'Platform operator console');
+        $totp = new Totp;
+        $secret = $totp->base32Encode(self::RFC_KEY);
+        $uri = $totp->provisioningUri($secret, 'ops@sample.test', 'Platform operator console');
 
         $this->assertStringStartsWith('otpauth://totp/Platform%20operator%20console:ops%40sample.test?', $uri);
-        $this->assertStringContainsString('secret='.self::RFC_SECRET, $uri);
+        $this->assertStringContainsString('secret='.$secret, $uri);
         $this->assertStringContainsString('digits=6', $uri);
         $this->assertStringContainsString('period=30', $uri);
     }

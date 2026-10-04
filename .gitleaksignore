@@ -1,0 +1,6 @@
+# Findings reviewed and accepted. One fingerprint per line, with the reason above it.
+
+# RFC 6238's published TOTP test key ("12345678901234567890" in base32), used once as a literal in
+# tests/Unit/TotpTest.php to check the implementation against the RFC's test vectors. Public test
+# data, not a credential; the test now derives it at runtime, but this commit keeps the literal.
+2e9cb4bb02e891ea778170d96bd3f10c0f59d646:tests/Unit/TotpTest.php:generic-api-key:19
