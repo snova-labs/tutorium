@@ -40,5 +40,10 @@ return [
         // Reporting
         'reports.include_notes' => true,
         'reports.require_review_before_send' => true,
+
+        // Security
+        // Roles that must enter a code emailed to them at every sign-in. The ones that can see
+        // money or change who has access; an academy can widen it to everyone.
+        'security.sign_in_code_roles' => ['Owner', 'Management', 'Accountant'],
     ],
 ];

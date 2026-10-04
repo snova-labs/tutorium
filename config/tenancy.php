@@ -48,6 +48,7 @@ use App\Models\RubricCriterion;
 use App\Models\SampleDataSet;
 use App\Models\SessionType;
 use App\Models\Setting;
+use App\Models\SignInCode;
 use App\Models\SignupAttempt;
 use App\Models\SubmissionStatus;
 use App\Models\Subscription;
@@ -155,6 +156,9 @@ return [
         Plan::class,
         PlanFeature::class,
         SignupAttempt::class,
+        // Operators have no tenant, and at sign-in no tenant is bound yet. Always reached through
+        // its subject (an operator or a user), never queried bare (SignInCodes).
+        SignInCode::class,
         // A provider's event arrives before we know whose it is. The tenant is read from its
         // payload and every change it causes is applied inside that tenant (WebhookProcessor).
         WebhookEvent::class,

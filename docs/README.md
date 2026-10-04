@@ -24,7 +24,7 @@ invalidates no reference.
 - `generators/` — the scripts that produce them; edit these, then regenerate, so the
   documents stay versioned rather than becoming untracked binaries that drift
 - `adr/` — architecture decision records, dated and numbered
-- `OPERATOR-SIGN-IN.md` — how operators sign in, enrol a second factor and use recovery codes
+- `SIGN-IN.md` — emailed sign-in codes for operators and academy staff, the optional authenticator app and recovery codes
 
 ## Regenerating
 

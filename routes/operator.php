@@ -46,6 +46,10 @@ Route::post('tenants/{tenant}/support-access', [ImpersonationController::class, 
 Route::post('support-access/{impersonation}/end', [ImpersonationController::class, 'end'])
     ->name('operator.impersonation.end');
 
+// Setting up an authenticator app is an optional upgrade from emailed codes, done while signed in.
+Route::post('auth/two-factor/enrol', [AuthController::class, 'enrol'])->name('operator.auth.two-factor.enrol');
+Route::post('auth/two-factor/confirm', [AuthController::class, 'confirm'])
+    ->middleware('throttle:10,1')->name('operator.auth.two-factor.confirm');
 Route::post('auth/two-factor/recovery-codes', [AuthController::class, 'regenerateRecoveryCodes'])
     ->middleware('throttle:10,1')->name('operator.auth.two-factor.recovery-codes');
 Route::post('auth/logout', [AuthController::class, 'logout'])->name('operator.auth.logout');
