@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\HealthController;
+use App\Http\Controllers\Webhook\PaymentWebhookController;
 use App\Http\Middleware\EnsureOperator;
 use App\Http\Middleware\RestrictImpersonatedAccess;
 use App\Support\Tenancy\RequiresTenant;
@@ -17,8 +19,17 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
         then: function () {
+            // Probes sit outside the web group so they never start a session or bind a tenant.
+            Route::get('up', [HealthController::class, 'live'])->name('health.live');
+            Route::get('ready', [HealthController::class, 'ready'])->name('health.ready');
+
+            // The payment provider's callback. Outside both the web group (no session, no CSRF,
+            // no tenant resolution) and the API group: the caller is the provider, not a user, and
+            // the controller verifies the signature before reading anything.
+            Route::post('webhooks/payments', [PaymentWebhookController::class, 'handle'])
+                ->name('webhooks.payments');
+
             Route::middleware(['api', 'auth:operator', 'operator'])
                 ->prefix('operator/v1')
                 ->group(base_path('routes/operator.php'));

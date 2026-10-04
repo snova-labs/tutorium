@@ -26,7 +26,7 @@ final class InvitationController
         $invitation = $this->invitations->preview($token);
 
         $tenant = $this->tenancy->withoutScoping(
-            fn () => Tenant::query()->find($invitation->tenant_id)
+            fn () => Tenant::query()->find($invitation->tenant_id),
         );
 
         return response()->json([

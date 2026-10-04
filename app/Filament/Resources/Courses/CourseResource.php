@@ -6,18 +6,20 @@ namespace App\Filament\Resources\Courses;
 
 use App\Enums\PeriodType;
 use App\Filament\Resources\Courses\Pages\ListCourses;
+use App\Models\Brand;
 use App\Models\Course;
 use App\Services\CourseService;
 use App\Support\Terminology\Terminology;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -32,7 +34,7 @@ final class CourseResource extends Resource
 {
     protected static ?string $model = Course::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
     protected static ?int $navigationSort = 20;
 
@@ -63,7 +65,7 @@ final class CourseResource extends Resource
                         ->label('Brand')
                         ->relationship('brand', 'name')
                         ->required()
-                        ->default(fn () => \App\Models\Brand::query()->where('is_default', true)->value('id')),
+                        ->default(fn () => Brand::query()->where('is_default', true)->value('id')),
 
                     TextInput::make('code')->required()->maxLength(32),
 
@@ -141,7 +143,7 @@ final class CourseResource extends Resource
             ->recordActions([EditAction::make()->using(
                 // Through the service, so the refusal to change the period type
                 // after reporting applies here too.
-                fn (Course $record, array $data): Course => app(CourseService::class)->update($record, $data)
+                fn (Course $record, array $data): Course => app(CourseService::class)->update($record, $data),
             )])
             ->headerActions([CreateAction::make()])
             ->defaultSort('name');

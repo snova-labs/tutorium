@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Learners\Pages;
 
 use App\Filament\Resources\Learners\LearnerResource;
 use App\Services\LearnerService;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ final class EditLearner extends EditRecord
 {
     protected static string $resource = LearnerResource::class;
 
-    /** @return array<int, \Filament\Actions\Action> */
+    /** @return array<int, Action> */
     protected function getHeaderActions(): array
     {
         return [

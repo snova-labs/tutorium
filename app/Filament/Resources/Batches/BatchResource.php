@@ -9,6 +9,7 @@ use App\Enums\DeliveryMode;
 use App\Filament\Resources\Batches\Pages\EditBatch;
 use App\Filament\Resources\Batches\Pages\ListBatches;
 use App\Models\Batch;
+use App\Models\Branch;
 use App\Support\Terminology\Terminology;
 use App\Support\Time\SessionGenerator;
 use Carbon\CarbonImmutable;
@@ -21,10 +22,9 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Support\Icons\Heroicon;
-
 
 /**
  * Batches.
@@ -36,7 +36,6 @@ use Filament\Support\Icons\Heroicon;
 final class BatchResource extends Resource
 {
     protected static ?string $model = Batch::class;
-
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
 
@@ -80,7 +79,7 @@ final class BatchResource extends Resource
                             // A batch left without an explicit timezone follows its
                             // branch. Defaulting to UTC instead would schedule every
                             // session at the wrong hour and look correct doing it.
-                            $branch = \App\Models\Branch::query()->find($state);
+                            $branch = Branch::query()->find($state);
 
                             if ($branch !== null) {
                                 $set('timezone', $branch->timezone);

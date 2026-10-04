@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Billing;
 
 use App\Models\Invoice;
-use App\Models\PaymentEvent;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\WebhookEvent;
 use App\Services\TenantProvisioner;
 use App\Services\WebhookProcessor;
 use App\Support\Tenancy\TenantContext;
@@ -89,7 +89,7 @@ final class WebhookTest extends TestCase
         app(WebhookProcessor::class)->process($second);
 
         $this->assertTrue($first->is($second));
-        $this->assertSame(1, PaymentEvent::query()->count());
+        $this->assertSame(1, WebhookEvent::query()->count());
     }
 
     #[Test]
@@ -128,9 +128,60 @@ final class WebhookTest extends TestCase
     public function an_unverifiable_webhook_is_rejected_at_the_door(): void
     {
         $this->postJson('/webhooks/payments', ['id' => 'evt_forged', 'type' => 'payment_intent.succeeded'])
-            ->assertStatus(400);
+            ->assertUnauthorized();
 
-        $this->assertSame(0, PaymentEvent::query()->count());
+        $this->assertSame(0, WebhookEvent::query()->count());
+    }
+
+    #[Test]
+    public function a_payment_settles_only_the_invoice_in_the_tenant_it_names(): void
+    {
+        // Every tenant numbers its own invoices, so the same number exists in other accounts.
+        $other = app(TenantProvisioner::class)->provision([
+            'name' => 'Other Academy',
+            'owner_name' => 'Other Owner',
+            'owner_email' => 'owner@other.test',
+            'password' => 'a-long-enough-password',
+            'timezone' => 'Asia/Kathmandu',
+            'preset_code' => 'blank',
+        ])['tenant'];
+
+        app(TenantContext::class)->runAs($other, function (): void {
+            Invoice::query()->create([
+                'number' => 'INV-00042',
+                'period_start' => now()->startOfMonth()->toDateString(),
+                'period_end' => now()->endOfMonth()->toDateString(),
+                'quantity' => 10, 'currency' => 'EUR', 'unit_price_minor' => 200,
+                'subtotal_minor' => 2_000, 'total_minor' => 2_000,
+                'status' => Invoice::ISSUED, 'issued_at' => now(),
+            ]);
+        });
+
+        $event = app(WebhookProcessor::class)->record('stripe', $this->successEvent('evt_1'));
+        app(WebhookProcessor::class)->process($event);
+
+        app(TenantContext::class)->runAs($this->tenant, function (): void {
+            $this->assertSame(Invoice::PAID, Invoice::query()->first()->status);
+        });
+
+        app(TenantContext::class)->runAs($other, function (): void {
+            $this->assertSame(Invoice::ISSUED, Invoice::query()->first()->status);
+        });
+    }
+
+    #[Test]
+    public function an_event_without_a_tenant_is_acknowledged_and_ignored(): void
+    {
+        $payload = $this->successEvent('evt_1');
+        unset($payload['data']['object']['metadata']['tenant_id']);
+
+        $event = app(WebhookProcessor::class)->record('stripe', $payload);
+
+        $this->assertTrue(app(WebhookProcessor::class)->process($event));
+
+        app(TenantContext::class)->runAs($this->tenant, function (): void {
+            $this->assertSame(Invoice::ISSUED, Invoice::query()->first()->status);
+        });
     }
 
     /** @return array<string, mixed> */
@@ -141,7 +192,10 @@ final class WebhookTest extends TestCase
             'type' => 'payment_intent.succeeded',
             'data' => ['object' => [
                 'id' => 'pi_test_123',
-                'metadata' => ['invoice_number' => 'INV-00042'],
+                'metadata' => [
+                    'invoice_number' => 'INV-00042',
+                    'tenant_id' => (string) $this->tenant->getKey(),
+                ],
             ]],
         ];
     }

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\SessionController;
-use App\Http\Controllers\HealthController;
 use App\Livewire\Attendance\Register;
 use App\Livewire\Gradebook\Grid;
 use App\Livewire\Today;
@@ -26,9 +25,6 @@ use Illuminate\Support\Facades\Route;
 | what somebody touches every day.
 |
 */
-
-Route::get('/up', [HealthController::class, 'live'])->name('health.live');
-Route::get('/ready', [HealthController::class, 'ready'])->name('health.ready');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/sign-in', [SessionController::class, 'show'])->name('sign-in');

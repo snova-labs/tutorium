@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Invitations;
 
 use App\Filament\Resources\Invitations\Pages\ListInvitations;
+use App\Models\Branch;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Services\InvitationService;
@@ -18,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Spatie\Permission\Models\Role;
@@ -34,7 +36,7 @@ final class InvitationResource extends Resource
 {
     protected static ?string $model = Invitation::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-envelope';
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
     protected static ?string $navigationLabel = 'Invitations';
 
@@ -76,7 +78,7 @@ final class InvitationResource extends Resource
 
                     CheckboxList::make('branch_ids')
                         ->label('Locations')
-                        ->options(fn () => \App\Models\Branch::query()
+                        ->options(fn () => Branch::query()
                             ->where('is_active', true)->pluck('name', 'id'))
                         ->columns(2)
                         ->visible(fn ($get): bool => ! $get('scope_all_branches')),

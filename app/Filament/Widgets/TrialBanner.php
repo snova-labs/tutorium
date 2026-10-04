@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Models\Tenant;
 use App\Services\TrialService;
 use App\Support\Tenancy\TenantContext;
 use Filament\Widgets\Widget;
@@ -26,7 +27,7 @@ final class TrialBanner extends Widget
     {
         $tenant = app(TenantContext::class)->get();
 
-        return $tenant !== null && $tenant->status === \App\Models\Tenant::STATUS_TRIAL;
+        return $tenant !== null && $tenant->status === Tenant::STATUS_TRIAL;
     }
 
     /** @return array<string, mixed> */

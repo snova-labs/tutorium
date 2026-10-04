@@ -206,7 +206,13 @@ final class DunningService
         ]);
     }
 
-    private function setTenantStatus(Tenant $tenant, string $status, string $reason): void
+    /**
+     * Move the account between billing states, with the reason in the customer's own activity log.
+     *
+     * Public so a payment that arrives by webhook restores an account the same way a successful
+     * retry does.
+     */
+    public function setTenantStatus(Tenant $tenant, string $status, string $reason): void
     {
         $from = $tenant->status;
 

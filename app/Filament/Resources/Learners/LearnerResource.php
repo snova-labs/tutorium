@@ -9,22 +9,23 @@ use App\Filament\Resources\Learners\Pages\EditLearner;
 use App\Filament\Resources\Learners\Pages\ListLearners;
 use App\Models\Learner;
 use App\Models\LearnerStatus;
+use App\Support\Settings\SettingsResolver;
 use App\Support\Terminology\Terminology;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Learners.
@@ -40,7 +41,7 @@ final class LearnerResource extends Resource
     // protected static ?string $navigationIcon = 'heroicon-o-users';
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
-    
+
     protected static ?int $navigationSort = 10;
 
     public static function getModelLabel(): string
@@ -150,7 +151,7 @@ final class LearnerResource extends Resource
                     // Hidden entirely when the account has switched guardians off,
                     // rather than showing an empty column for a concept they do
                     // not use.
-                    ->visible(fn () => (bool) app(\App\Support\Settings\SettingsResolver::class)
+                    ->visible(fn () => (bool) app(SettingsResolver::class)
                         ->get('people.guardians_enabled', null, true)),
 
                 TextColumn::make('enrollments_count')

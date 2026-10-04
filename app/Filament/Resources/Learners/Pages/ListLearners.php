@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Learners\Pages;
 
 use App\Filament\Resources\Learners\LearnerResource;
 use App\Support\Terminology\Terminology;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
@@ -13,7 +14,7 @@ final class ListLearners extends ListRecords
 {
     protected static string $resource = LearnerResource::class;
 
-    /** @return array<int, \Filament\Actions\Action> */
+    /** @return array<int, Action> */
     protected function getHeaderActions(): array
     {
         return [

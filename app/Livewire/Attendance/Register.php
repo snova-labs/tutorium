@@ -8,7 +8,9 @@ use App\Models\AttendanceStatus;
 use App\Models\ClassSession;
 use App\Services\AttendanceService;
 use App\Support\Attendance\AttendancePolicyResolver;
+use App\Support\Attendance\ResolvedAttendancePolicy;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -79,15 +81,15 @@ final class Register extends Component
         return app(AttendanceService::class)->roster($this->session())->all();
     }
 
-    /** @return \Illuminate\Support\Collection<int, AttendanceStatus> */
+    /** @return Collection<int, AttendanceStatus> */
     #[Computed(persist: true)]
-    public function statuses(): \Illuminate\Support\Collection
+    public function statuses(): Collection
     {
         return AttendanceStatus::query()->where('is_active', true)->orderBy('sort')->get();
     }
 
     #[Computed(persist: true)]
-    public function policy(): \App\Support\Attendance\ResolvedAttendancePolicy
+    public function policy(): ResolvedAttendancePolicy
     {
         return app(AttendancePolicyResolver::class)->for($this->session()->batch);
     }
