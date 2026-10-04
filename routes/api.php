@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\EnrollmentController;
 use App\Http\Controllers\Api\V1\GradeBookController;
 use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\NoteController;
@@ -107,6 +108,16 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.learners.guardians.detach');
         Route::put('learners/{learner}/guardians/{guardian}/recipient', [GuardianController::class, 'setRecipient'])
             ->name('api.learners.guardians.recipient');
+
+        // Spreadsheet import: checked first, written only on commit.
+        Route::get('imports/learners/template', [ImportController::class, 'template'])
+            ->name('api.imports.template');
+        Route::post('imports/learners', [ImportController::class, 'preview'])
+            ->middleware('throttle:20,1')->name('api.imports.preview');
+        Route::get('imports/{import}', [ImportController::class, 'show'])->name('api.imports.show');
+        Route::get('imports/{import}/rejects', [ImportController::class, 'rejects'])->name('api.imports.rejects');
+        Route::post('imports/{import}/commit', [ImportController::class, 'commit'])->name('api.imports.commit');
+        Route::delete('imports/{import}', [ImportController::class, 'discard'])->name('api.imports.discard');
 
         // Enrollment. No destroy route by design — an enrollment is withdrawn, never deleted,
         // because the record that someone attended for six weeks is what the reports were built on.
