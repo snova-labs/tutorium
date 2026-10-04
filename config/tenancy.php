@@ -26,6 +26,7 @@ use App\Models\Guardian;
 use App\Models\Holiday;
 use App\Models\IdSequence;
 use App\Models\Impersonation;
+use App\Models\Import;
 use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
@@ -103,6 +104,7 @@ return [
 
         // People
         Learner::class,
+        Import::class,
         Guardian::class,
         Enrollment::class,
         EnrollmentStatusHistory::class,
