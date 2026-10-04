@@ -7,9 +7,12 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\Operator;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Moving an account between states.
@@ -57,6 +60,43 @@ final class TenantLifecycleService
      * must have passed, an export must already exist, and the caller must type the account's slug.
      * Everything about this operation should feel like it is trying to talk you out of it.
      */
+    /**
+     * Remove every row the tenant owns before the tenant itself.
+     *
+     * The organisation tables restrict deleting their tenant, and other tables restrict deleting
+     * those (a batch holds on to its branch), so no single delete order cascades cleanly. The rows
+     * go with foreign-key checks off, then the tenant row goes with them on, so the audit log's
+     * nullOnDelete still fires. Audit rows are never deleted: production revokes that right.
+     */
+    private function deleteTenantRows(Tenant $tenant): void
+    {
+        $tenantId = $tenant->getKey();
+        $teamColumn = app(PermissionRegistrar::class)->teamsKey;
+
+        Schema::withoutForeignKeyConstraints(function () use ($tenantId, $teamColumn): void {
+            $userIds = DB::table('users')->where('tenant_id', $tenantId)->pluck('id');
+
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $userIds)
+                ->delete();
+
+            foreach (Schema::getTableListing(schemaQualified: false) as $table) {
+                if (in_array($table, ['tenants', 'audit_logs'], true)) {
+                    continue;
+                }
+
+                $columns = Schema::getColumnListing($table);
+
+                foreach (['tenant_id', $teamColumn] as $column) {
+                    if (in_array($column, $columns, true)) {
+                        DB::table($table)->where($column, $tenantId)->delete();
+                    }
+                }
+            }
+        });
+    }
+
     public function purge(Tenant $tenant, Operator $operator, string $confirmation, bool $exportExists): Tenant
     {
         if ($tenant->status !== Tenant::STATUS_CANCELLED) {
@@ -102,6 +142,7 @@ final class TenantLifecycleService
                 ]);
 
                 $tenant->update(['status' => Tenant::STATUS_PURGED]);
+                $this->deleteTenantRows($tenant);
                 $tenant->forceDelete();
             });
 

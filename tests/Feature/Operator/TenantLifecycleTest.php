@@ -93,7 +93,9 @@ final class TenantLifecycleTest extends TestCase
 
         $this->assertSame(Tenant::STATUS_CANCELLED, $cancelled->status);
         $this->assertTrue($cancelled->purge_after->isFuture());
-        $this->assertSame(30, (int) now()->diffInDays($cancelled->purge_after));
+        // Compared as dates: purge_after is stored to the second, so an exact day count from a
+        // now() with microseconds comes out a fraction short of 30.
+        $this->assertSame(now()->addDays(30)->toDateString(), $cancelled->purge_after->toDateString());
     }
 
     #[Test]

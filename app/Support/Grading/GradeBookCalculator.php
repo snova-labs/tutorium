@@ -68,8 +68,9 @@ final class GradeBookCalculator
                 continue;
             }
 
-            if (! $grade->submissionStatus->counts_as_submitted && $grade->normalized_pct === null) {
-                // Missing work is a zero, not an absence of information.
+            if (! $grade->submissionStatus->counts_as_submitted) {
+                // Missing work is a zero, not an absence of information. Counted by its status,
+                // because the grade book may already have stored the zero as a score.
                 $byType[$typeId]['values'][] = 0.0;
                 $missing++;
 

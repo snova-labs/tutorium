@@ -128,7 +128,8 @@ final class PresetApplicationTest extends TestCase
 
         app(TenantContext::class)->runAs($this->tenant, function (): void {
             // The customer decides late arrivals get twenty minutes, not ten.
-            Setting::query()->where('key', 'attendance.late_grace_minutes')->update(['value' => 20]);
+            // Through the model, as the settings screen does: the value column is JSON.
+            Setting::query()->where('key', 'attendance.late_grace_minutes')->first()->update(['value' => 20]);
             AttendanceStatus::query()->where('code', 'LATE')->update(['name' => 'Arrived late']);
         });
 
@@ -136,7 +137,7 @@ final class PresetApplicationTest extends TestCase
 
         app(TenantContext::class)->runAs($this->tenant, function (): void {
             // A starting point that overwrites your work is not a starting point.
-            $this->assertSame(20, Setting::query()->where('key', 'attendance.late_grace_minutes')->value('value'));
+            $this->assertSame(20, Setting::query()->where('key', 'attendance.late_grace_minutes')->first()->value);
             $this->assertSame('Arrived late', AttendanceStatus::query()->where('code', 'LATE')->value('name'));
             $this->assertSame(1, AttendanceStatus::query()->where('code', 'LATE')->count());
         });
