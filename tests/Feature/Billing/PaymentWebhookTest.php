@@ -127,6 +127,30 @@ final class PaymentWebhookTest extends TestCase
     }
 
     #[Test]
+    public function a_setup_intent_after_the_card_arrives_does_not_blank_its_summary(): void
+    {
+        $this->send([
+            'id' => 'evt_method',
+            'type' => 'payment_method.attached',
+            'data' => ['object' => [
+                'customer' => 'fake_cus_1',
+                'card' => ['brand' => 'Visa', 'last4' => '4242', 'exp_month' => 9, 'exp_year' => 2029],
+            ]],
+        ])->assertOk();
+
+        // A setup intent names the payment method by id only; it carries no card.
+        $this->send([
+            'id' => 'evt_setup',
+            'type' => 'setup_intent.succeeded',
+            'data' => ['object' => ['customer' => 'fake_cus_1', 'payment_method' => 'pm_1']],
+        ])->assertOk();
+
+        app(TenantContext::class)->runAs($this->tenant, function (): void {
+            $this->assertSame('Visa •••• 4242, expires 09/2029', BillingProfile::query()->first()?->methodSummary());
+        });
+    }
+
+    #[Test]
     public function an_event_for_an_unknown_invoice_is_acknowledged_and_ignored(): void
     {
         $event = $this->paidEvent();

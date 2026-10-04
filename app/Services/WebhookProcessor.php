@@ -131,12 +131,18 @@ final class WebhookProcessor
             return;
         }
 
-        $card = $object['card'] ?? [];
+        $card = $object['card'] ?? null;
+
+        // A setup intent names the payment method by id and carries no card details. Writing from
+        // it would blank the summary the attached-method event is about to fill in.
+        if (! is_array($card) || ($card['last4'] ?? null) === null) {
+            return;
+        }
 
         $this->tenancy->withoutScoping(fn () => $profile->update([
             'method_brand' => $card['brand'] ?? null,
             // Only ever the last four and the expiry, so a customer can recognise their own card.
-            'method_last_four' => $card['last4'] ?? null,
+            'method_last_four' => $card['last4'],
             'method_exp_month' => $card['exp_month'] ?? null,
             'method_exp_year' => $card['exp_year'] ?? null,
         ]));

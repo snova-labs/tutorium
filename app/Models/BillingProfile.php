@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Support\Audit\Auditable;
 use App\Support\Tenancy\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\BillingProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,28 @@ final class BillingProfile extends Model
         return $this->method_last_four !== null;
     }
 
+    /** Cards are valid to the end of their expiry month. */
+    public function methodExpired(): bool
+    {
+        $end = $this->methodExpiresAt();
+
+        return $end !== null && $end->isPast();
+    }
+
+    /** Within a month of expiring, so there is time to replace it before a charge fails. */
+    public function methodExpiresSoon(): bool
+    {
+        $end = $this->methodExpiresAt();
+
+        return $end !== null && ! $end->isPast() && $end->lte(now()->addMonth());
+    }
+
+    /** A card that could be charged today. */
+    public function hasUsablePaymentMethod(): bool
+    {
+        return $this->hasPaymentMethod() && ! $this->methodExpired();
+    }
+
     public function methodSummary(): ?string
     {
         return $this->hasPaymentMethod()
@@ -48,6 +71,15 @@ final class BillingProfile extends Model
                 $this->method_exp_year,
             )
             : null;
+    }
+
+    private function methodExpiresAt(): ?CarbonImmutable
+    {
+        if (! $this->hasPaymentMethod() || $this->method_exp_month === null || $this->method_exp_year === null) {
+            return null;
+        }
+
+        return CarbonImmutable::create((int) $this->method_exp_year, (int) $this->method_exp_month, 1)?->endOfMonth();
     }
 
     public function auditModule(): string

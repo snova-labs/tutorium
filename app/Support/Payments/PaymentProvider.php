@@ -31,5 +31,11 @@ interface PaymentProvider
     /** Verify a webhook actually came from the provider. */
     public function verifyWebhook(string $payload, string $signature): bool;
 
+    /**
+     * Whether this provider takes payment by itself (a card on file). False means every invoice
+     * is paid by transfer, so a card cannot be added or chosen.
+     */
+    public function collectsAutomatically(): bool;
+
     public function name(): string;
 }

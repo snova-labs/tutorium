@@ -79,6 +79,11 @@ final class FakePaymentProvider implements PaymentProvider
         return $signature === 'valid-signature';
     }
 
+    public function collectsAutomatically(): bool
+    {
+        return true;
+    }
+
     public function name(): string
     {
         return 'fake';

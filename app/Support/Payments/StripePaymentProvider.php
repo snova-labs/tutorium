@@ -126,7 +126,7 @@ final class StripePaymentProvider implements PaymentProvider
                 ]);
             }
 
-            $paid = $this->stripe->invoices->pay($stripeInvoice->id);
+            $paid = $this->stripe->invoices->pay($stripeInvoice->id, $this->paymentMethodFor($profile->customer_ref));
 
             return $paid->status === 'paid'
                 ? PaymentResult::succeeded($this->name(), $paid->id)
@@ -144,6 +144,30 @@ final class StripePaymentProvider implements PaymentProvider
         }
     }
 
+    /**
+     * A card added through setup-mode checkout is attached to the customer but not made their
+     * default, and paying an invoice with no default fails. Use the customer's default when one is
+     * set (the portal sets it), otherwise their most recently added card.
+     *
+     * @return array{payment_method?: string}
+     */
+    private function paymentMethodFor(string $customerRef): array
+    {
+        $customer = $this->stripe->customers->retrieve($customerRef);
+
+        if (($customer->invoice_settings->default_payment_method ?? null) !== null) {
+            return [];
+        }
+
+        $latest = $this->stripe->paymentMethods->all([
+            'customer' => $customerRef,
+            'type' => 'card',
+            'limit' => 1,
+        ])->first();
+
+        return $latest === null ? [] : ['payment_method' => $latest->id];
+    }
+
     public function verifyWebhook(string $payload, string $signature): bool
     {
         try {
@@ -154,6 +178,11 @@ final class StripePaymentProvider implements PaymentProvider
             // A failed signature is an unauthenticated request, not an error worth detail.
             return false;
         }
+    }
+
+    public function collectsAutomatically(): bool
+    {
+        return true;
     }
 
     public function name(): string
