@@ -48,6 +48,11 @@ final class ManualPaymentProvider implements PaymentProvider
         return false;
     }
 
+    public function collectsAutomatically(): bool
+    {
+        return false;
+    }
+
     public function name(): string
     {
         return 'manual';

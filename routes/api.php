@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
+use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CourseController;
@@ -54,7 +55,21 @@ Route::prefix('v1')->group(function (): void {
             ->name('public.invitations.accept');
     });
 
+    // Billing. Its own group so that an account made read-only for non-payment can still see what
+    // it owes and fix how it pays. Support access never reaches these (RestrictImpersonatedAccess).
+    Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant:billing'])->group(function (): void {
+        Route::get('billing', [BillingController::class, 'show'])->name('api.billing.show');
+        Route::put('billing/details', [BillingController::class, 'updateDetails'])->name('api.billing.details');
+        Route::post('billing/payment-method', [BillingController::class, 'paymentMethodLink'])
+            ->middleware('throttle:10,1')->name('api.billing.payment-method');
+        Route::put('billing/collection', [BillingController::class, 'setCollection'])
+            ->name('api.billing.collection');
+    });
+
     Route::middleware(['auth:sanctum', 'tenant.resolve', 'tenant'])->group(function (): void {
+
+        Route::post('billing/plan', [BillingController::class, 'changePlan'])->name('api.billing.plan');
+        Route::post('billing/cancel', [BillingController::class, 'cancel'])->name('api.billing.cancel');
 
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
         Route::get('me', [AuthController::class, 'me'])->name('api.me');

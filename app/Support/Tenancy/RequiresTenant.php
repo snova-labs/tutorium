@@ -14,12 +14,15 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * The rule this encodes: non-payment restricts service, never access to one's own data. A
  * suspended tenant keeps reading and exporting; it stops writing.
+ *
+ * Except for paying: routes marked `tenant:billing` stay writable, because an account made
+ * read-only for non-payment must still be able to add a card or switch to invoicing.
  */
 final class RequiresTenant
 {
     public function __construct(private readonly TenantContext $context) {}
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ?string $exemption = null): Response
     {
         $tenant = $this->context->get();
 
@@ -27,7 +30,7 @@ final class RequiresTenant
             abort(403, 'No tenant context.');
         }
 
-        if ($tenant->isSuspended() && ! $request->isMethodSafe()) {
+        if ($tenant->isSuspended() && ! $request->isMethodSafe() && $exemption !== 'billing') {
             abort(423, 'This account is read-only. Your data remains available for export.');
         }
 
