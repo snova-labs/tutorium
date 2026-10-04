@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\Operator\AuthController as OperatorAuthController;
 use App\Http\Controllers\Webhook\PaymentWebhookController;
 use App\Http\Middleware\EnsureOperator;
 use App\Http\Middleware\PreserveFloatTypes;
@@ -15,6 +16,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,6 +33,21 @@ return Application::configure(basePath: dirname(__DIR__))
             // the controller verifies the signature before reading anything.
             Route::post('webhooks/payments', [PaymentWebhookController::class, 'handle'])
                 ->name('webhooks.payments');
+
+            // Operator sign-in and two-factor enrolment come before the console guard: the first
+            // has no token yet, the second holds only an enrolment token.
+            Route::middleware('api')->prefix('operator/v1/auth')->group(function (): void {
+                Route::post('login', [OperatorAuthController::class, 'login'])
+                    ->middleware('throttle:10,1')->name('operator.auth.login');
+
+                Route::middleware(['auth:operator', 'abilities:'.OperatorAuthController::ABILITY_ENROL])
+                    ->group(function (): void {
+                        Route::post('two-factor/enrol', [OperatorAuthController::class, 'enrol'])
+                            ->name('operator.auth.two-factor.enrol');
+                        Route::post('two-factor/confirm', [OperatorAuthController::class, 'confirm'])
+                            ->middleware('throttle:10,1')->name('operator.auth.two-factor.confirm');
+                    });
+            });
 
             Route::middleware(['api', 'auth:operator', 'operator'])
                 ->prefix('operator/v1')
@@ -49,6 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.resolve' => ResolveTenant::class,
             'tenant' => RequiresTenant::class,
             'operator' => EnsureOperator::class,
+            'abilities' => CheckAbilities::class,
         ]);
         $middleware->api(append: [RestrictImpersonatedAccess::class, PreserveFloatTypes::class]);
 

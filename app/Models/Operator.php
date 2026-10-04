@@ -24,17 +24,22 @@ final class Operator extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'password', 'two_factor_secret',
-        'two_factor_confirmed_at', 'is_active', 'last_login_at',
+        'name', 'email', 'password', 'two_factor_secret', 'two_factor_confirmed_at',
+        'two_factor_recovery_codes', 'two_factor_last_step', 'is_active', 'last_login_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
+            // Encrypted at rest: the secret is a standing way to produce valid codes.
+            'two_factor_secret' => 'encrypted',
             'two_factor_confirmed_at' => 'immutable_datetime',
+            // Hashes only, never the codes themselves.
+            'two_factor_recovery_codes' => 'array',
+            'two_factor_last_step' => 'integer',
             'last_login_at' => 'immutable_datetime',
             'is_active' => 'boolean',
         ];

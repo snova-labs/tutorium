@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Operator\AuthController;
 use App\Http\Controllers\Operator\ImpersonationController;
 use App\Http\Controllers\Operator\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -44,3 +45,7 @@ Route::post('tenants/{tenant}/support-access', [ImpersonationController::class, 
     ->name('operator.impersonation.start');
 Route::post('support-access/{impersonation}/end', [ImpersonationController::class, 'end'])
     ->name('operator.impersonation.end');
+
+Route::post('auth/two-factor/recovery-codes', [AuthController::class, 'regenerateRecoveryCodes'])
+    ->middleware('throttle:10,1')->name('operator.auth.two-factor.recovery-codes');
+Route::post('auth/logout', [AuthController::class, 'logout'])->name('operator.auth.logout');
