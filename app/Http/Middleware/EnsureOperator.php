@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Operator\AuthController;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,8 +29,9 @@ final class EnsureOperator
             abort(403, 'This operator account is disabled.');
         }
 
-        if (! $operator->hasTwoFactor()) {
-            abort(403, 'Set up two-factor authentication before using the console.');
+        // A token issued before the second factor (enrolment only) never opens the console.
+        if (! $operator->hasTwoFactor() || ! $operator->tokenCan(AuthController::ABILITY_CONSOLE)) {
+            abort(403, 'Sign in with two-factor authentication before using the console.');
         }
 
         return $next($request);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Operator;
+use App\Support\Security\Totp;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 
@@ -20,8 +21,9 @@ final class OperatorFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'password' => Hash::make('password'),
             // Two-factor confirmed by default, because an operator without it cannot sign in and
-            // most tests are not about that rule.
-            'two_factor_secret' => encrypt('SAMPLESECRET'),
+            // most tests are not about that rule. A real secret, so tests can compute real codes;
+            // the model's cast encrypts it.
+            'two_factor_secret' => app(Totp::class)->generateSecret(),
             'two_factor_confirmed_at' => now(),
             'is_active' => true,
         ];
@@ -29,6 +31,10 @@ final class OperatorFactory extends Factory
 
     public function withoutTwoFactor(): self
     {
-        return $this->state(fn () => ['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+        return $this->state(fn () => [
+            'two_factor_secret' => null,
+            'two_factor_confirmed_at' => null,
+            'two_factor_recovery_codes' => null,
+        ]);
     }
 }
