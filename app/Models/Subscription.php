@@ -22,8 +22,8 @@ final class Subscription extends Model
     public const CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'tenant_id', 'plan_id', 'provider', 'provider_ref', 'status',
-        'current_period_start', 'current_period_end', 'cancel_at_period_end', 'cancelled_at',
+        'tenant_id', 'plan_id', 'pending_plan_id', 'pending_plan_starts_on', 'provider', 'provider_ref', 'status',
+        'current_period_start', 'current_period_end', 'cancel_at_period_end', 'cancelled_at', 'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -31,6 +31,7 @@ final class Subscription extends Model
         return [
             'current_period_start' => 'immutable_date',
             'current_period_end' => 'immutable_date',
+            'pending_plan_starts_on' => 'immutable_date',
             'cancel_at_period_end' => 'boolean',
             'cancelled_at' => 'immutable_datetime',
         ];
@@ -39,6 +40,11 @@ final class Subscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function pendingPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'pending_plan_id');
     }
 
     /** Past due still counts: service continues while we try to collect (SL-BIL-006 §6). */

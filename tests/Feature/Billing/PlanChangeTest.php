@@ -176,7 +176,10 @@ final class PlanChangeTest extends TestCase
             CarbonImmutable::parse('2026-08-31'),
         );
 
-        $lines = $invoice->lines()->orderBy('sort')->get();
+        $lines = app(TenantContext::class)->runAs(
+            $this->tenant,
+            fn () => $invoice->lines()->orderBy('sort')->get(),
+        );
 
         //   1–14 Aug on Starter:  peak 10 × €1.00 = €10.00
         //  15–31 Aug on Growth:   peak 12 × €2.00 = €24.00

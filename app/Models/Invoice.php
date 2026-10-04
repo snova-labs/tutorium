@@ -8,6 +8,7 @@ use App\Support\Tenancy\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A bill, with its own reasoning attached.
@@ -55,6 +56,12 @@ final class Invoice extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    /** One line per metered segment; more than one when the plan changed inside the period. */
+    public function lines(): HasMany
+    {
+        return $this->hasMany(InvoiceLine::class);
     }
 
     /** Issued invoices are immutable; a change is a credit note, never an edit. */
