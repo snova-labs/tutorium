@@ -1,0 +1,83 @@
+name: Images
+
+# Builds the deployable images once CI has passed on main, and tags them "staging".
+# The staging stack in Portainer runs ...:staging; production runs ...:production, which only the
+# "Promote to production" workflow moves (to an image staging has already run).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.image }} (linux/arm64)
+    # Only after a green CI run on a push to main (not on a PR run that happens to target main).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    # Emulated ARM on the standard runner by default. If native ARM runners are available to this
+    # repository, set the repository variable IMAGE_RUNNER=ubuntu-24.04-arm for much faster builds.
+    runs-on: ${{ vars.IMAGE_RUNNER || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            context: .
+            file: deploy/docker/api.Dockerfile
+          - image: web
+            context: web
+            file: deploy/docker/web.Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Image name and tags
+        id: meta
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          name="ghcr.io/${OWNER,,}/tutorium-${{ matrix.image }}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "tags=${name}:staging,${name}:sha-${SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      - name: Summary
+        run: |
+          echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${{ steps.meta.outputs.tags }}\`" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"

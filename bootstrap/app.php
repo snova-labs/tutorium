@@ -8,6 +8,7 @@ use App\Http\Controllers\Webhook\PaymentWebhookController;
 use App\Http\Middleware\EnsureOperator;
 use App\Http\Middleware\PreserveFloatTypes;
 use App\Http\Middleware\RestrictImpersonatedAccess;
+use App\Support\Http\TrustedProxies;
 use App\Support\Tenancy\RequiresTenant;
 use App\Support\Tenancy\ResolveTenant;
 use App\Support\Tenancy\TenancyException;
@@ -45,6 +46,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind a tunnel or reverse proxy, which addresses may report the client and the scheme.
+        $middleware->trustProxies(at: TrustedProxies::parse(env('TRUSTED_PROXIES')));
+
         // On the web the session has already resolved the user by the time this runs, so the
         // tenant can be bound for the whole group.
         $middleware->web(append: [ResolveTenant::class]);

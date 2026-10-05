@@ -82,8 +82,10 @@ services:
     networks: [platform]
 
   # S3-compatible object storage. Same driver as production.
-  minio:
-    image: minio/minio:latest
+  # Silo is Pigsty's maintained fork of the MinIO server: upstream MinIO no longer publishes
+  # community images. Same S3 API, MINIO_* variables, `mc` client and on-disk format.
+  silo:
+    image: pgsty/silo:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: platform
@@ -92,16 +94,16 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio-data:/data
+      - silo-data:/data
     networks: [platform]
 
   # Creates the bucket once, then exits.
-  minio-init:
-    image: minio/mc:latest
-    depends_on: [minio]
+  silo-init:
+    image: pgsty/mc:latest
+    depends_on: [silo]
     entrypoint: >
       /bin/sh -c "
-      until mc alias set local http://minio:9000 platform platform-secret; do sleep 1; done;
+      until mc alias set local http://silo:9000 platform platform-secret; do sleep 1; done;
       mc mb --ignore-existing local/platform;
       mc anonymous set none local/platform;
       exit 0;
@@ -149,7 +151,7 @@ services:
 
 volumes:
   db-data:
-  minio-data:
+  silo-data:
   n8n-data:
 
 networks:
