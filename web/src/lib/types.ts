@@ -96,3 +96,86 @@ export interface Billing {
   collection: Record<string, unknown> | null;
   available_plans: { code: string; name: string; unit_price: string; minimum: string; current: boolean }[];
 }
+
+export interface AttendanceStatus {
+  id: number;
+  name: string;
+  code: string;
+  counts_as_attended: boolean;
+  counts_in_rate: boolean;
+  is_late: boolean;
+  color: string | null;
+}
+
+export interface RosterRow {
+  enrollment_id: number;
+  learner_id: number;
+  number: string;
+  name: string;
+  status_id: number | null;
+  minutes_late: number | null;
+  note: string | null;
+  marked: boolean;
+}
+
+/** Where each attendance rule came from: the batch, its course, or the academy. */
+export type PolicyOrigin = "batch" | "course" | "tenant" | "system";
+
+export interface Register {
+  session: {
+    id: number;
+    batch: { id: number; name: string };
+    type: string;
+    local: { date: string; time: string; timezone: string };
+    status: string;
+  };
+  policy: {
+    is_compulsory: boolean;
+    allow_late_join: boolean;
+    late_grace_min: number;
+    low_threshold_pct: number;
+    origins: Record<string, PolicyOrigin>;
+  };
+  counts_in_rate: boolean;
+  statuses: AttendanceStatus[];
+  roster: RosterRow[];
+}
+
+export type SchemeKind = "points" | "percentage" | "pass_fail" | "letter" | "level" | "rubric";
+
+export interface GradeCell {
+  grade_id: number;
+  submission_status_id: number;
+  raw_score: string | number | null;
+  letter: string | null;
+  level_code: string | null;
+  passed: boolean | null;
+  normalized_pct: string | number | null;
+  feedback: string | null;
+}
+
+export interface GradeBook {
+  assessments: {
+    id: number;
+    title: string;
+    type: string;
+    scheme: {
+      kind: SchemeKind;
+      label: string;
+      max_points: string | number | null;
+      config: { bands?: { label: string }[]; ladder?: string[] } | null;
+    };
+    due_local_date: string | null;
+    criteria: { id: number; name: string; max_points: string | number }[];
+  }[];
+  rows: { enrollment_id: number; number: string; name: string; cells: Record<string, GradeCell | null> }[];
+  period: { label: string; starts_local_date: string; ends_local_date: string; timezone: string };
+  submission_statuses: {
+    id: number;
+    name: string;
+    code: string;
+    counts_as_submitted: boolean;
+    excluded_from_average: boolean;
+    color: string | null;
+  }[];
+}

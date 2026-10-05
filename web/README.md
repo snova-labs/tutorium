@@ -32,6 +32,22 @@ Laravel rate-limits sign-in per address and IP, and this server forwards the bro
 `X-Forwarded-For`. In production, configure Laravel's trusted proxies to trust this server, or
 every sign-in will appear to come from one address.
 
+## Screens
+
+- **Home**: trial status and the setup checklist.
+- **Learners**: list and search, add (with the duplicate warning), spreadsheet import.
+- **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
+- **Register** (`/sessions/{id}/register`): one large button per status (44px or more, for a phone in
+  a classroom), minutes late for a late mark, "mark the rest present", one save for the class.
+  The batch's attendance rules sit above it, each with its provenance. Leaving with unsaved marks
+  asks first.
+- **Grade book** (`/batches/{id}/gradebook`): one period at a time, in the batch's clock. Each cell
+  takes a result in its scheme's own terms (a score, a letter, a level, pass or fail) and a
+  submission status; typing a result marks it submitted. Changed cells save together, and a value
+  the scheme rejects comes back with the scheme's own message. Rubric totals are shown but
+  scored per criterion elsewhere.
+- **Billing**: payment method, card or invoice, converting a trial.
+
 ## Conventions that must not drift
 
 - **Provenance chip** (`components/app/provenance-chip.tsx`): grey for a value inherited from a

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import Link from "next/link";
+
 import { PageHeader } from "@/components/app/page-header";
 import { ProvenanceChip } from "@/components/app/provenance-chip";
 import { SessionTime } from "@/components/app/session-time";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
 import { isApiError } from "@/lib/api-error";
 import { getMe } from "@/lib/me";
+import { can } from "@/lib/permissions";
 import type { Batch, ClassSession } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Batch" };
@@ -46,12 +50,19 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
         title={batch.name}
         description={[batch.course?.name, batch.branch?.name].filter(Boolean).join(" · ")}
         actions={
-          <ProvenanceChip
-            value={batch.timezone}
-            inherited={batch.timezone_source === "inherited from branch"}
-            inheritedFrom={batch.branch?.name}
-            setOn="this batch"
-          />
+          <>
+            <ProvenanceChip
+              value={batch.timezone}
+              inherited={batch.timezone_source === "inherited from branch"}
+              inheritedFrom={batch.branch?.name}
+              setOn="this batch"
+            />
+            {can(me, "grades.view") && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/batches/${batch.id}/gradebook`}>Grade book</Link>
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -67,12 +78,13 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
               <TableHead className="pl-4">When</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="pr-4 text-right">Register</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sessions.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
                   No sessions yet. They are generated from the timetable.
                 </TableCell>
               </TableRow>
@@ -89,6 +101,15 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
                   </Badge>
                   {session.cancel_reason && (
                     <div className="mt-1 text-xs text-muted-foreground">{session.cancel_reason}</div>
+                  )}
+                </TableCell>
+                <TableCell className="pr-4 text-right">
+                  {session.status !== "cancelled" && can(me, "attendance.view") && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/sessions/${session.id}/register`}>
+                        {can(me, "attendance.record") ? "Take register" : "View register"}
+                      </Link>
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>
