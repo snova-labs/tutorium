@@ -25,9 +25,6 @@ use Illuminate\Support\Facades\DB;
  */
 final class TrialService
 {
-    /** Days remaining at which a reminder goes out. */
-    private const REMIND_AT = [7, 3, 1];
-
     public function __construct(
         private readonly TenantContext $tenancy,
         private readonly OnboardingChecklist $checklist,
@@ -59,37 +56,71 @@ final class TrialService
     }
 
     /**
-     * Send whichever reminder is due, at most once each.
+     * Send whichever reminder is due, at most once each (SL-403).
+     *
+     * If the daily run was missed and two are due at once, only the most urgent goes out: nobody
+     * needs "a week left" and "last day" in the same morning.
      *
      * @return array{sent: int}
      */
     public function sendDueReminders(): array
     {
         $sent = 0;
+        $thresholds = $this->reminderThresholds();
 
         foreach ($this->trialTenants() as $tenant) {
             $daysLeft = (int) ceil(now()->diffInDays($tenant->trial_ends_at, false));
-            $already = $tenant->trial_reminders_sent ?? [];
 
-            foreach (self::REMIND_AT as $threshold) {
-                if ($daysLeft > $threshold || in_array($threshold, $already, true)) {
-                    continue;
-                }
-
-                $this->notifyOwner($tenant, $threshold, $daysLeft);
-
-                $already[] = $threshold;
-                $this->tenancy->withoutScoping(
-                    fn () => $tenant->update(['trial_reminders_sent' => array_values(array_unique($already))]),
-                );
-
-                $sent++;
-
-                break;
+            if ($daysLeft < 1) {
+                continue; // Ended; expiry handles it.
             }
+
+            $already = $tenant->trial_reminders_sent ?? [];
+            $due = array_values(array_filter(
+                $thresholds,
+                fn (int $threshold): bool => $daysLeft <= $threshold && ! in_array($threshold, $already, true),
+            ));
+
+            if ($due === []) {
+                continue;
+            }
+
+            $this->notifyOwner($tenant, $daysLeft);
+
+            // Everything at or above today's threshold counts as sent, so a missed run never
+            // produces an out-of-date reminder later.
+            $covered = array_filter($thresholds, fn (int $threshold): bool => $threshold >= $daysLeft);
+
+            $this->tenancy->withoutScoping(fn () => $tenant->update([
+                'trial_reminders_sent' => array_values(array_unique(array_merge($already, $covered))),
+            ]));
+
+            $sent++;
         }
 
         return ['sent' => $sent];
+    }
+
+    /**
+     * The days-left values at which reminders go out, from the trial days they fall on.
+     *
+     * Day 7, 12 and 14 of a 14-day trial are 8, 3 and 1 days left, counting the current day.
+     *
+     * @return list<int>
+     */
+    public function reminderThresholds(): array
+    {
+        $length = (int) config('signup.trial_days', 14);
+
+        $thresholds = array_map(
+            fn (int $day): int => max(1, $length - $day + 1),
+            array_map(intval(...), (array) config('signup.trial_reminder_days', [7, 12, 14])),
+        );
+
+        $thresholds = array_values(array_unique($thresholds));
+        sort($thresholds);
+
+        return $thresholds;
     }
 
     /**
@@ -261,9 +292,9 @@ final class TrialService
         });
     }
 
-    private function notifyOwner(Tenant $tenant, int $threshold, int $daysLeft): void
+    private function notifyOwner(Tenant $tenant, int $daysLeft): void
     {
-        $this->tenancy->runAs($tenant, function () use ($tenant, $threshold, $daysLeft): void {
+        $this->tenancy->runAs($tenant, function () use ($tenant, $daysLeft): void {
             $owner = User::query()->where('is_active', true)->orderBy('id')->first();
 
             if ($owner === null) {
@@ -273,8 +304,7 @@ final class TrialService
             $onboarding = $this->checklist->for($tenant);
 
             $owner->notify(new TrialEndingNotification(
-                daysLeft: max(0, $daysLeft),
-                threshold: $threshold,
+                daysLeft: max(1, $daysLeft),
                 readyToTeach: $onboarding['can_record_attendance'],
                 nextStep: collect($onboarding['steps'])->firstWhere('done', false)['title'] ?? null,
             ));

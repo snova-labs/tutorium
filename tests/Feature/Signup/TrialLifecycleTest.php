@@ -62,22 +62,58 @@ final class TrialLifecycleTest extends TestCase
     }
 
     #[Test]
-    public function reminders_go_out_once_each_at_seven_three_and_one_days(): void
+    public function reminders_go_out_once_each_on_days_seven_twelve_and_fourteen(): void
     {
         $service = app(TrialService::class);
+        $subjects = [];
 
-        $this->travel(7)->days();
+        // Day 6: nothing yet.
+        $this->travel(5)->days();
+        $this->assertSame(0, $service->sendDueReminders()['sent']);
+
+        // Day 7.
+        $this->travel(1)->days();
         $this->assertSame(1, $service->sendDueReminders()['sent']);
         // Running twice on the same day must not send twice.
         $this->assertSame(0, $service->sendDueReminders()['sent']);
 
-        $this->travel(4)->days();
+        // Days 8 to 11: nothing.
+        foreach (range(8, 11) as $day) {
+            $this->travel(1)->days();
+            $this->assertSame(0, $service->sendDueReminders()['sent'], "Nothing is due on day {$day}.");
+        }
+
+        // Day 12, then day 14.
+        $this->travel(1)->days();
+        $this->assertSame(1, $service->sendDueReminders()['sent']);
+        $this->travel(1)->days();
+        $this->assertSame(0, $service->sendDueReminders()['sent']);
+        $this->travel(1)->days();
         $this->assertSame(1, $service->sendDueReminders()['sent']);
 
-        $this->travel(2)->days();
+        Notification::assertSentTimes(TrialEndingNotification::class, 3);
+        $owner = app(TenantContext::class)->runAs($this->tenant, fn () => User::query()->first());
+        Notification::assertSentTo($owner, TrialEndingNotification::class, function ($n, $channels, $owner) use (&$subjects) {
+            $subjects[] = $n->toMail($owner)->subject;
+
+            return true;
+        });
+        $this->assertSame(['8 days left on your trial', '3 days left on your trial', 'Last day of your trial'], $subjects);
+    }
+
+    #[Test]
+    public function a_missed_run_sends_only_the_most_urgent_reminder(): void
+    {
+        $service = app(TrialService::class);
+
+        // The scheduler was down from day 6 until day 13.
+        $this->travel(12)->days();
         $this->assertSame(1, $service->sendDueReminders()['sent']);
 
-        Notification::assertCount(3);
+        $this->travel(1)->days();
+        $this->assertSame(1, $service->sendDueReminders()['sent']);
+
+        Notification::assertSentTimes(TrialEndingNotification::class, 2);
     }
 
     #[Test]

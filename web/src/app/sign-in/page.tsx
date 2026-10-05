@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { SignInForm } from "@/app/sign-in/sign-in-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,12 @@ export default function SignInPage() {
 
         <p className="mt-4 text-center text-[11px] text-faint">
           Five failed attempts pause sign-in for this address for fifteen minutes.
+        </p>
+        <p className="mt-3 text-center text-sm text-muted-foreground">
+          New to Tutorium?{" "}
+          <Link href="/sign-up" className="font-medium text-foreground underline underline-offset-4">
+            Start a free trial
+          </Link>
         </p>
       </div>
     </main>

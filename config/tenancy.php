@@ -35,6 +35,7 @@ use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
 use App\Models\Operator;
+use App\Models\PendingSignup;
 use App\Models\PersonalAccessToken;
 use App\Models\Plan;
 use App\Models\PlanChange;
@@ -159,6 +160,8 @@ return [
         Plan::class,
         PlanFeature::class,
         SignupAttempt::class,
+        // A signup waiting for its address to be confirmed: there is no tenant yet (SL-402).
+        PendingSignup::class,
         // Operators have no tenant, and at sign-in no tenant is bound yet. Always reached through
         // its subject (an operator or a user), never queried bare (SignInCodes).
         SignInCode::class,

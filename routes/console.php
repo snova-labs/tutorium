@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Jobs\TakeUsageSnapshotsJob;
 use App\Models\SignupAttempt;
 use App\Services\ImpersonationService;
+use App\Services\SignupService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -21,3 +22,6 @@ Schedule::command('platform:trials')->dailyAt('08:00')->name('trials');
 Schedule::call(fn () => SignupAttempt::query()
     ->where('attempted_at', '<', now()->subDays(14))->delete())
     ->weekly()->name('purge-signup-attempts');
+// Confirmation links that can no longer be used, with the form answers they held.
+Schedule::call(fn () => app(SignupService::class)->purgeExpired())
+    ->daily()->name('purge-pending-signups');

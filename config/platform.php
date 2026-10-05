@@ -16,6 +16,12 @@ return [
     */
     'mode' => env('PLATFORM_MODE', 'cloud'),
 
+    /*
+    | Where people use the product: the staff client (web/). Links in emails point here. Falls back
+    | to APP_URL when the API and the client share an address.
+    */
+    'web_url' => env('WEB_URL', env('APP_URL')),
+
     'pdf' => [
         // php    — pure PHP renderer; no browser dependency, low memory
         // chrome — headless browser; modern CSS, ~700MB more RAM

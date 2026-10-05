@@ -14,13 +14,16 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class SignupAttempt extends Model
 {
+    /** The form was accepted and a confirmation link sent. Nothing is provisioned yet. */
+    public const PENDING = 'pending';
+
     public const CREATED = 'created';
 
     public const RATE_LIMITED = 'rate_limited';
 
     public const REJECTED = 'rejected';
 
-    protected $fillable = ['email', 'ip', 'outcome', 'reason', 'attempted_at'];
+    protected $fillable = ['email', 'domain', 'ip', 'outcome', 'reason', 'attempted_at'];
 
     protected function casts(): array
     {
