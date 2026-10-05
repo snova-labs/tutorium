@@ -35,6 +35,7 @@ use App\Models\LearnerStatus;
 use App\Models\MakeupLink;
 use App\Models\NoteCategory;
 use App\Models\Operator;
+use App\Models\PersonalAccessToken;
 use App\Models\Plan;
 use App\Models\PlanChange;
 use App\Models\PlanFeature;
@@ -161,6 +162,8 @@ return [
         // Operators have no tenant, and at sign-in no tenant is bound yet. Always reached through
         // its subject (an operator or a user), never queried bare (SignInCodes).
         SignInCode::class,
+        // Looked up by hash before anyone is known. Its owner then decides the tenant.
+        PersonalAccessToken::class,
         // A provider's event arrives before we know whose it is. The tenant is read from its
         // payload and every change it causes is applied inside that tenant (WebhookProcessor).
         WebhookEvent::class,

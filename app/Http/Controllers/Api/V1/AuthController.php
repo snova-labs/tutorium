@@ -83,7 +83,9 @@ final class AuthController
         $tenancy->set($user->tenant);
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
 
-        $token = $user->createToken($credentials['device'] ?? 'api')->plainTextToken;
+        // A named ability rather than the default wildcard, so this token is never mistaken for
+        // support access (which is marked "impersonate").
+        $token = $user->createToken($credentials['device'] ?? 'api', ['staff'])->plainTextToken;
 
         return response()->json([
             'data' => [

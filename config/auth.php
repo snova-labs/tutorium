@@ -66,8 +66,10 @@ return [
     */
 
     'providers' => [
+        // Users are found across tenants at sign-in and on each request, because the user is what
+        // decides the tenant (App\Auth\TenantUserProvider). Everything after that is scoped.
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'tenant-eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
         'operators' => ['driver' => 'eloquent', 'model' => Operator::class],
