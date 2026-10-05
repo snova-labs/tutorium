@@ -64,8 +64,14 @@ x-laravel: &laravel
     BILLING_PROVIDER: ${BILLING_PROVIDER:-manual}
     STRIPE_SECRET: ${STRIPE_SECRET:-}
     STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    # Nightly backup and weekly restore drill (SL-415, docs/DEPLOYMENT.md "Backups").
+    BACKUP_PATH: /var/www/html/storage/backups
+    BACKUP_DRILL_DATABASE: ${BACKUP_DRILL_DATABASE:-}
+    BACKUP_ALERT_TO: ${BACKUP_ALERT_TO:-}
+    BACKUP_KEEP: ${BACKUP_KEEP:-14}
   volumes:
     - storage:/var/www/html/storage/app
+    - backups:/var/www/html/storage/backups
   networks:
     - internal
     - db
@@ -177,6 +183,9 @@ volumes:
   # Uploaded logos, generated report PDFs, exports and imports. Named so backups can find it.
   storage:
     name: ${APP_SLUG}_storage
+  # Nightly backups: database dump, files archive and manifest, one folder per night.
+  backups:
+    name: ${APP_SLUG}_backups
 
 networks:
   # This stack's own network: the containers talk to each other here, and the tunnel reaches web and

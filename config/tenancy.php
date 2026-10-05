@@ -8,6 +8,7 @@ use App\Models\AttendancePolicy;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceStatus;
 use App\Models\AuditLog;
+use App\Models\BackupRun;
 use App\Models\Batch;
 use App\Models\BillingProfile;
 use App\Models\Branch;
@@ -162,6 +163,8 @@ return [
         SignupAttempt::class,
         // A signup waiting for its address to be confirmed: there is no tenant yet (SL-402).
         PendingSignup::class,
+        // Backups and restore drills cover the whole platform, every tenant at once (SL-415).
+        BackupRun::class,
         // Operators have no tenant, and at sign-in no tenant is bound yet. Always reached through
         // its subject (an operator or a user), never queried bare (SignInCodes).
         SignInCode::class,

@@ -25,3 +25,8 @@ Schedule::call(fn () => SignupAttempt::query()
 // Confirmation links that can no longer be used, with the form answers they held.
 Schedule::call(fn () => app(SignupService::class)->purgeExpired())
     ->daily()->name('purge-pending-signups');
+
+// Nightly backup, and a weekly restore of it that proves it is usable (SL-415). The drill runs
+// after Sunday's backup, so it always restores the newest one.
+Schedule::command('platform:backup')->dailyAt('01:30')->name('backup')->withoutOverlapping();
+Schedule::command('platform:restore-drill')->weeklyOn(0, '03:00')->name('restore-drill')->withoutOverlapping();

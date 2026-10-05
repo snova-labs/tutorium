@@ -289,17 +289,79 @@ to S3-compatible storage on the server, use Silo too: it reads MinIO's variables
 
 ## Backups
 
-The MySQL databases are covered by the server's existing dumps. Uploaded files and generated
-reports live in the volume `<slug>_storage`. Add this to `~/scripts/backup.sh`, before the clean-up
-line:
+A backup nobody has restored is a hope (SL-415). The stack backs itself up every night and proves
+once a week that the backup restores.
+
+| When (server time, UTC) | What | Command |
+|---|---|---|
+| Every night, 01:30 | Database dump + uploaded files + manifest, into the `<slug>_backups` volume | `platform:backup` |
+| Sundays, 03:00 | Restores the newest backup into the drill database and checks it | `platform:restore-drill` |
+| Any time | When the last backup and drill ran, and whether they are recent enough | `platform:backups` |
+
+Each night writes one folder, for example `2026-10-05_013000/`, containing `database.sql.gz`,
+`storage.tar.gz` and `manifest.json`. The manifest records each table's row count and a hash of its
+contents, the number and total size of the files, and a checksum of both archives. The last 14 are
+kept (`BACKUP_KEEP`).
+
+**What the drill checks:** both archives match their checksums; every table comes back with the
+same rows and the same contents; the files unpack to the same count and size. It empties the drill
+database afterwards. Any difference fails the drill and emails `BACKUP_ALERT_TO` (or every active
+operator), as does a failed backup. `platform:backups` exits non-zero when the last backup is older
+than 26 hours or the last good drill older than 8 days, so a monitor can run it.
+
+### One-time setup: the drill database
+
+The drill restores into its own database, never the live one (it refuses if they are the same).
+Create it and let the app's user use it:
+
+**Server**
+```bash
+docker exec -i mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'
+CREATE DATABASE IF NOT EXISTS `sajilo_staging_drill`;
+GRANT ALL PRIVILEGES ON `sajilo_staging_drill`.* TO 'sajilo_staging'@'%';
+SQL
+```
+
+For production, `sajilo_drill` and the user `sajilo`. The stack variable is
+`BACKUP_DRILL_DATABASE`. Then prove it once by hand: Portainer → Containers → `<slug>-api` →
+Console:
 
 ```bash
-for vol in sajilo-staging_storage sajilo_storage; do
+php artisan platform:backup && php artisan platform:restore-drill && php artisan platform:backups
+```
+
+### Off the machine
+
+The backups volume is on the same disk as the database. Add it to `~/scripts/backup.sh`, before the
+clean-up line, so the server's nightly copy takes the newest backup with it:
+
+```bash
+for vol in sajilo-staging_backups sajilo_backups; do
   docker volume inspect "$vol" >/dev/null 2>&1 || continue
-  docker run --rm -v "$vol":/data:ro -v "$BACKUP_DIR":/backup alpine \
-    tar czf "/backup/${vol}_${STAMP}.tar.gz" -C /data .
+  docker run --rm -v "$vol":/data:ro -v "$BACKUP_DIR":/backup alpine sh -c \
+    'latest=$(ls -1 /data | sort | tail -n 1); [ -n "$latest" ] && tar cf "/backup/'"$vol"'_${latest}.tar" -C /data "$latest"'
 done
 ```
+
+### Restoring for real
+
+1. Stop the stack's `app`, `queue` and `scheduler` (Portainer → Stacks → `<slug>` → Stop).
+2. Restore the database from the folder you want (the dump replays with the `mysql` client):
+
+   **Server**
+   ```bash
+   docker run --rm -v sajilo_backups:/b:ro alpine ls /b
+   docker run --rm -v sajilo_backups:/b:ro alpine cat /b/<folder>/database.sql.gz \
+     | gunzip | docker exec -i mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root sajilo'
+   ```
+3. Restore the files into the storage volume:
+
+   **Server**
+   ```bash
+   docker run --rm -v sajilo_backups:/b:ro -v sajilo_storage:/data alpine \
+     sh -c 'find /data -mindepth 1 -delete && tar xzf /b/<folder>/storage.tar.gz -C /data'
+   ```
+4. Start the stack. Migrations newer than the backup run first.
 
 Never run `docker compose down -v` or delete these volumes without a backup.
 
@@ -313,6 +375,7 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | Artisan | Portainer → Containers → `<slug>-api` → Console, then `php artisan …` |
 | Health | `https://<api host>/up` (alive) and `/ready` (database and cache) |
 | Memory | `docker stats --no-stream \| grep sajilo` |
+| Backups | `php artisan platform:backups` in `<slug>-api` |
 
 ## Troubleshooting
 
@@ -327,4 +390,5 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | `exec format error` | An image not built for arm64; check the Images workflow ran for this tag. |
 | Links in emails or the admin panel are `http://` | `TRUSTED_PROXIES` overridden or empty. The stack default trusts Docker's private ranges. |
 | No sign-in code in the logs | `MAIL_MAILER` must be `log` and `LOG_LEVEL` `debug` (the log mailer writes at debug level). |
+| Backup or drill failure email | `php artisan platform:backups`, then the `<slug>-scheduler` logs. "BACKUP_DRILL_DATABASE is not set" or "Access denied" means the drill database setup above is missing. |
 | Signed out on every request | `APP_KEY` changed, or `SESSION_SECURE_COOKIE=true` without HTTPS. Behind the tunnel, HTTPS is always on. |

@@ -47,4 +47,4 @@ ARG BUILD_PHP="php -d pcre.jit=0 -d opcache.enable_cli=0 -d opcache.jit=off"
 RUN ${BUILD_PHP} "$(command -v composer)" dump-autoload --optimize --classmap-authoritative --no-dev \
     && ${BUILD_PHP} artisan package:discover --ansi \
     && ${BUILD_PHP} artisan storage:link \
-    && mkdir -p storage/app/private storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views
+    && mkdir -p storage/backups storage/app/private storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views
