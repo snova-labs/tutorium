@@ -34,5 +34,5 @@ Build the staff client as a Next.js application in `web/`, using only `/api/v1`.
   - Browser sessions did not survive to the next request, for the same reason.
   - Every ordinary token was treated as support access, because the wildcard ability answers yes
     to "impersonate".
-- Screens arrive in slices. This first slice covers sign-in, home, learners (list, add, import),
-  batches with sessions, and billing. The attendance register and grade book follow.
+- Screens arrive in slices. The first covered sign-in, home, learners (list, add, import), batches
+  with sessions, and billing. The second adds the attendance register and the grade book.
