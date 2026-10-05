@@ -41,8 +41,9 @@ node d03_04.js && node d05_06.js && node d07_08.js
 
 | ADR | Decision |
 |---|---|
-| 001 | Admin panel first, custom frontend later |
+| 001 | Admin panel first, custom frontend later (staff interface superseded by 004) |
 | 002 | Shared database with row-level tenant isolation |
 | 003 | Cost-aware defaults with documented upgrade triggers |
+| 004 | A Next.js staff client on the API (`web/`) |
 
 Add one whenever a choice would be expensive to reverse or puzzling to a newcomer.
