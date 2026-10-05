@@ -39,7 +39,12 @@ RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-
 COPY --chown=www-data:www-data . .
 COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
 
-RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
-    && php artisan package:discover --ansi \
-    && php artisan storage:link \
+# PHP's JIT crashes (segfault) under the QEMU emulation used to cross-build for ARM, as soon as
+# Composer scans the classmap with its large regular expressions. These build-time commands run
+# with it off; the running containers on real ARM hardware are unaffected.
+ARG BUILD_PHP="php -d pcre.jit=0 -d opcache.enable_cli=0 -d opcache.jit=off"
+
+RUN ${BUILD_PHP} "$(command -v composer)" dump-autoload --optimize --classmap-authoritative --no-dev \
+    && ${BUILD_PHP} artisan package:discover --ansi \
+    && ${BUILD_PHP} artisan storage:link \
     && mkdir -p storage/app/private storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views
