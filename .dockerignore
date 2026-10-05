@@ -1,0 +1,26 @@
+# Context for deploy/docker/api.Dockerfile. Anything not needed at runtime stays out of the image.
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+web
+docs
+tests
+deploy
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/*
+!storage/app/.gitignore
+public/build
+public/hot
+*.log
+.phpunit.cache
+docker-compose.yml
+Makefile
+# Generated per environment: a copy from a development machine names dev-only providers.
+bootstrap/cache/*.php

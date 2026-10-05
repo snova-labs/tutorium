@@ -1,0 +1,167 @@
+# Sajilo (Tutorium) as one Portainer stack. The same file runs staging and production: only the
+# stack's environment variables differ (deploy/portainer/staging.env.example, production.env.example).
+# Paste those into Portainer → Stack → Environment variables (Advanced mode); they are substituted
+# below, so no .env file is needed on the server.
+#
+#   app        Laravel: API, admin panel, Livewire screens, webhooks   (port 8080, not published)
+#   queue      Laravel queue worker
+#   scheduler  Laravel scheduler (trials, dunning, metering, cleanup)
+#   web        Next.js staff client                                     (port 3000, not published)
+#   tunnel     Cloudflare Tunnel connector: the only way in from outside
+#   migrate    one-off: runs database migrations, then exits; app, queue and scheduler wait for it
+#
+# Nothing publishes a port. Public hostnames are set on the tunnel in Cloudflare and point at
+# http://web:3000 and http://app:8080, names that only resolve inside this stack's network.
+#
+# Needs, once per server: the shared `mysql` stack on the external `db` network, and a database and
+# user for this environment (~/scripts/my-create-db.sh <name>). See docs/DEPLOYMENT.md.
+
+x-laravel: &laravel
+  image: ${API_IMAGE:-ghcr.io/snova-labs/tutorium-api}:${IMAGE_TAG:-staging}
+  # Every setting is passed explicitly from the stack's variables. The ones marked :? must be set,
+  # or the stack refuses to deploy rather than starting half-configured.
+  environment:
+    APP_NAME: ${APP_NAME:-Sajilo}
+    PLATFORM_NAME: ${PLATFORM_NAME:-Sajilo}
+    APP_ENV: ${APP_ENV:-staging}
+    APP_DEBUG: ${APP_DEBUG:-false}
+    APP_KEY: ${APP_KEY:?Set APP_KEY (echo "base64:$(openssl rand -base64 32)")}
+    APP_URL: ${APP_URL:?Set APP_URL to the public API address}
+    APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+    LOG_CHANNEL: stderr
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    # Containers reach each other by name; the tunnel and any proxy sit on private Docker ranges.
+    TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+    DB_CONNECTION: mysql
+    DB_HOST: ${DB_HOST:-mysql}
+    DB_PORT: ${DB_PORT:-3306}
+    DB_DATABASE: ${DB_DATABASE:?Set DB_DATABASE}
+    DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME}
+    DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+    CACHE_STORE: ${CACHE_STORE:-database}
+    SESSION_DRIVER: ${SESSION_DRIVER:-database}
+    SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+    FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
+    PDF_RENDERER: ${PDF_RENDERER:-php}
+    MAIL_MAILER: ${MAIL_MAILER:-log}
+    MAIL_SCHEME: ${MAIL_SCHEME:-}
+    MAIL_HOST: ${MAIL_HOST:-}
+    MAIL_PORT: ${MAIL_PORT:-587}
+    MAIL_USERNAME: ${MAIL_USERNAME:-}
+    MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@jayshyampatel.com.np}
+    MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Sajilo}
+    BILLING_PROVIDER: ${BILLING_PROVIDER:-manual}
+    STRIPE_SECRET: ${STRIPE_SECRET:-}
+    STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  volumes:
+    - storage:/var/www/html/storage/app
+  networks:
+    - internal
+    - db
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  migrate:
+    <<: *laravel
+    container_name: ${APP_SLUG:?Set APP_SLUG, e.g. sajilo-staging}-migrate
+    command: ["php", "/var/www/html/artisan", "migrate", "--force", "--no-interaction"]
+    restart: "no"
+    mem_limit: 256m
+
+  app:
+    <<: *laravel
+    container_name: ${APP_SLUG}-api
+    restart: unless-stopped
+    mem_limit: 512m
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  queue:
+    <<: *laravel
+    container_name: ${APP_SLUG}-queue
+    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3", "--max-time=3600", "--sleep=3"]
+    stop_signal: SIGTERM
+    restart: unless-stopped
+    mem_limit: 256m
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 15s
+
+  scheduler:
+    <<: *laravel
+    container_name: ${APP_SLUG}-scheduler
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    restart: unless-stopped
+    mem_limit: 192m
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 15s
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/snova-labs/tutorium-web}:${IMAGE_TAG:-staging}
+    container_name: ${APP_SLUG}-web
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      # Server to server, inside the stack: the API is never called from the browser.
+      API_BASE_URL: http://app:8080/api/v1
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/sign-in"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - internal
+    logging: *logging
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: ${APP_SLUG}-tunnel
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN from the Cloudflare tunnel}
+    restart: unless-stopped
+    mem_limit: 128m
+    depends_on:
+      - web
+      - app
+    networks:
+      - internal
+    logging: *logging
+
+volumes:
+  # Uploaded logos, generated report PDFs, exports and imports. Named so backups can find it.
+  storage:
+    name: ${APP_SLUG}_storage
+
+networks:
+  # This stack's own network: the tunnel reaches web and app here, and nothing else can.
+  internal:
+    name: ${APP_SLUG}_internal
+  # The shared database network from the mysql stack (internal: no route to the internet).
+  db:
+    external: true
