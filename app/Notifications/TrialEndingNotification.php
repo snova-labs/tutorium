@@ -20,7 +20,6 @@ final class TrialEndingNotification extends Notification
 
     public function __construct(
         private readonly int $daysLeft,
-        private readonly int $threshold,
         private readonly bool $readyToTeach,
         private readonly ?string $nextStep,
     ) {}
@@ -39,36 +38,41 @@ final class TrialEndingNotification extends Notification
             return $message
                 ->greeting('Hello.')
                 ->line(sprintf(
-                    'Your trial ends in %s, and you have not reached the point where the product does '
-                    .'anything useful for you yet.',
-                    $this->daysLeft === 1 ? 'a day' : $this->daysLeft.' days',
+                    '%s, and you have not reached the point where the product does anything useful '
+                    .'for you yet.',
+                    $this->ends(),
                 ))
                 ->line($this->nextStep === null
                     ? 'The next step is adding a class with a timetable.'
                     : 'The next step is: '.$this->nextStep.'.')
-                ->action('Finish setting up', rtrim((string) config('app.url'), '/').'/onboarding')
+                ->action('Finish setting up', rtrim((string) config('platform.web_url'), '/').'/')
                 ->line('If something is in the way, reply to this message and a person will read it.');
         }
 
         return $message
             ->greeting('Hello.')
             ->line(sprintf(
-                'Your trial ends in %s.',
-                $this->daysLeft === 1 ? 'a day' : $this->daysLeft.' days',
+                '%s.',
+                $this->ends(),
             ))
             ->line('If you add a payment method before then, nothing changes at all.')
             ->line('If you do not, your account becomes read-only: everything you have entered stays '
                 .'exactly as it is, you can still read and export all of it, and adding a payment '
                 .'method later restores full access immediately.')
-            ->action('Add a payment method', rtrim((string) config('app.url'), '/').'/billing');
+            ->action('Add a payment method', rtrim((string) config('platform.web_url'), '/').'/billing');
     }
 
     private function subject(): string
     {
-        return match ($this->threshold) {
-            1 => 'Your trial ends tomorrow',
-            3 => 'Three days left on your trial',
-            default => 'A week left on your trial',
-        };
+        return $this->daysLeft <= 1
+            ? 'Last day of your trial'
+            : sprintf('%d days left on your trial', $this->daysLeft);
+    }
+
+    private function ends(): string
+    {
+        return $this->daysLeft <= 1
+            ? 'Your trial ends within a day'
+            : sprintf('Your trial ends in %d days', $this->daysLeft);
     }
 }

@@ -58,6 +58,7 @@ final class TenantProvisioner
                     ? now()->addDays((int) ($input['trial_days'] ?? 14))
                     : null,
                 'region_code' => $input['region_code'] ?? 'default',
+                'country' => $input['country'] ?? null,
                 'preset_code' => $presetCode,
                 'deployment_mode' => 'cloud',
                 'contact_name' => $input['owner_name'],
@@ -95,7 +96,10 @@ final class TenantProvisioner
                 $owner = User::query()->create([
                     'name' => $input['owner_name'],
                     'email' => $input['owner_email'],
-                    'password' => Hash::make($input['password'] ?? Str::password(16)),
+                    // Self-serve signup hashes the password when the form arrives, and keeps only that
+                    // until the address is confirmed.
+                    'password' => $input['password_hash'] ?? Hash::make($input['password'] ?? Str::password(16)),
+                    'email_verified_at' => $input['email_verified_at'] ?? null,
                     'is_active' => true,
                     'scope_all_branches' => true,
                     'locale' => $input['locale'] ?? 'en',

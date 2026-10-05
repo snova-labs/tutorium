@@ -155,7 +155,7 @@ Portainer → **Stacks** → **Add stack**
 - **Deploy the stack**.
 
 The variables are substituted into the stack file, so nothing needs creating on the server. If a
-required one (`APP_KEY`, `APP_URL`, `DB_*`, `APP_SLUG`) is missing, the deploy stops with a message
+required one (`APP_KEY`, `APP_URL`, `WEB_URL`, `DB_*`, `APP_SLUG`) is missing, the deploy stops with a message
 naming it. A missing tunnel token doesn't stop the deploy (NPM stacks have none); the tunnel
 container exits instead and its log says why.
 
@@ -178,6 +178,10 @@ Owners, managers and accountants confirm each sign-in with an emailed code. Stag
 mail (`MAIL_MAILER=log`), so the code is in Portainer → Containers → `sajilo-staging-api` → **Logs**:
 search for `sign-in code`. To send real mail instead, set the `MAIL_*` SMTP variables and update the
 stack.
+
+Or sign up like a customer would, at `https://sajilo-staging.jayshyampatel.com.np/sign-up`. The
+confirmation link goes to the same log (search for `sign-up/confirm`). Production keeps
+`SIGNUP_OPEN=false` until you open it; see `SIGN-UP.md`.
 
 For demo data instead: `php artisan db:seed --force` creates two sample academies whose owners sign
 in with `owner@sample-one.test` / `password`. **Staging only**: never run it on production.

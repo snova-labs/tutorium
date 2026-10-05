@@ -1,6 +1,8 @@
 name: Images
 
-# Builds the deployable images once CI has passed on main, and tags them "staging".
+# Builds the deployable images once CI has passed on main, and tags them "staging". Pull requests
+# that change how the images are built get the same ARM build, without pushing, so a broken build
+# is found before it reaches main.
 # The staging stack in Portainer runs ...:staging; production runs ...:production, which only the
 # "Promote to production" workflow moves (to an image staging has already run).
 
@@ -10,14 +12,26 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    paths:
+      - deploy/docker/**
+      - .dockerignore
+      - web/.dockerignore
+      - composer.json
+      - composer.lock
+      - package-lock.json
+      - web/package-lock.json
+      - web/next.config.ts
+      - .github/workflows/images.yml
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: images
-  cancel-in-progress: false
+  # Pushes to the registry queue behind each other; a PR's check build is replaced by its next push.
+  group: images-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -25,6 +39,7 @@ jobs:
     # Only after a green CI run on a push to main (not on a PR run that happens to target main).
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     # Emulated ARM on the standard runner by default. If native ARM runners are available to this
     # repository, set the repository variable IMAGE_RUNNER=ubuntu-24.04-arm for much faster builds.
@@ -58,6 +73,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -68,16 +84,18 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           platforms: linux/arm64
-          push: true
+          # A pull request only proves the image builds.
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope={0}', matrix.image) || '' }}
 
       - name: Summary
+        if: github.event_name != 'pull_request'
         run: |
           echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.meta.outputs.tags }}\`" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"

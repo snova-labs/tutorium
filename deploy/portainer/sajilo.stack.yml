@@ -31,6 +31,9 @@ x-laravel: &laravel
     APP_DEBUG: ${APP_DEBUG:-false}
     APP_KEY: ${APP_KEY:?Set APP_KEY (echo "base64:$(openssl rand -base64 32)")}
     APP_URL: ${APP_URL:?Set APP_URL to the public API address}
+    # The staff client's public address. Links in emails (signup confirmation, trial reminders)
+    # open here.
+    WEB_URL: ${WEB_URL:?Set WEB_URL to the public address of the web client}
     APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
     LOG_CHANNEL: stderr
     LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -56,6 +59,8 @@ x-laravel: &laravel
     MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@jayshyampatel.com.np}
     MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Sajilo}
+    # Public signup (SL-401). false closes the form without a deploy.
+    SIGNUP_OPEN: ${SIGNUP_OPEN:-true}
     BILLING_PROVIDER: ${BILLING_PROVIDER:-manual}
     STRIPE_SECRET: ${STRIPE_SECRET:-}
     STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

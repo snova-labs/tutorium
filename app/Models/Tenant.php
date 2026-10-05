@@ -33,7 +33,7 @@ final class Tenant extends Model
     public const STATUS_PURGED = 'purged';
 
     protected $fillable = [
-        'name', 'slug', 'region_code', 'preset_code', 'status',
+        'name', 'slug', 'region_code', 'country', 'preset_code', 'status',
         'deployment_mode', 'contact_name', 'contact_email', 'locale',
         'trial_ends_at', 'trial_reminders_sent', 'trial_expired_at', 'suspended_at', 'purge_after',
         'onboarding_dismissed_at',

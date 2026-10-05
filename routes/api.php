@@ -48,7 +48,8 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('throttle:20,1')->group(function (): void {
         Route::get('signup/options', [SignupController::class, 'options'])->name('public.signup.options');
         Route::post('signup', [SignupController::class, 'store'])->name('public.signup.store');
-        Route::get('signup/verify/{token}', [SignupController::class, 'verify'])->name('public.signup.verify');
+        Route::get('signup/confirm/{token}', [SignupController::class, 'show'])->name('public.signup.show');
+        Route::post('signup/confirm/{token}', [SignupController::class, 'confirm'])->name('public.signup.confirm');
 
         Route::get('invitations/{token}', [PublicInvitationController::class, 'show'])
             ->name('public.invitations.show');

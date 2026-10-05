@@ -24,6 +24,7 @@ invalidates no reference.
 - `generators/` — the scripts that produce them; edit these, then regenerate, so the
   documents stay versioned rather than becoming untracked binaries that drift
 - `adr/` — architecture decision records, dated and numbered
+- `SIGN-UP.md` — self-serve signup: the form and its throttling, confirming the address before anything is created, trial reminders and expiry
 - `SIGN-IN.md` — emailed sign-in codes for operators and academy staff, the optional authenticator app and recovery codes
 - `BILLING-PAYMENT-METHOD.md` — how an academy adds a card, sees what it pays with, switches to invoicing, and converts a trial in one step
 - `DEPLOYMENT.md` — staging and production on the Oracle server: images, Portainer stacks, Cloudflare Tunnel, promotion and rollback
