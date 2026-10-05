@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Auth\TenantUserProvider;
+use App\Models\PersonalAccessToken;
 use App\Support\Payments\FakePaymentProvider;
 use App\Support\Payments\ManualPaymentProvider;
 use App\Support\Payments\PaymentProvider;
 use App\Support\Payments\StripePaymentProvider;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Laravel\Sanctum\Sanctum;
 use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +40,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Who is signed in decides the tenant, so finding them cannot wait for a tenant to be bound.
+        Auth::provider('tenant-eloquent', fn ($app, array $config): TenantUserProvider => new TenantUserProvider(
+            $app['hash'],
+            $config['model'],
+        ));
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 }

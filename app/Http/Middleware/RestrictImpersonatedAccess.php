@@ -33,7 +33,9 @@ final class RestrictImpersonatedAccess
     {
         $token = $request->user()?->currentAccessToken();
 
-        if ($token === null || ! $token->can('impersonate')) {
+        // Named explicitly, not asked through can(): a token with the wildcard ability answers yes
+        // to every ability, and an ordinary sign-in must never be mistaken for support access.
+        if ($token === null || ! in_array('impersonate', (array) ($token->abilities ?? []), true)) {
             return $next($request);
         }
 
