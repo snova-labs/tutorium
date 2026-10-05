@@ -55,6 +55,15 @@ final class ReportRun extends Model
         $this->update(['failures' => $failures, 'failed' => $this->failed + 1]);
     }
 
+    /** Something worth knowing about a report that was generated: listed with the failures, not counted as one. */
+    public function recordNotice(string $learner, string $reason): void
+    {
+        $failures = $this->failures ?? [];
+        $failures[] = ['learner' => $learner, 'reason' => $reason];
+
+        $this->update(['failures' => $failures]);
+    }
+
     public function progress(): int
     {
         return $this->total === 0 ? 0 : (int) round((($this->succeeded + $this->failed) / $this->total) * 100);

@@ -179,3 +179,75 @@ export interface GradeBook {
     color: string | null;
   }[];
 }
+
+export interface Period {
+  type: string;
+  label: string;
+  starts_local_date: string;
+  ends_local_date: string;
+  timezone: string;
+}
+
+export interface ReportReadiness {
+  period: Period;
+  learners: {
+    enrollment_id: number;
+    learner: string;
+    recipients: number;
+    readiness: { is_ready: boolean; gaps: string[] };
+    /** No guardian receives reports and the learner has no email: nobody to send it to. */
+    blocked: boolean;
+  }[];
+  ready: number;
+  with_gaps: number;
+  without_recipients: number;
+}
+
+export type ReportRunStatus = "queued" | "running" | "completed" | "completed_with_failures" | "failed";
+
+export interface ReportRun {
+  id: number;
+  status: ReportRunStatus;
+  total: number;
+  succeeded: number;
+  failed: number;
+  progress: number;
+  /** Failures, and notes about reports that were generated ("Generated but not sent: …"). */
+  failures: { learner: string; reason: string }[];
+  finished_at_utc: string | null;
+}
+
+export type DeliveryStatus = "queued" | "sent" | "failed" | "bounced";
+
+export interface ReportDelivery {
+  id: number;
+  to: string;
+  name: string | null;
+  status: DeliveryStatus;
+  error: string | null;
+  sent_at_utc: string | null;
+}
+
+export interface ArchivedReport {
+  id: number;
+  number: string;
+  learner: string;
+  period: string;
+  generated_at_utc: string;
+  deliveries: ReportDelivery[];
+}
+
+export interface NoteCategory {
+  id: number;
+  name: string;
+  report_visible_default: boolean;
+}
+
+export interface Enrollment {
+  id: number;
+  number: string;
+  learner_id: number;
+  status: { id: number; name?: string };
+  ended_on: string | null;
+  learner?: Learner;
+}

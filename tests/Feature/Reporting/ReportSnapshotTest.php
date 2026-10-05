@@ -6,6 +6,9 @@ namespace Tests\Feature\Reporting;
 
 use App\Models\Report;
 use App\Models\ReportTemplate;
+use App\Models\SubmissionStatus;
+use App\Services\AssessmentService;
+use App\Services\GradeBookService;
 use App\Services\ReportService;
 use App\Support\Reporting\ReportRenderer;
 use App\Support\Tenancy\TenantContext;
@@ -49,6 +52,41 @@ final class ReportSnapshotTest extends TestCase
                 Report::query()->find($report->getKey())->stats_snapshot['average']['percentage'],
                 'A sent report must not silently change when a later grade is corrected.',
             );
+        });
+    }
+
+    #[Test]
+    public function every_graded_assessment_in_the_period_reaches_the_report(): void
+    {
+        Storage::fake('local');
+
+        $this->inTenant(function (): void {
+            $this->markAllPresent();
+            $this->gradeHomework(16);
+
+            // A second graded piece of work: with more than one grade loaded together, a grade
+            // that fetched its assessment again would be refused outside production.
+            $quiz = app(AssessmentService::class)->publish(app(AssessmentService::class)->create($this->batch, [
+                'assessment_type_id' => $this->homework->assessment_type_id,
+                'grading_scheme_id' => $this->homework->grading_scheme_id,
+                'title' => 'Sample quiz',
+                'due_local_date' => '2026-08-22',
+                'max_points' => 10,
+            ]));
+            app(GradeBookService::class)->saveGrid($this->batch, [[
+                'assessment_id' => $quiz->getKey(),
+                'enrollment_id' => $this->enrollment->getKey(),
+                'submission_status_id' => SubmissionStatus::query()->where('code', 'SUBMITTED')->value('id'),
+                'raw_score' => 9,
+            ]]);
+
+            $report = $this->generate();
+
+            $this->assertSame(
+                ['Sample worksheet', 'Sample quiz'],
+                array_column($report->stats_snapshot['assessments'], 'title'),
+            );
+            $this->assertNotNull($report->stats_snapshot['assessments'][1]['result']);
         });
     }
 

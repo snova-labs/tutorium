@@ -64,16 +64,24 @@ final class GenerateReportJob implements ShouldQueue
             $period = $periods->forLabel($enrollment->batch, $this->periodLabel);
 
             $report = $reports->generate($enrollment, $period, $this->options + ['run_id' => $run->getKey()]);
-
-            if ($this->options['send'] ?? false) {
-                $deliveries->queue($report);
-            }
-
             $run->increment('succeeded');
         } catch (Throwable $e) {
             // Recorded against the run and moved on. The failure is visible and retryable rather
             // than silently missing from a batch of reports.
             $run->recordFailure($enrollment->learner->displayName(), $e->getMessage());
+            $this->finishIfDone($run->refresh());
+
+            return;
+        }
+
+        if ($this->options['send'] ?? false) {
+            try {
+                $deliveries->queue($report);
+            } catch (Throwable $e) {
+                // The report exists and is in the archive; only sending it was refused (an address
+                // not yet confirmed, say). It can be sent from the archive once that is fixed.
+                $run->recordNotice($enrollment->learner->displayName(), 'Generated but not sent: '.$e->getMessage());
+            }
         }
 
         $this->finishIfDone($run->refresh());

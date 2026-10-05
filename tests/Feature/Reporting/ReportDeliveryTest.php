@@ -8,6 +8,7 @@ use App\Enums\DeliveryStatus;
 use App\Models\Guardian;
 use App\Models\Report;
 use App\Models\ReportDelivery;
+use App\Models\User;
 use App\Services\ReportDeliveryService;
 use App\Services\ReportService;
 use App\Support\Mail\MailMessage;
@@ -163,6 +164,27 @@ final class ReportDeliveryTest extends TestCase
             $this->assertCount(1, $deliveries);
             $this->assertSame('adult.learner@example.test', $deliveries->first()->to_address);
             $this->assertSame('learner', $deliveries->first()->recipient_type->value);
+        });
+    }
+
+    #[Test]
+    public function a_report_that_may_not_be_sent_yet_is_still_generated(): void
+    {
+        Storage::fake('local');
+
+        $this->inTenant(function (): void {
+            // Nobody on the account has confirmed an address, so sending to families is held.
+            User::query()->update(['email_verified_at' => null]);
+            $this->markAllPresent();
+
+            $run = app(ReportService::class)->queueBatchRun($this->batch, '2026-08', ['send' => true, 'require_complete' => false]);
+            $run->refresh();
+
+            $this->assertSame(1, $run->succeeded, 'Generating is not blocked by sending.');
+            $this->assertSame(0, $run->failed);
+            $this->assertStringStartsWith('Generated but not sent', $run->failures[0]['reason']);
+            $this->assertSame(1, Report::query()->count());
+            $this->assertSame(0, ReportDelivery::query()->count());
         });
     }
 

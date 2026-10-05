@@ -102,7 +102,9 @@ final class ReportDataBuilder
             ->keyBy('assessment_id');
 
         return $assessments->map(function (Assessment $assessment) use ($grades): array {
-            $grade = $grades->get($assessment->getKey());
+            // The assessment is already loaded; hand it to the grade rather than letting the grade
+            // fetch it again, once per learner per assessment.
+            $grade = $grades->get($assessment->getKey())?->setRelation('assessment', $assessment);
 
             return [
                 'title' => $assessment->title,
@@ -110,8 +112,8 @@ final class ReportDataBuilder
                 'due' => $assessment->due_local_date?->toDateString(),
                 // Displayed in the scheme's own terms — "17 / 20", "B1", "Pass" — because that is
                 // what the learner was told when the work was set.
-                'result' => $grade === null ? null : $grade->assessment
-                    ->gradingScheme->strategy()->display($grade->setRelation('assessment', $assessment), $assessment),
+                'result' => $grade === null ? null : $assessment
+                    ->gradingScheme->strategy()->display($grade, $assessment),
                 'status' => $grade?->submissionStatus->name,
                 'normalized_pct' => $grade?->normalized_pct === null ? null : (float) $grade->normalized_pct,
                 'feedback' => $grade?->feedback,

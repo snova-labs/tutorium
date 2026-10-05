@@ -62,6 +62,16 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
                 <Link href={`/batches/${batch.id}/gradebook`}>Grade book</Link>
               </Button>
             )}
+            {can(me, "notes.write") && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/batches/${batch.id}/notes`}>Notes</Link>
+              </Button>
+            )}
+            {can(me, "reports.generate") && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/batches/${batch.id}/reports`}>Reports</Link>
+              </Button>
+            )}
           </>
         }
       />

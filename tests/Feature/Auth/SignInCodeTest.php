@@ -64,6 +64,19 @@ final class SignInCodeTest extends TestCase
     }
 
     #[Test]
+    public function signing_in_with_an_emailed_code_confirms_the_address(): void
+    {
+        $owner = $this->user('Owner');
+        $owner->forceFill(['email_verified_at' => null])->saveQuietly();
+
+        $this->apiLogin()->assertStatus(422);
+        $this->assertNull($owner->fresh()?->email_verified_at, 'Asking for a code proves nothing yet.');
+
+        $this->apiLogin($this->emailedCode($owner))->assertOk();
+        $this->assertNotNull($owner->fresh()?->email_verified_at);
+    }
+
+    #[Test]
     public function the_code_is_never_stored_as_typed(): void
     {
         $owner = $this->user('Owner');

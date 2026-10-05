@@ -148,6 +148,7 @@ final class ReportController
                 'period' => $report->period->label,
                 'generated_at_utc' => $report->generated_at->toIso8601String(),
                 'deliveries' => $report->deliveries->map(fn (ReportDelivery $d) => [
+                    'id' => $d->getKey(),
                     'to' => $d->to_address,
                     'name' => $d->recipient_name,
                     'status' => $d->status->value,
