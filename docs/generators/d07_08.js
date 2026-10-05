@@ -30,7 +30,7 @@ ch.push(...CODE([
   '  worker     # queue worker (database driver by default)',
   '  scheduler  # runs the scheduler loop (session generation, metering)',
   '  mailpit    # SMTP :1025, UI :8025 — catches ALL outbound mail',
-  '  minio      # S3-compatible object storage + console',
+  '  silo       # S3-compatible object storage + console (MinIO fork)',
   '  redis      # optional profile: enabled when testing at load',
   '  n8n        # optional profile: email-dispatch flow parity',
   '',
@@ -42,7 +42,7 @@ ch.push(NOTE('Rule: the entire product — including PDF generation and report e
 ch.push(H1('2. Provider Drivers'));
 ch.push(TBL(['Interface', 'Local', 'Cloud production', 'Microsoft-native (P5)', 'Self-hosted'], [
   ['MailProvider', 'Mail catcher (SMTP)', 'SMTP relay, or n8n workflow', 'Graph `sendMail` from the tenant mailbox', 'Customer SMTP or their M365'],
-  ['FileStorage', 'MinIO / local disk', 'S3-compatible object storage', 'SharePoint/OneDrive via Graph (optional destination)', 'Local disk or customer storage'],
+  ['FileStorage', 'Silo (MinIO fork) / local disk', 'S3-compatible object storage', 'SharePoint/OneDrive via Graph (optional destination)', 'Local disk or customer storage'],
   ['PdfRenderer', 'PHP-native', 'PHP-native → headless browser when layout demands', 'Unchanged', 'PHP-native (no browser dependency)'],
   ['PaymentProvider', 'Stub', 'Stripe + manual invoicing', 'Unchanged', 'Not used — licence file'],
   ['Entitlements', 'Subscription', 'Subscription', 'Subscription', 'Signed licence file'],

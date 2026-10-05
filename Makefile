@@ -10,7 +10,7 @@ setup:         ## one command for a new developer
 	docker compose exec -T app composer install
 	docker compose exec -T app php artisan key:generate
 	docker compose exec -T app php artisan migrate --seed
-	@echo "Ready: http://localhost:8080  |  mail http://localhost:8025  |  minio http://localhost:9001"
+	@echo "Ready: http://localhost:8080  |  mail http://localhost:8025  |  silo http://localhost:9001"
 
 build:
 	docker compose build

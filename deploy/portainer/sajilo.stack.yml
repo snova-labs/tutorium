@@ -7,14 +7,18 @@
 #   queue      Laravel queue worker
 #   scheduler  Laravel scheduler (trials, dunning, metering, cleanup)
 #   web        Next.js staff client                                     (port 3000, not published)
-#   tunnel     Cloudflare Tunnel connector: the only way in from outside
+#   tunnel     Cloudflare Tunnel connector; only with COMPOSE_PROFILES=tunnel
 #   migrate    one-off: runs database migrations, then exits; app, queue and scheduler wait for it
 #
-# Nothing publishes a port. Public hostnames are set on the tunnel in Cloudflare and point at
-# http://web:3000 and http://app:8080, names that only resolve inside this stack's network.
+# Nothing publishes a port. Traffic comes in one of two ways, chosen per stack:
+#   - Cloudflare Tunnel (COMPOSE_PROFILES=tunnel): the tunnel's public hostnames point at
+#     http://<APP_SLUG>-web:3000 and http://<APP_SLUG>-api:8080.
+#   - Nginx Proxy Manager (leave COMPOSE_PROFILES out): app and web also join the proxy's shared
+#     network (PROXY_NETWORK, default `web`), and NPM proxy hosts point at the same two addresses.
 #
-# Needs, once per server: the shared `mysql` stack on the external `db` network, and a database and
-# user for this environment (~/scripts/my-create-db.sh <name>). See docs/DEPLOYMENT.md.
+# Needs, once per server: the shared `mysql` stack on the external `db` network, the proxy network
+# (`docker network create web`, already there when NPM runs), and a database and user for this
+# environment (~/scripts/my-create-db.sh <name>). See docs/DEPLOYMENT.md.
 
 x-laravel: &laravel
   image: ${API_IMAGE:-ghcr.io/snova-labs/tutorium-api}:${IMAGE_TAG:-staging}
@@ -30,7 +34,7 @@ x-laravel: &laravel
     APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
     LOG_CHANNEL: stderr
     LOG_LEVEL: ${LOG_LEVEL:-info}
-    # Containers reach each other by name; the tunnel and any proxy sit on private Docker ranges.
+    # The tunnel connector and NPM both reach the app from private Docker ranges.
     TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
     DB_CONNECTION: mysql
     DB_HOST: ${DB_HOST:-mysql}
@@ -79,6 +83,10 @@ services:
     container_name: ${APP_SLUG}-api
     restart: unless-stopped
     mem_limit: 512m
+    networks:
+      - internal
+      - db
+      - proxy
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -123,8 +131,10 @@ services:
     restart: unless-stopped
     mem_limit: 384m
     environment:
-      # Server to server, inside the stack: the API is never called from the browser.
-      API_BASE_URL: http://app:8080/api/v1
+      # Server to server, inside the stack: the API is never called from the browser. The container
+      # name, not the service name: on the shared proxy network another stack's `app` (staging next
+      # to production) would answer to `app` too.
+      API_BASE_URL: http://${APP_SLUG}-api:8080/api/v1
     depends_on:
       app:
         condition: service_healthy
@@ -136,14 +146,19 @@ services:
       start_period: 20s
     networks:
       - internal
+      - proxy
     logging: *logging
 
   tunnel:
     image: cloudflare/cloudflared:latest
     container_name: ${APP_SLUG}-tunnel
+    # Started only with COMPOSE_PROFILES=tunnel in the stack's variables.
+    profiles: ["tunnel"]
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN from the Cloudflare tunnel}
+      # Not marked required (:?): Compose checks those even for services whose profile is off, which
+      # would force a token on NPM stacks. Without one the container exits and its log says why.
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     restart: unless-stopped
     mem_limit: 128m
     depends_on:
@@ -159,9 +174,14 @@ volumes:
     name: ${APP_SLUG}_storage
 
 networks:
-  # This stack's own network: the tunnel reaches web and app here, and nothing else can.
+  # This stack's own network: the containers talk to each other here, and the tunnel reaches web and
+  # app.
   internal:
     name: ${APP_SLUG}_internal
+  # The network Nginx Proxy Manager shares with the apps it serves. Only app and web join it.
+  proxy:
+    name: ${PROXY_NETWORK:-web}
+    external: true
   # The shared database network from the mysql stack (internal: no route to the internet).
   db:
     external: true

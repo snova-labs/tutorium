@@ -1,4 +1,4 @@
-# Deployment: staging and production on the Oracle server (Portainer + Cloudflare Tunnel)
+# Deployment: staging and production on the Oracle server (Portainer, Cloudflare Tunnel or NPM)
 
 _Applies to the Oracle Ampere A1 server (2 OCPU, 12 GB, ARM) described in the server notes: Docker,
 Portainer-managed stacks, a shared `mysql` stack on the external `db` network, and the domain
@@ -8,11 +8,25 @@ Portainer-managed stacks, a shared `mysql` stack on the external `db` network, a
 
 ```
                     Cloudflare (TLS, Access)                         Oracle server, no open ports for this app
- browser ──https──▶ sajilo-staging.jayshyampatel.com.np     ──tunnel──▶ sajilo-staging-tunnel ─▶ web:3000  (Next.js)
- browser ──https──▶ sajilo-staging-api.jayshyampatel.com.np ──tunnel──▶ sajilo-staging-tunnel ─▶ app:8080  (Laravel)
-                                                                        web ──http──▶ app:8080/api/v1  (inside the stack)
-                                                                        app, queue, scheduler ──▶ mysql  (db network)
+ browser ──https──▶ sajilo-staging.jayshyampatel.com.np     ──tunnel──▶ sajilo-staging-tunnel ─▶ sajilo-staging-web:3000  (Next.js)
+ browser ──https──▶ sajilo-staging-api.jayshyampatel.com.np ──tunnel──▶ sajilo-staging-tunnel ─▶ sajilo-staging-api:8080  (Laravel)
+                                                       web ──http──▶ sajilo-staging-api:8080/api/v1  (server to server)
+                                                       api, queue, scheduler ──▶ mysql  (db network)
 ```
+
+**Two ways in, chosen per stack** (same file, one variable):
+
+| | Cloudflare Tunnel (default) | Nginx Proxy Manager |
+|---|---|---|
+| Variable | `COMPOSE_PROFILES=tunnel` and `CLOUDFLARE_TUNNEL_TOKEN` | leave both out |
+| Certificates | Cloudflare | NPM (Let's Encrypt) |
+| Open ports | none | the server's existing 80/443 |
+| Keep strangers out of staging | Cloudflare Access (email login) | an NPM Access List (password or IP) |
+| Setup | "One-time setup: staging", steps 4–5 | "Alternative: Nginx Proxy Manager" below |
+
+Either way the targets are the same two containers, `<slug>-web:3000` and `<slug>-api:8080`. The
+`api` and `web` containers always join NPM's shared network (`web`), so switching is only a change
+of variables and a redeploy.
 
 One Portainer stack per environment, all from the same file, `deploy/portainer/sajilo.stack.yml`:
 
@@ -23,7 +37,7 @@ One Portainer stack per environment, all from the same file, `deploy/portainer/s
 | `<slug>-queue` | Laravel queue worker | 256 MB |
 | `<slug>-scheduler` | Laravel scheduler (trials, dunning, metering, clean-up) | 192 MB |
 | `<slug>-web` | Next.js staff client | 384 MB |
-| `<slug>-tunnel` | Cloudflare Tunnel connector, the only way in | 128 MB |
+| `<slug>-tunnel` | Cloudflare Tunnel connector (tunnel mode only) | 128 MB |
 
 `<slug>` is `sajilo-staging` for staging and `sajilo` for production. Measured idle use is about
 250 MB for the whole stack.
@@ -92,14 +106,14 @@ Don't run the command; the stack runs the connector.
 
 | Subdomain | Domain | Service type | URL |
 |---|---|---|---|
-| `sajilo-staging` | `jayshyampatel.com.np` | HTTP | `web:3000` |
-| `sajilo-staging-api` | `jayshyampatel.com.np` | HTTP | `app:8080` |
+| `sajilo-staging` | `jayshyampatel.com.np` | HTTP | `sajilo-staging-web:3000` |
+| `sajilo-staging-api` | `jayshyampatel.com.np` | HTTP | `sajilo-staging-api:8080` |
 
 Cloudflare creates the DNS records itself. The names are one level deep (`sajilo-staging-api`, not
 `api.sajilo-staging`) so Cloudflare's free certificate covers them.
 
-`web` and `app` only resolve inside this stack's own network, so the staging tunnel can only reach
-staging, and the production tunnel only production.
+Use the container names exactly as above (with the `sajilo-staging-` prefix), not `web` or `app`:
+the prefix is what keeps the staging tunnel on staging when production runs next to it.
 
 ### 5. Put staging behind Cloudflare Access
 
@@ -137,12 +151,13 @@ Portainer → **Stacks** → **Add stack**
   - Authentication: on, with a GitHub token that can read the repository
 - **Environment variables** → **Advanced mode** → paste
   `deploy/portainer/staging.env.example`, then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `APP_KEY` and
-  `DB_PASSWORD`.
+  `DB_PASSWORD`. Keep `COMPOSE_PROFILES=tunnel`: it is what starts the tunnel container.
 - **Deploy the stack**.
 
 The variables are substituted into the stack file, so nothing needs creating on the server. If a
-required one (`APP_KEY`, `APP_URL`, `DB_*`, `CLOUDFLARE_TUNNEL_TOKEN`) is missing, the deploy stops
-with a message naming it.
+required one (`APP_KEY`, `APP_URL`, `DB_*`, `APP_SLUG`) is missing, the deploy stops with a message
+naming it. A missing tunnel token doesn't stop the deploy (NPM stacks have none); the tunnel
+container exits instead and its log says why.
 
 The first start pulls the images, runs the migrations (`sajilo-staging-migrate` shows **exited**,
 which is correct), then starts the rest. In Portainer → Containers they should all turn
@@ -171,6 +186,43 @@ The admin panel is at `https://sajilo-staging-api.jayshyampatel.com.np/admin`.
 
 ---
 
+## Alternative: Nginx Proxy Manager instead of the tunnel
+
+Use this when you'd rather serve Sajilo like your other public sites, through NPM on ports 80/443.
+Everything else (images, database, Portainer stack, updates) stays the same.
+
+1. **DNS**: in Cloudflare, add two A records pointing at the server, **DNS only** (grey cloud),
+   because NPM's certificate challenge runs over HTTP:
+   `sajilo-staging` and `sajilo-staging-api`. If the tunnel had these names, delete its public
+   hostnames first (Zero Trust → Tunnels → the tunnel → Public hostnames), and the DNS records that
+   pointed at the tunnel.
+2. **Stack variables**: delete `COMPOSE_PROFILES` and `CLOUDFLARE_TUNNEL_TOKEN`. If NPM's network
+   isn't called `web`, set `PROXY_NETWORK` to its name. **Update the stack**. If a `sajilo-staging-tunnel` container is
+   left over from tunnel mode, remove it in Portainer → Containers.
+3. **NPM** → Hosts → Proxy Hosts → **Add Proxy Host**, twice:
+
+   | Domain | Scheme | Forward hostname | Port |
+   |---|---|---|---|
+   | `sajilo-staging.jayshyampatel.com.np` | http | `sajilo-staging-web` | `3000` |
+   | `sajilo-staging-api.jayshyampatel.com.np` | http | `sajilo-staging-api` | `8080` |
+
+   On each, tick **Block Common Exploits**. SSL tab: **Request a new SSL Certificate**, **Force SSL**,
+   **HTTP/2 Support**.
+4. **Keep staging private**: NPM → Access Lists → add one (a username and password, and/or your IP
+   under Access), then select it on both proxy hosts. Skip it for production. If you test payment
+   webhooks on staging, the provider can't pass the password; use the tunnel mode for that.
+
+Check: `docker network inspect web` lists `npm`, `sajilo-staging-api` and `sajilo-staging-web`.
+
+`TRUSTED_PROXIES` needs no change: NPM sits on a private Docker range, so the app sees HTTPS and the
+visitor's address. Keep the records grey: with an orange (proxied) record the app would see
+Cloudflare's address instead of the visitor's.
+
+**Switching back to the tunnel**: put the two variables back, update the stack, then delete the two
+proxy hosts in NPM and the two A records (the tunnel creates its own DNS records).
+
+---
+
 ## Updating staging
 
 1. Merge to `main`. Wait for **CI**, then **Images**, to go green.
@@ -190,7 +242,8 @@ Variable changes: Stacks → `sajilo-staging` → Environment variables → edit
 Repeat the staging setup with production values:
 
 1. Database: `~/scripts/my-create-db.sh sajilo`.
-2. Tunnel `sajilo`, with public hostnames `sajilo` → `web:3000` and `sajilo-api` → `app:8080`.
+2. Tunnel `sajilo`, with public hostnames `sajilo` → `sajilo-web:3000` and `sajilo-api` →
+   `sajilo-api:8080`. Or, with Nginx Proxy Manager, proxy hosts to the same two targets.
 3. Access: production is for customers, so leave the app public. If you want, protect only
    `sajilo-api.jayshyampatel.com.np/admin` (Allow: your email).
 4. A **new** `APP_KEY`: never reuse staging's.
@@ -222,6 +275,13 @@ If the bad release changed the database, restore the pre-deploy dump first ("Res
 database" in the server operations notes).
 
 ---
+
+## File storage
+
+Uploads and generated files go to the `<slug>_storage` volume on the server (`FILESYSTEM_DISK=local`),
+so the stack needs no object storage. Local development runs **Silo** (`pgsty/silo`), Pigsty's
+maintained fork of MinIO, because MinIO no longer publishes community images. If you later move files
+to S3-compatible storage on the server, use Silo too: it reads MinIO's variables and data format.
 
 ## Backups
 
@@ -255,7 +315,10 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | Symptom | Likely cause → fix |
 |---|---|
 | `<slug>-migrate` exited (1), app not started | Logs of `<slug>-migrate`. Usually wrong `DB_PASSWORD`, the database not created, or `mysql` not running (`docker ps \| grep mysql`). |
-| Cloudflare error 1033 / 502 | The tunnel container isn't running (logs of `<slug>-tunnel`), the token is wrong, or a public hostname points at the wrong service. It must be HTTP to `web:3000` or `app:8080`, not `localhost`. |
+| Cloudflare error 1033 / 502 | The tunnel container isn't running (logs of `<slug>-tunnel`), the token is wrong, or a public hostname points at the wrong service. It must be HTTP to `<slug>-web:3000` or `<slug>-api:8080`, not `localhost`. |
+| No `<slug>-tunnel` container at all | `COMPOSE_PROFILES=tunnel` is missing from the stack's variables. |
+| NPM shows 502 | The proxy host's forward hostname or port is wrong, or the stack isn't on NPM's network: `docker network inspect web` must list `<slug>-api` and `<slug>-web`. |
+| Deploy fails: `network web declared as external, but could not be found` | NPM's network has another name; set `PROXY_NETWORK`. On a server without NPM: `docker network create web`. |
 | Pull fails: `denied` / `unauthorized` | Portainer's `ghcr` registry is missing or its token expired (step 2). |
 | `exec format error` | An image not built for arm64; check the Images workflow ran for this tag. |
 | Links in emails or the admin panel are `http://` | `TRUSTED_PROXIES` overridden or empty. The stack default trusts Docker's private ranges. |
