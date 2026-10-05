@@ -44,7 +44,7 @@ final class TeacherNoteService
     /**
      * Write a note for a whole batch in one pass, skipping the empty ones.
      *
-     * @param array<int, array{enrollment_id: int, body: string, note_category_id: int, is_report_visible?: bool}> $notes
+     * @param array<int, array{enrollment_id: int, body?: string|null, note_category_id: int, is_report_visible?: bool|null}> $notes
      * @return array{written: int, skipped: int}
      */
     public function writeMany(array $notes, ?string $period = null): array
@@ -54,7 +54,7 @@ final class TeacherNoteService
 
         DB::transaction(function () use ($notes, $period, &$written, &$skipped): void {
             foreach ($notes as $note) {
-                if (trim($note['body']) === '') {
+                if (trim((string) ($note['body'] ?? '')) === '') {
                     // An empty box is a teacher who has not got to that learner yet, not a note
                     // saying nothing.
                     $skipped++;

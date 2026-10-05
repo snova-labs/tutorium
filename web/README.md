@@ -26,7 +26,7 @@ signed-in person's token (a backend-for-frontend):
   and clears the cookie.
 - `src/proxy.ts` sends anyone without a session cookie to `/sign-in` before a page renders. It
   checks only that a cookie is there; the API checks the token on every call.
-- Downloads (the import template, blocked rows) go through route handlers that pass the CSV on.
+- Downloads (the import template, blocked rows, report PDFs) go through route handlers that pass the file on.
 
 Laravel rate-limits sign-in per address and IP, and this server forwards the browser's address as
 `X-Forwarded-For`. In production, configure Laravel's trusted proxies to trust this server, or
@@ -46,6 +46,16 @@ every sign-in will appear to come from one address.
   submission status; typing a result marks it submitted. Changed cells save together, and a value
   the scheme rejects comes back with the scheme's own message. Rubric totals are shown but
   scored per criterion elsewhere.
+- **Notes** (`/batches/{id}/notes`): the period-end pass, one box per learner, saved together.
+  Empty boxes are skipped. Each note can be kept off the report; the kind of note sets the default.
+- **Reports** (`/batches/{id}/reports`): readiness first (who is ready, who has gaps, who has nobody
+  to send to), then Generate, optionally skipping learners with gaps and emailing as each report
+  is ready. Progress is shown while the queue works; reasons such as "generated but not sent" are
+  grouped with a count.
+- **Report archive** (`/reports`): every report with its delivery state; download exactly what was
+  sent, send, and retry a failed or bounced delivery.
+- **Sign up** (`/sign-up`, public): the self-serve form; nothing is created until the emailed link
+  is confirmed (`/sign-up/confirm/{token}`), and opening that page alone creates nothing.
 - **Billing**: payment method, card or invoice, converting a trial.
 
 ## Conventions that must not drift

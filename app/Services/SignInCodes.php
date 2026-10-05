@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\SignInCode;
+use App\Models\User;
 use App\Notifications\SignInCodeNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -81,6 +82,12 @@ final class SignInCodes
             }
 
             $current->forceFill(['consumed_at' => now()])->save();
+
+            // Using a code sent to the address proves the address, exactly as a confirmation link
+            // would: academies created without self-serve signup confirm theirs this way.
+            if ($subject instanceof User && $subject->email_verified_at === null) {
+                $subject->forceFill(['email_verified_at' => now()])->saveQuietly();
+            }
 
             return true;
         });

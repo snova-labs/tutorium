@@ -155,6 +155,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('enrollments/{enrollment}/average', [GradeBookController::class, 'average'])
             ->name('api.enrollments.average');
         // Notes
+        Route::get('note-categories', [NoteController::class, 'categories'])->name('api.notes.categories');
         Route::get('enrollments/{enrollment}/notes', [NoteController::class, 'index'])->name('api.notes.index');
         Route::post('enrollments/{enrollment}/notes', [NoteController::class, 'store'])->name('api.notes.store');
         Route::post('batches/{batch}/notes', [NoteController::class, 'storeMany'])->name('api.notes.bulk');

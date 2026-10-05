@@ -11,6 +11,7 @@ use App\Models\TeacherNote;
 use App\Services\TeacherNoteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 final class NoteController
 {
@@ -81,6 +82,17 @@ final class NoteController
             'notes.*.body' => ['nullable', 'string', 'max:4000'],
             'notes.*.is_report_visible' => ['nullable', 'boolean'],
         ]);
+
+        // Only this batch's learners. Permission to write for one class is not permission to write
+        // for every class in the academy.
+        $inBatch = Enrollment::query()->where('batch_id', $batch->getKey())->pluck('id')->all();
+        $outside = array_diff(array_column($validated['notes'], 'enrollment_id'), $inBatch);
+
+        if ($outside !== []) {
+            throw ValidationException::withMessages([
+                'notes' => 'Some of these learners are not in this batch.',
+            ]);
+        }
 
         $result = $this->notes->writeMany($validated['notes'], $validated['period'] ?? null);
 
