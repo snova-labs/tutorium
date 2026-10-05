@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { createLearner, type NewLearnerState } from "@/app/(app)/learners/new/actions";
@@ -73,7 +74,11 @@ export function NewLearnerForm() {
             <ul className="mt-1 space-y-1">
               {state.duplicates.map((candidate) => (
                 <li key={candidate.id}>
-                  <span className="font-mono text-xs">{candidate.number}</span> {candidate.name}:{" "}
+                  <span className="font-mono text-xs">{candidate.number}</span>{" "}
+                  <Link href={`/learners/${candidate.id}`} className="underline underline-offset-2">
+                    {candidate.name}
+                  </Link>
+                  :{" "}
                   {candidate.confidence} ({candidate.reasons.join(", ")})
                 </li>
               ))}

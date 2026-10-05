@@ -11,6 +11,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     ...(can(me, "learners.view") ? [{ href: "/learners", label: "Learners" }] : []),
     { href: "/batches", label: "Batches" },
     ...(can(me, "reports.view_archive") ? [{ href: "/reports", label: "Reports" }] : []),
+    ...(can(me, "users.manage") ? [{ href: "/team", label: "Team" }] : []),
     ...(can(me, "billing.manage") ? [{ href: "/billing", label: "Billing" }] : []),
   ];
 

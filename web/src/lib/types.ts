@@ -36,6 +36,7 @@ export interface Batch {
   runs: { starts_on: string; ends_on: string | null };
   status: string;
   delivery_mode: string;
+  accepts_enrollments?: boolean;
   course?: { id: number; name: string };
   branch?: Branch;
 }
@@ -250,4 +251,52 @@ export interface Enrollment {
   status: { id: number; name?: string };
   ended_on: string | null;
   learner?: Learner;
+}
+
+export interface Guardian {
+  id: number;
+  name: string;
+  relation?: string | null;
+  contact: { email: string | null; phone: string | null };
+  /** Present when read through a learner: how this guardian relates to them. */
+  link?: { is_primary: boolean; receives_reports: boolean };
+}
+
+export interface LearnerDetail extends Omit<Learner, "guardians"> {
+  home_timezone: string | null;
+  guardians: Guardian[];
+  enrollments: (Enrollment & {
+    enrolled_on: string;
+    batch?: Batch;
+    status: { id: number; name?: string; reason: string | null; counts_toward_billing?: boolean };
+  })[];
+}
+
+export interface AttendanceRate {
+  attended: number;
+  counted: number;
+  percentage: number | null;
+  unmarked: number;
+  is_complete: boolean;
+  is_informational: boolean;
+}
+
+export interface PeriodAverage {
+  percentage: number | null;
+  graded: number;
+  ungraded: number;
+  is_complete: boolean;
+  explanation: string;
+}
+
+export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
+
+export interface Invitation {
+  id: number;
+  email: string;
+  role: string;
+  status: InvitationStatus;
+  invited_by: string | null;
+  expires_on: string;
+  times_sent: number;
 }

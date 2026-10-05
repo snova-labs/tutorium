@@ -63,8 +63,10 @@ export async function createLearner(_: NewLearnerState, formData: FormData): Pro
     force: formData.get("force") === "1",
   };
 
+  let created: { id: number };
+
   try {
-    await api("learners", { method: "POST", json: payload });
+    created = (await api<{ data: { id: number } }>("learners", { method: "POST", json: payload })).data;
   } catch (error) {
     if (!isApiError(error)) {
       throw error;
@@ -86,5 +88,6 @@ export async function createLearner(_: NewLearnerState, formData: FormData): Pro
   }
 
   revalidatePath("/learners");
-  redirect("/learners");
+  // Straight to the new learner, where the next step (enrolling them in a batch) is.
+  redirect(`/learners/${created.id}`);
 }

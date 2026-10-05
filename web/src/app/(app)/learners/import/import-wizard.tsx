@@ -42,6 +42,8 @@ export function ImportWizard() {
           <CardTitle>Choose a file</CardTitle>
           <CardDescription>
             An .xlsx or .csv file, up to 5 MB and 5,000 rows. The first row names the columns.{" "}
+            {/* A file download from a route handler, not a page: a plain link, so the browser saves it. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a className="underline" href="/learners/import/template">
               Download the template
             </a>

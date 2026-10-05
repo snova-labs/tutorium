@@ -27,7 +27,8 @@ final class StaffInvitationNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $url = rtrim((string) config('app.url'), '/').'/invitations/'.$this->token;
+        // The staff client, where the acceptance page is (web/src/app/invitations).
+        $url = rtrim((string) config('platform.web_url'), '/').'/invitations/'.$this->token;
 
         return (new MailMessage)
             ->subject($this->academyName.' has invited you')
