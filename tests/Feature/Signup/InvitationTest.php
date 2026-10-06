@@ -71,6 +71,19 @@ final class InvitationTest extends TestCase
     }
 
     #[Test]
+    public function the_emailed_link_opens_the_staff_client(): void
+    {
+        config(['platform.web_url' => 'https://staff.example.test']);
+        $this->invite(['email' => 'teacher@example.test', 'role_name' => 'Teacher']);
+
+        Notification::assertSentOnDemand(StaffInvitationNotification::class, function ($notification, $channels, $notifiable) {
+            $mail = $notification->toMail($notifiable);
+
+            return str_starts_with((string) $mail->actionUrl, 'https://staff.example.test/invitations/');
+        });
+    }
+
+    #[Test]
     public function nobody_can_invite_into_a_role_stronger_than_their_own(): void
     {
         $frontDesk = $this->staff('Front desk', 'front@sample.test');

@@ -36,6 +36,13 @@ every sign-in will appear to come from one address.
 
 - **Home**: trial status and the setup checklist.
 - **Learners**: list and search, add (with the duplicate warning), spreadsheet import.
+- **Learner** (`/learners/{id}`): classes with this period's attendance and average, enrolling in
+  another batch, guardians with who receives reports (a warning when nobody does), adding a
+  guardian, and the learner's details.
+- **Team** (`/team`): invitations and their state; invite with only the roles you may grant, send
+  again, withdraw, or invite an expired address again.
+- **Accept an invitation** (`/invitations/{token}`, public): the page the invitation email opens;
+  the newcomer sets a password, and their browser's timezone is stored.
 - **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
 - **Register** (`/sessions/{id}/register`): one large button per status (44px or more, for a phone in
   a classroom), minutes late for a late mark, "mark the rest present", one save for the class.

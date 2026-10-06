@@ -71,7 +71,9 @@ export default async function LearnersPage({ searchParams }: PageProps<"/learner
               <TableRow key={learner.id}>
                 <TableCell className="pl-4 font-mono text-xs">{learner.number}</TableCell>
                 <TableCell>
-                  <div className="font-medium">{learner.name.display}</div>
+                  <Link href={`/learners/${learner.id}`} className="font-medium hover:underline">
+                    {learner.name.display}
+                  </Link>
                   {learner.name.preferred && learner.name.preferred !== learner.name.legal && (
                     <div className="text-xs text-muted-foreground">{learner.name.legal}</div>
                   )}
