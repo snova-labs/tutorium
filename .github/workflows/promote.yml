@@ -1,7 +1,7 @@
 name: Promote to production
 
 # Points ...:production at an image that already ran on staging. Nothing is rebuilt, so production
-# runs exactly the bytes that were tested. Afterwards: Portainer → Stacks → sajilo → Pull and
+# runs exactly the bytes that were tested. Afterwards: Portainer → Stacks → tutorium → Pull and
 # redeploy (with re-pull). To roll back, promote an older sha-xxxxxxx tag the same way.
 
 on:
