@@ -300,3 +300,44 @@ export interface Invitation {
   expires_on: string;
   times_sent: number;
 }
+
+export type TermKey = "learner" | "guardian" | "batch" | "course" | "session" | "assessment" | "period";
+
+export type Terms = Record<TermKey, { singular: string; plural: string }>;
+
+export interface EnrollmentStatusOption {
+  id: number;
+  name: string;
+  code: string | null;
+  is_terminal: boolean;
+  counts_toward_billing: boolean;
+  set_by_transfer_only: boolean;
+}
+
+export interface Preset {
+  code: string;
+  name: string;
+  vertical: string;
+  version: number;
+  summary: string;
+  sets: Record<string, string>;
+}
+
+export interface OnboardingStep {
+  key: string;
+  title: string;
+  hint: string;
+  done: boolean;
+  detail: string | null;
+}
+
+export interface Onboarding {
+  dismissed: boolean;
+  complete: boolean;
+  done: number;
+  total: number;
+  can_record_attendance: boolean;
+  steps: OnboardingStep[];
+  sample_data_loaded: boolean;
+  preset: string | null;
+}

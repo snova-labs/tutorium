@@ -7,18 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
+import { getTerms } from "@/lib/me";
 import type { Batch } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Batches" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTerms()).batch.plural };
+}
 
 export default async function BatchesPage() {
-  const batches = await api<Paginated<Batch>>("batches");
+  const [batches, terms] = await Promise.all([api<Paginated<Batch>>("batches"), getTerms()]);
 
   return (
     <>
       <PageHeader
-        title="Batches"
-        description="Each batch runs on its own clock: its location's, unless it was set on the batch."
+        title={terms.batch.plural}
+        description="Each one runs on its own clock: its location's, unless one was set on it directly."
       />
 
       <Card className="py-0">

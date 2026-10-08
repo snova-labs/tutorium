@@ -34,10 +34,13 @@ every sign-in will appear to come from one address.
 
 ## Screens
 
-- **Home**: trial status and the setup checklist.
+- **Home**: trial status and the setup checklist. Each unfinished step links to where it is done;
+  whoever manages settings can load or remove the sample class, or hide the guide.
 - **Learners**: list and search, add (with the duplicate warning), spreadsheet import.
 - **Learner** (`/learners/{id}`): classes with this period's attendance and average, enrolling in
-  another batch, guardians with who receives reports (a warning when nobody does), adding a
+  another batch, changing an enrollment's status (ending one needs a reason; what each status does
+  to the bill is said before choosing), moving the learner to another batch (a transfer: the old
+  enrollment closes and keeps its attendance and grades), guardians with who receives reports (a warning when nobody does), adding a
   guardian, and the learner's details.
 - **Team** (`/team`): invitations and their state; invite with only the roles you may grant, send
   again, withdraw, or invite an expired address again.
@@ -64,6 +67,12 @@ every sign-in will appear to come from one address.
 - **Sign up** (`/sign-up`, public): the self-serve form; nothing is created until the emailed link
   is confirmed (`/sign-up/confirm/{token}`), and opening that page alone creates nothing.
 - **Billing**: payment method, card or invoice, converting a trial.
+- **Settings** (`/settings`): the academy's own words for learners, batches and the rest (used for
+  every label, from the nav down), presets with what each would set, and bringing back a hidden
+  setup guide.
+
+Labels come from the academy's terminology (`getTerms()` in `lib/me.ts`), never hard-coded nouns.
+The API's field names stay canonical whatever an academy calls things.
 
 ## Conventions that must not drift
 

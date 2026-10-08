@@ -23,6 +23,9 @@ final class EnrollmentStatus extends Model
     /** @use HasFactory<EnrollmentStatusFactory> */
     use Auditable, BelongsToTenant, HasFactory;
 
+    /** Set by a transfer, never chosen directly: a transfer also creates the new enrollment. */
+    public const TRANSFERRED = 'TRANSFERRED';
+
     protected $fillable = ['tenant_id', 'name', 'code', 'is_active_for_billing', 'is_terminal', 'color', 'sort'];
 
     protected function casts(): array

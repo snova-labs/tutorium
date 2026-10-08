@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EnrolForm } from "@/app/(app)/learners/[id]/enrol-form";
+import { EnrollmentControls } from "@/app/(app)/learners/[id]/enrollment-controls";
 import { GuardiansPanel } from "@/app/(app)/learners/[id]/guardians-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, type Paginated } from "@/lib/api";
 import { isApiError } from "@/lib/api-error";
-import { getMe } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
 import { attendanceSummary, hasReportRecipient, percent, sortEnrollments } from "@/lib/people";
 import { can } from "@/lib/permissions";
 import { formatLocalDate } from "@/lib/time";
-import type { AttendanceRate, Batch, LearnerDetail, PeriodAverage } from "@/lib/types";
+import type { AttendanceRate, Batch, EnrollmentStatusOption, LearnerDetail, PeriodAverage } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Learner" };
 
@@ -45,7 +46,7 @@ export default async function LearnerPage({ params }: PageProps<"/learners/[id]"
     throw error;
   }
 
-  const me = await getMe();
+  const [me, terms] = await Promise.all([getMe(), getTerms()]);
   const enrollments = sortEnrollments(learner.enrollments);
   const running = enrollments.filter((e) => e.ended_on === null);
 
@@ -77,11 +78,17 @@ export default async function LearnerPage({ params }: PageProps<"/learners/[id]"
   );
 
   const enrolledIn = new Set(running.map((e) => e.batch?.id));
-  const openBatches = can(me, "enrollments.manage")
-    ? (await api<Paginated<Batch>>("batches")).data
-        .filter((b) => b.accepts_enrollments !== false && !enrolledIn.has(b.id))
-        .map((b) => ({ id: b.id, label: [b.name, b.course?.name].filter(Boolean).join(" · ") }))
-    : [];
+  const manages = can(me, "enrollments.manage");
+  const [openBatches, statuses] = manages
+    ? await Promise.all([
+        api<Paginated<Batch>>("batches").then((r) =>
+          r.data
+            .filter((b) => b.accepts_enrollments !== false && !enrolledIn.has(b.id))
+            .map((b) => ({ id: b.id, label: [b.name, b.course?.name].filter(Boolean).join(" · ") })),
+        ),
+        api<{ data: EnrollmentStatusOption[] }>("enrollment-statuses").then((r) => r.data),
+      ])
+    : [[], []];
 
   return (
     <>
@@ -94,7 +101,7 @@ export default async function LearnerPage({ params }: PageProps<"/learners/[id]"
           <>
             {learner.status.name && <Badge variant="secondary">{learner.status.name}</Badge>}
             <Button asChild variant="ghost" size="sm">
-              <Link href="/learners">All learners</Link>
+              <Link href="/learners">All {terms.learner.plural.toLowerCase()}</Link>
             </Button>
           </>
         }
@@ -138,6 +145,7 @@ export default async function LearnerPage({ params }: PageProps<"/learners/[id]"
                         </div>
                         <Badge variant={enrollment.ended_on ? "outline" : "secondary"}>{enrollment.status.name ?? "—"}</Badge>
                       </div>
+                      {enrollment.status.reason && <p className="mt-1 text-xs text-muted-foreground">{enrollment.status.reason}</p>}
                       {figures && (figures.attendance || figures.average) && (
                         <dl className="mt-2 grid grid-cols-2 gap-2 text-sm">
                           {figures.attendance && (
@@ -159,11 +167,21 @@ export default async function LearnerPage({ params }: PageProps<"/learners/[id]"
                           )}
                         </dl>
                       )}
+                      {manages && enrollment.ended_on === null && (
+                        <EnrollmentControls
+                          learnerId={learner.id}
+                          enrollmentId={enrollment.id}
+                          currentStatusId={enrollment.status.id}
+                          statuses={statuses}
+                          batches={openBatches}
+                          batchNoun={terms.batch.singular.toLowerCase()}
+                        />
+                      )}
                     </li>
                   );
                 })}
               </ul>
-              {can(me, "enrollments.manage") && <EnrolForm learnerId={learner.id} batches={openBatches} />}
+              {manages && <EnrolForm learnerId={learner.id} batches={openBatches} />}
             </CardContent>
           </Card>
 

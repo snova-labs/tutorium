@@ -82,3 +82,41 @@ export async function enrol(learnerId: number, _previous: FormResult, formData: 
     return "Enrolled.";
   });
 }
+
+/** Move one enrollment to another status. Ending it needs a reason, which the API insists on too. */
+export async function changeEnrollmentStatus(
+  learnerId: number,
+  enrollmentId: number,
+  statusId: number,
+  reason: string,
+): Promise<FormResult> {
+  return attempt(learnerId, async () => {
+    await api(`enrollments/${enrollmentId}/status`, {
+      method: "PUT",
+      json: { status_id: statusId, reason: reason.trim() === "" ? undefined : reason.trim() },
+    });
+
+    return "Status changed.";
+  });
+}
+
+/** Move the learner to another batch: this enrollment closes, and a new one opens there. */
+export async function transferEnrollment(
+  learnerId: number,
+  enrollmentId: number,
+  batchId: number,
+  reason: string,
+): Promise<FormResult> {
+  if (!batchId) {
+    return { ok: false, errors: { batch_id: "Choose where they are moving to." } };
+  }
+
+  return attempt(learnerId, async () => {
+    await api(`enrollments/${enrollmentId}/transfer`, {
+      method: "POST",
+      json: { batch_id: batchId, reason: reason.trim() === "" ? undefined : reason.trim() },
+    });
+
+    return "Moved. Attendance and grades so far stay with the old enrollment.";
+  });
+}

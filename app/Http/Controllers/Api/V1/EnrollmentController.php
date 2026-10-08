@@ -42,6 +42,31 @@ final class EnrollmentController
         return EnrollmentResource::collection($query->paginate(50));
     }
 
+    /**
+     * The statuses an enrollment can be in, in this account's order and wording.
+     *
+     * Each says whether it ends the enrollment (and so needs a reason) and whether it counts toward
+     * the bill, so the client can say both before anyone chooses.
+     */
+    public function statuses(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('viewAny', Enrollment::class), 403);
+
+        return response()->json([
+            'data' => EnrollmentStatus::query()->orderBy('sort')->orderBy('id')->get()
+                ->map(fn (EnrollmentStatus $status) => [
+                    'id' => $status->id,
+                    'name' => $status->name,
+                    'code' => $status->code,
+                    'is_terminal' => $status->is_terminal,
+                    'counts_toward_billing' => $status->is_active_for_billing,
+                    // Transferring creates the new enrollment as well, so it has its own route.
+                    'set_by_transfer_only' => $status->code === EnrollmentStatus::TRANSFERRED,
+                ])
+                ->values(),
+        ]);
+    }
+
     public function store(StoreEnrollmentRequest $request): JsonResponse
     {
         $enrollment = $this->enrollments->enroll(
@@ -74,7 +99,7 @@ final class EnrollmentController
             $request->input('reason'),
         );
 
-        return new EnrollmentResource($updated->load(['status', 'history.toStatus']));
+        return new EnrollmentResource($updated->load(['status', 'history.fromStatus', 'history.toStatus']));
     }
 
     /**

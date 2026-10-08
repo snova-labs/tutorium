@@ -124,6 +124,8 @@ Route::prefix('v1')->group(function (): void {
         // because the record that someone attended for six weeks is what the reports were built on.
         Route::apiResource('enrollments', EnrollmentController::class)
             ->only(['index', 'store', 'show'])->names('api.enrollments');
+        Route::get('enrollment-statuses', [EnrollmentController::class, 'statuses'])
+            ->name('api.enrollments.statuses');
         Route::put('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])
             ->name('api.enrollments.status');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])
@@ -178,6 +180,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('onboarding', [OnboardingController::class, 'status'])->name('api.onboarding.status');
         Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('api.onboarding.dismiss');
+        Route::post('onboarding/reopen', [OnboardingController::class, 'reopen'])->name('api.onboarding.reopen');
 
         Route::get('presets', [OnboardingController::class, 'presets'])->name('api.presets.index');
         Route::post('presets/apply', [OnboardingController::class, 'applyPreset'])->name('api.presets.apply');

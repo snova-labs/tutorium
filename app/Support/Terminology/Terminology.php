@@ -54,6 +54,26 @@ final class Terminology
         return Str::lower($plural ? $this->plural($key) : $this->singular($key));
     }
 
+    /**
+     * The nouns a tenant may rename.
+     *
+     * @return list<string>
+     */
+    public function keys(): array
+    {
+        return array_keys(self::CANONICAL);
+    }
+
+    /**
+     * The words shipped with the product, so a screen can offer "put it back".
+     *
+     * @return array<string, array{singular: string, plural: string}>
+     */
+    public function defaults(): array
+    {
+        return array_map(fn (array $t) => ['singular' => $t[0], 'plural' => $t[1]], self::CANONICAL);
+    }
+
     /** @return array<string, array{singular: string, plural: string}> */
     public function all(): array
     {
