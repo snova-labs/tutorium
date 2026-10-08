@@ -8,9 +8,9 @@ Portainer-managed stacks, a shared `mysql` stack on the external `db` network, a
 
 ```
                     Cloudflare (TLS, Access)                         Oracle server, no open ports for this app
- browser ──https──▶ sajilo-staging.jayshyampatel.com.np     ──tunnel──▶ sajilo-staging-tunnel ─▶ sajilo-staging-web:3000  (Next.js)
- browser ──https──▶ sajilo-staging-api.jayshyampatel.com.np ──tunnel──▶ sajilo-staging-tunnel ─▶ sajilo-staging-api:8080  (Laravel)
-                                                       web ──http──▶ sajilo-staging-api:8080/api/v1  (server to server)
+ browser ──https──▶ tutorium-staging.jayshyampatel.com.np     ──tunnel──▶ tutorium-staging-tunnel ─▶ tutorium-staging-web:3000  (Next.js)
+ browser ──https──▶ tutorium-staging-api.jayshyampatel.com.np ──tunnel──▶ tutorium-staging-tunnel ─▶ tutorium-staging-api:8080  (Laravel)
+                                                       web ──http──▶ tutorium-staging-api:8080/api/v1  (server to server)
                                                        api, queue, scheduler ──▶ mysql  (db network)
 ```
 
@@ -28,7 +28,7 @@ Either way the targets are the same two containers, `<slug>-web:3000` and `<slug
 `api` and `web` containers always join NPM's shared network (`web`), so switching is only a change
 of variables and a redeploy.
 
-One Portainer stack per environment, all from the same file, `deploy/portainer/sajilo.stack.yml`:
+One Portainer stack per environment, all from the same file, `deploy/portainer/stack.yml`:
 
 | Container | What it is | Memory limit |
 |---|---|---|
@@ -39,7 +39,7 @@ One Portainer stack per environment, all from the same file, `deploy/portainer/s
 | `<slug>-web` | Next.js staff client | 384 MB |
 | `<slug>-tunnel` | Cloudflare Tunnel connector (tunnel mode only) | 128 MB |
 
-`<slug>` is `sajilo-staging` for staging and `sajilo` for production. Measured idle use is about
+`<slug>` is `tutorium-staging` for staging and `tutorium` for production. Measured idle use is about
 250 MB for the whole stack.
 
 **Switching between staging and production** changes nothing in the files: it is a second stack,
@@ -89,7 +89,7 @@ Portainer → **Registries** → **Add registry** → **Custom registry**
 
 **Server**
 ```bash
-~/scripts/my-create-db.sh sajilo_staging
+~/scripts/my-create-db.sh tutorium_staging
 ```
 Save the printed password in your password manager. The app reaches MySQL as `mysql:3306` over the
 `db` network, and the database is never exposed outside Docker.
@@ -97,7 +97,7 @@ Save the printed password in your password manager. The app reaches MySQL as `my
 ### 4. Create the Cloudflare Tunnel
 
 Cloudflare dashboard → **Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel** →
-**Cloudflared** → name `sajilo-staging` → Save.
+**Cloudflared** → name `tutorium-staging` → Save.
 
 On the install screen, pick **Docker**, and copy only the token (the long string after `--token`).
 Don't run the command; the stack runs the connector.
@@ -106,29 +106,29 @@ Don't run the command; the stack runs the connector.
 
 | Subdomain | Domain | Service type | URL |
 |---|---|---|---|
-| `sajilo-staging` | `jayshyampatel.com.np` | HTTP | `sajilo-staging-web:3000` |
-| `sajilo-staging-api` | `jayshyampatel.com.np` | HTTP | `sajilo-staging-api:8080` |
+| `tutorium-staging` | `jayshyampatel.com.np` | HTTP | `tutorium-staging-web:3000` |
+| `tutorium-staging-api` | `jayshyampatel.com.np` | HTTP | `tutorium-staging-api:8080` |
 
-Cloudflare creates the DNS records itself. The names are one level deep (`sajilo-staging-api`, not
-`api.sajilo-staging`) so Cloudflare's free certificate covers them.
+Cloudflare creates the DNS records itself. The names are one level deep (`tutorium-staging-api`, not
+`api.tutorium-staging`) so Cloudflare's free certificate covers them.
 
-Use the container names exactly as above (with the `sajilo-staging-` prefix), not `web` or `app`:
+Use the container names exactly as above (with the `tutorium-staging-` prefix), not `web` or `app`:
 the prefix is what keeps the staging tunnel on staging when production runs next to it.
 
 ### 5. Put staging behind Cloudflare Access
 
 Zero Trust → **Access** → **Applications** → **Add an application** → **Self-hosted**
 
-- Name: `Sajilo staging`
-- Application domains: `sajilo-staging.jayshyampatel.com.np` and
-  `sajilo-staging-api.jayshyampatel.com.np`
+- Name: `Tutorium staging`
+- Application domains: `tutorium-staging.jayshyampatel.com.np` and
+  `tutorium-staging-api.jayshyampatel.com.np`
 - Policy: **Allow**, Include → **Emails** → your address (and any testers)
 
 Anyone else gets Cloudflare's login page before reaching the app. The app's own sign-in still
 applies after that.
 
 If you test payment-provider webhooks on staging, add a second application for
-`sajilo-staging-api.jayshyampatel.com.np/webhooks` with a **Bypass** policy (Include: Everyone). The
+`tutorium-staging-api.jayshyampatel.com.np/webhooks` with a **Bypass** policy (Include: Everyone). The
 webhook checks its own signature.
 
 ### 6. Create the stack in Portainer
@@ -143,11 +143,11 @@ echo "base64:$(openssl rand -base64 32)"
 
 Portainer → **Stacks** → **Add stack**
 
-- Name: `sajilo-staging`
+- Name: `tutorium-staging`
 - Build method: **Repository**
   - Repository URL: `https://github.com/snova-labs/tutorium`
   - Repository reference: `refs/heads/main`
-  - Compose path: `deploy/portainer/sajilo.stack.yml`
+  - Compose path: `deploy/portainer/stack.yml`
   - Authentication: on, with a GitHub token that can read the repository
 - **Environment variables** → **Advanced mode** → paste
   `deploy/portainer/staging.env.example`, then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `APP_KEY` and
@@ -159,56 +159,56 @@ required one (`APP_KEY`, `APP_URL`, `WEB_URL`, `DB_*`, `APP_SLUG`) is missing, t
 naming it. A missing tunnel token doesn't stop the deploy (NPM stacks have none); the tunnel
 container exits instead and its log says why.
 
-The first start pulls the images, runs the migrations (`sajilo-staging-migrate` shows **exited**,
+The first start pulls the images, runs the migrations (`tutorium-staging-migrate` shows **exited**,
 which is correct), then starts the rest. In Portainer → Containers they should all turn
 **healthy** within a minute.
 
 ### 7. Create an academy and sign in
 
-Portainer → Containers → `sajilo-staging-api` → **Console** → Connect (`/bin/sh`), then:
+Portainer → Containers → `tutorium-staging-api` → **Console** → Connect (`/bin/sh`), then:
 
 ```bash
 php artisan platform:provision-academy "Test Academy" you@example.com "Your Name" --timezone=Asia/Kathmandu
 ```
 
-It prints a temporary password once. Open `https://sajilo-staging.jayshyampatel.com.np`, pass
+It prints a temporary password once. Open `https://tutorium-staging.jayshyampatel.com.np`, pass
 Cloudflare Access, then sign in.
 
 Owners, managers and accountants confirm each sign-in with an emailed code. Staging doesn't send
-mail (`MAIL_MAILER=log`), so the code is in Portainer → Containers → `sajilo-staging-api` → **Logs**:
+mail (`MAIL_MAILER=log`), so the code is in Portainer → Containers → `tutorium-staging-api` → **Logs**:
 search for `sign-in code`. To send real mail instead, set the `MAIL_*` SMTP variables and update the
 stack.
 
-Or sign up like a customer would, at `https://sajilo-staging.jayshyampatel.com.np/sign-up`. The
+Or sign up like a customer would, at `https://tutorium-staging.jayshyampatel.com.np/sign-up`. The
 confirmation link goes to the same log (search for `sign-up/confirm`). Production keeps
 `SIGNUP_OPEN=false` until you open it; see `SIGN-UP.md`.
 
 For demo data instead: `php artisan db:seed --force` creates two sample academies whose owners sign
 in with `owner@sample-one.test` / `password`. **Staging only**: never run it on production.
 
-The admin panel is at `https://sajilo-staging-api.jayshyampatel.com.np/admin`.
+The admin panel is at `https://tutorium-staging-api.jayshyampatel.com.np/admin`.
 
 ---
 
 ## Alternative: Nginx Proxy Manager instead of the tunnel
 
-Use this when you'd rather serve Sajilo like your other public sites, through NPM on ports 80/443.
+Use this when you'd rather serve Tutorium like your other public sites, through NPM on ports 80/443.
 Everything else (images, database, Portainer stack, updates) stays the same.
 
 1. **DNS**: in Cloudflare, add two A records pointing at the server, **DNS only** (grey cloud),
    because NPM's certificate challenge runs over HTTP:
-   `sajilo-staging` and `sajilo-staging-api`. If the tunnel had these names, delete its public
+   `tutorium-staging` and `tutorium-staging-api`. If the tunnel had these names, delete its public
    hostnames first (Zero Trust → Tunnels → the tunnel → Public hostnames), and the DNS records that
    pointed at the tunnel.
 2. **Stack variables**: delete `COMPOSE_PROFILES` and `CLOUDFLARE_TUNNEL_TOKEN`. If NPM's network
-   isn't called `web`, set `PROXY_NETWORK` to its name. **Update the stack**. If a `sajilo-staging-tunnel` container is
+   isn't called `web`, set `PROXY_NETWORK` to its name. **Update the stack**. If a `tutorium-staging-tunnel` container is
    left over from tunnel mode, remove it in Portainer → Containers.
 3. **NPM** → Hosts → Proxy Hosts → **Add Proxy Host**, twice:
 
    | Domain | Scheme | Forward hostname | Port |
    |---|---|---|---|
-   | `sajilo-staging.jayshyampatel.com.np` | http | `sajilo-staging-web` | `3000` |
-   | `sajilo-staging-api.jayshyampatel.com.np` | http | `sajilo-staging-api` | `8080` |
+   | `tutorium-staging.jayshyampatel.com.np` | http | `tutorium-staging-web` | `3000` |
+   | `tutorium-staging-api.jayshyampatel.com.np` | http | `tutorium-staging-api` | `8080` |
 
    On each, tick **Block Common Exploits**. SSL tab: **Request a new SSL Certificate**, **Force SSL**,
    **HTTP/2 Support**.
@@ -216,7 +216,7 @@ Everything else (images, database, Portainer stack, updates) stays the same.
    under Access), then select it on both proxy hosts. Skip it for production. If you test payment
    webhooks on staging, the provider can't pass the password; use the tunnel mode for that.
 
-Check: `docker network inspect web` lists `npm`, `sajilo-staging-api` and `sajilo-staging-web`.
+Check: `docker network inspect web` lists `npm`, `tutorium-staging-api` and `tutorium-staging-web`.
 
 `TRUSTED_PROXIES` needs no change: NPM sits on a private Docker range, so the app sees HTTPS and the
 visitor's address. Keep the records grey: with an orange (proxied) record the app would see
@@ -230,12 +230,12 @@ proxy hosts in NPM and the two A records (the tunnel creates its own DNS records
 ## Updating staging
 
 1. Merge to `main`. Wait for **CI**, then **Images**, to go green.
-2. Portainer → Stacks → `sajilo-staging` → **Pull and redeploy**, with **Re-pull image** ticked.
+2. Portainer → Stacks → `tutorium-staging` → **Pull and redeploy**, with **Re-pull image** ticked.
 
-Migrations run on every redeploy, before the app starts. If one fails, `sajilo-staging-migrate`
+Migrations run on every redeploy, before the app starts. If one fails, `tutorium-staging-migrate`
 shows **exited (1)** and the app doesn't start on a half-migrated database; its **Logs** show why.
 
-Variable changes: Stacks → `sajilo-staging` → Environment variables → edit → **Update the stack**.
+Variable changes: Stacks → `tutorium-staging` → Environment variables → edit → **Update the stack**.
 
 ---
 
@@ -245,17 +245,17 @@ Variable changes: Stacks → `sajilo-staging` → Environment variables → edit
 
 Repeat the staging setup with production values:
 
-1. Database: `~/scripts/my-create-db.sh sajilo`.
-2. Tunnel `sajilo`, with public hostnames `sajilo` → `sajilo-web:3000` and `sajilo-api` →
-   `sajilo-api:8080`. Or, with Nginx Proxy Manager, proxy hosts to the same two targets.
+1. Database: `~/scripts/my-create-db.sh tutorium`.
+2. Tunnel `tutorium`, with public hostnames `tutorium` → `tutorium-web:3000` and `tutorium-api` →
+   `tutorium-api:8080`. Or, with Nginx Proxy Manager, proxy hosts to the same two targets.
 3. Access: production is for customers, so leave the app public. If you want, protect only
-   `sajilo-api.jayshyampatel.com.np/admin` (Allow: your email).
+   `tutorium-api.jayshyampatel.com.np/admin` (Allow: your email).
 4. A **new** `APP_KEY`: never reuse staging's.
 5. Real SMTP settings: production must deliver sign-in codes.
 6. GitHub → Actions → **Promote to production** → Run workflow with tag `staging`.
-7. Portainer stack `sajilo`: same repository and compose path, variables from
+7. Portainer stack `tutorium`: same repository and compose path, variables from
    `deploy/portainer/production.env.example`.
-8. Create the first academy with `platform:provision-academy` in `sajilo-api`'s console.
+8. Create the first academy with `platform:provision-academy` in the `tutorium-api` container's console.
 
 ### Each release
 
@@ -264,11 +264,11 @@ Repeat the staging setup with production values:
 
    **Server**
    ```bash
-   docker exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -u root --single-transaction --routines sajilo' \
-     | gzip > ~/backups/mysql-sajilo_predeploy_$(date +%F_%H-%M).sql.gz
+   docker exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -u root --single-transaction --routines tutorium' \
+     | gzip > ~/backups/mysql-tutorium_predeploy_$(date +%F_%H-%M).sql.gz
    ```
 3. Actions → **Promote to production** → tag `staging` (or the exact `sha-…` you tested).
-4. Portainer → Stacks → `sajilo` → **Pull and redeploy** with **Re-pull image**.
+4. Portainer → Stacks → `tutorium` → **Pull and redeploy** with **Re-pull image**.
 
 ### Rolling back
 
@@ -317,12 +317,12 @@ Create it and let the app's user use it:
 **Server**
 ```bash
 docker exec -i mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root' <<'SQL'
-CREATE DATABASE IF NOT EXISTS `sajilo_staging_drill`;
-GRANT ALL PRIVILEGES ON `sajilo_staging_drill`.* TO 'sajilo_staging'@'%';
+CREATE DATABASE IF NOT EXISTS `tutorium_staging_drill`;
+GRANT ALL PRIVILEGES ON `tutorium_staging_drill`.* TO 'tutorium_staging'@'%';
 SQL
 ```
 
-For production, `sajilo_drill` and the user `sajilo`. The stack variable is
+For production, `tutorium_drill` and the user `tutorium`. The stack variable is
 `BACKUP_DRILL_DATABASE`. Then prove it once by hand: Portainer → Containers → `<slug>-api` →
 Console:
 
@@ -336,7 +336,7 @@ The backups volume is on the same disk as the database. Add it to `~/scripts/bac
 clean-up line, so the server's nightly copy takes the newest backup with it:
 
 ```bash
-for vol in sajilo-staging_backups sajilo_backups; do
+for vol in tutorium-staging_backups tutorium_backups; do
   docker volume inspect "$vol" >/dev/null 2>&1 || continue
   docker run --rm -v "$vol":/data:ro -v "$BACKUP_DIR":/backup alpine sh -c \
     'latest=$(ls -1 /data | sort | tail -n 1); [ -n "$latest" ] && tar cf "/backup/'"$vol"'_${latest}.tar" -C /data "$latest"'
@@ -350,15 +350,15 @@ done
 
    **Server**
    ```bash
-   docker run --rm -v sajilo_backups:/b:ro alpine ls /b
-   docker run --rm -v sajilo_backups:/b:ro alpine cat /b/<folder>/database.sql.gz \
-     | gunzip | docker exec -i mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root sajilo'
+   docker run --rm -v tutorium_backups:/b:ro alpine ls /b
+   docker run --rm -v tutorium_backups:/b:ro alpine cat /b/<folder>/database.sql.gz \
+     | gunzip | docker exec -i mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -u root tutorium'
    ```
 3. Restore the files into the storage volume:
 
    **Server**
    ```bash
-   docker run --rm -v sajilo_backups:/b:ro -v sajilo_storage:/data alpine \
+   docker run --rm -v tutorium_backups:/b:ro -v tutorium_storage:/data alpine \
      sh -c 'find /data -mindepth 1 -delete && tar xzf /b/<folder>/storage.tar.gz -C /data'
    ```
 4. Start the stack. Migrations newer than the backup run first.
@@ -374,7 +374,7 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | Logs | Portainer → Containers → `<slug>-api` (or `-web`, `-queue`, `-scheduler`, `-tunnel`) → Logs |
 | Artisan | Portainer → Containers → `<slug>-api` → Console, then `php artisan …` |
 | Health | `https://<api host>/up` (alive) and `/ready` (database and cache) |
-| Memory | `docker stats --no-stream \| grep sajilo` |
+| Memory | `docker stats --no-stream \| grep tutorium` |
 | Backups | `php artisan platform:backups` in `<slug>-api` |
 
 ## Troubleshooting

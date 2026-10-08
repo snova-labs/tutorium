@@ -1,4 +1,4 @@
-# Sajilo (Tutorium) as one Portainer stack. The same file runs staging and production: only the
+# Tutorium as one Portainer stack. The same file runs staging and production: only the
 # stack's environment variables differ (deploy/portainer/staging.env.example, production.env.example).
 # Paste those into Portainer → Stack → Environment variables (Advanced mode); they are substituted
 # below, so no .env file is needed on the server.
@@ -25,8 +25,8 @@ x-laravel: &laravel
   # Every setting is passed explicitly from the stack's variables. The ones marked :? must be set,
   # or the stack refuses to deploy rather than starting half-configured.
   environment:
-    APP_NAME: ${APP_NAME:-Sajilo}
-    PLATFORM_NAME: ${PLATFORM_NAME:-Sajilo}
+    APP_NAME: ${APP_NAME:-Tutorium}
+    PLATFORM_NAME: ${PLATFORM_NAME:-Tutorium}
     APP_ENV: ${APP_ENV:-staging}
     APP_DEBUG: ${APP_DEBUG:-false}
     APP_KEY: ${APP_KEY:?Set APP_KEY (echo "base64:$(openssl rand -base64 32)")}
@@ -58,7 +58,7 @@ x-laravel: &laravel
     MAIL_USERNAME: ${MAIL_USERNAME:-}
     MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@jayshyampatel.com.np}
-    MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Sajilo}
+    MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tutorium}
     # Public signup (SL-401). false closes the form without a deploy.
     SIGNUP_OPEN: ${SIGNUP_OPEN:-true}
     BILLING_PROVIDER: ${BILLING_PROVIDER:-manual}
@@ -84,7 +84,7 @@ x-laravel: &laravel
 services:
   migrate:
     <<: *laravel
-    container_name: ${APP_SLUG:?Set APP_SLUG, e.g. sajilo-staging}-migrate
+    container_name: ${APP_SLUG:?Set APP_SLUG, e.g. tutorium-staging}-migrate
     command: ["php", "/var/www/html/artisan", "migrate", "--force", "--no-interaction"]
     restart: "no"
     mem_limit: 256m
