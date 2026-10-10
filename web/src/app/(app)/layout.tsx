@@ -1,18 +1,19 @@
 import { AppNav, type NavItem } from "@/components/app/app-nav";
 import { Button } from "@/components/ui/button";
-import { getMe } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const me = await getMe();
+  const [me, terms] = await Promise.all([getMe(), getTerms()]);
 
   const items: NavItem[] = [
     { href: "/", label: "Home" },
-    ...(can(me, "learners.view") ? [{ href: "/learners", label: "Learners" }] : []),
-    { href: "/batches", label: "Batches" },
+    ...(can(me, "learners.view") ? [{ href: "/learners", label: terms.learner.plural }] : []),
+    { href: "/batches", label: terms.batch.plural },
     ...(can(me, "reports.view_archive") ? [{ href: "/reports", label: "Reports" }] : []),
     ...(can(me, "users.manage") ? [{ href: "/team", label: "Team" }] : []),
     ...(can(me, "billing.manage") ? [{ href: "/billing", label: "Billing" }] : []),
+    ...(can(me, "settings.manage") ? [{ href: "/settings", label: "Settings" }] : []),
   ];
 
   return (

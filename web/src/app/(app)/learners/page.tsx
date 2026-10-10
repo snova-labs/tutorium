@@ -8,19 +8,22 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
-import { getMe } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
 import type { Learner } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Learners" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTerms()).learner.plural };
+}
 
 export default async function LearnersPage({ searchParams }: PageProps<"/learners">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : "";
   const page = typeof params.page === "string" ? Number(params.page) || 1 : 1;
 
-  const [me, learners] = await Promise.all([
+  const [me, terms, learners] = await Promise.all([
     getMe(),
+    getTerms(),
     api<Paginated<Learner>>("learners", { query: { q, page } }),
   ]);
 
@@ -29,7 +32,7 @@ export default async function LearnersPage({ searchParams }: PageProps<"/learner
   return (
     <>
       <PageHeader
-        title="Learners"
+        title={terms.learner.plural}
         description={learners.meta ? `${learners.meta.total} on file` : undefined}
         actions={
           can(me, "learners.create") && (

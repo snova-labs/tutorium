@@ -57,6 +57,11 @@ final class OnboardingChecklist
         $this->tenancy->withoutScoping(fn () => $tenant->update(['onboarding_dismissed_at' => now()]));
     }
 
+    public function reopen(Tenant $tenant): void
+    {
+        $this->tenancy->withoutScoping(fn () => $tenant->update(['onboarding_dismissed_at' => null]));
+    }
+
     /** @return array<int, array<string, mixed>> */
     private function steps(): array
     {

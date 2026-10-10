@@ -47,6 +47,16 @@ final class OnboardingController
         return response()->json(['data' => ['message' => 'Setup guide hidden. Reopen it from settings.']]);
     }
 
+    /** Bring the setup guide back after it was hidden. */
+    public function reopen(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('settings.manage'), 403);
+
+        $this->checklist->reopen($this->tenancy->require());
+
+        return response()->json(['data' => ['message' => 'Setup guide is back on the home page.']]);
+    }
+
     /** The catalogue, with what each preset would set, for the screen that asks someone to choose. */
     public function presets(Request $request): JsonResponse
     {

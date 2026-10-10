@@ -91,7 +91,7 @@ final class EnrollmentService
         $this->guardCapacity($target);
 
         return DB::transaction(function () use ($enrollment, $target, $reason): Enrollment {
-            $transferred = $this->statusByCode('TRANSFERRED') ?? $this->statusByCode('COMPLETED');
+            $transferred = $this->statusByCode(EnrollmentStatus::TRANSFERRED) ?? $this->statusByCode('COMPLETED');
 
             $new = $this->enroll($enrollment->learner, $target);
 

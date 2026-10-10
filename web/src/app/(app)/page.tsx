@@ -5,17 +5,13 @@ import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActionButton } from "@/app/(app)/settings/action-button";
+import { hideSetupGuide, loadSampleData, removeSampleData } from "@/app/(app)/settings/actions";
 import { api } from "@/lib/api";
-import { getMe } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
-
-interface Onboarding {
-  dismissed: boolean;
-  complete: boolean;
-  done: number;
-  total: number;
-  steps: { key: string; title: string; hint: string; done: boolean; detail: string | null }[];
-}
+import { stepHref } from "@/lib/settings";
+import type { Onboarding } from "@/lib/types";
 
 interface Trial {
   in_trial: boolean;
@@ -25,7 +21,8 @@ interface Trial {
 }
 
 export default async function HomePage() {
-  const me = await getMe();
+  const [me, terms] = await Promise.all([getMe(), getTerms()]);
+  const manages = can(me, "settings.manage");
   const [onboarding, trial] = await Promise.all([
     api<{ data: Onboarding }>("onboarding").then((r) => r.data),
     api<{ data: Trial }>("trial").then((r) => r.data),
@@ -59,24 +56,59 @@ export default async function HomePage() {
             <CardTitle>Getting set up</CardTitle>
             <CardDescription>
               {onboarding.done} of {onboarding.total} done
+              {onboarding.can_record_attendance && " · Teachers can take registers now; the rest can wait."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ol className="space-y-3">
-              {onboarding.steps.map((step) => (
-                <li key={step.key} className="flex gap-3">
-                  {step.done ? (
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" aria-label="Done" />
-                  ) : (
-                    <Circle className="mt-0.5 size-4 shrink-0 text-faint" aria-label="Not done yet" />
-                  )}
-                  <div>
-                    <div className="text-sm font-medium">{step.title}</div>
-                    <div className="text-xs text-muted-foreground">{step.detail ?? step.hint}</div>
-                  </div>
-                </li>
-              ))}
+              {onboarding.steps.map((step) => {
+                const href = step.done ? null : stepHref(step.key);
+
+                return (
+                  <li key={step.key} className="flex gap-3">
+                    {step.done ? (
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" aria-label="Done" />
+                    ) : (
+                      <Circle className="mt-0.5 size-4 shrink-0 text-faint" aria-label="Not done yet" />
+                    )}
+                    <div>
+                      <div className="text-sm font-medium">
+                        {href ? (
+                          <Link href={href} className="hover:underline">
+                            {step.title}
+                          </Link>
+                        ) : (
+                          step.title
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{step.detail ?? step.hint}</div>
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
+            {manages && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {onboarding.sample_data_loaded ? (
+                  <ActionButton
+                    size="sm"
+                    variant="outline"
+                    run={removeSampleData}
+                    confirm="Remove the sample class and everything recorded in it?"
+                    pendingLabel="Removing…"
+                  >
+                    Remove sample data
+                  </ActionButton>
+                ) : (
+                  <ActionButton size="sm" variant="outline" run={loadSampleData} pendingLabel="Loading…">
+                    Try it with a sample class
+                  </ActionButton>
+                )}
+                <ActionButton size="sm" variant="ghost" run={hideSetupGuide}>
+                  Hide this guide
+                </ActionButton>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -85,7 +117,7 @@ export default async function HomePage() {
         {can(me, "learners.view") && (
           <Card>
             <CardHeader>
-              <CardTitle>Learners</CardTitle>
+              <CardTitle>{terms.learner.plural}</CardTitle>
               <CardDescription>Everyone you teach, and who receives their reports.</CardDescription>
             </CardHeader>
             <CardContent className="flex gap-2">
@@ -102,7 +134,7 @@ export default async function HomePage() {
         )}
         <Card>
           <CardHeader>
-            <CardTitle>Batches</CardTitle>
+            <CardTitle>{terms.batch.plural}</CardTitle>
             <CardDescription>Classes, their clocks and their sessions.</CardDescription>
           </CardHeader>
           <CardContent>

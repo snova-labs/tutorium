@@ -21,7 +21,10 @@ final class TerminologyController
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->terms->all()]);
+        return response()->json([
+            'data' => $this->terms->all(),
+            'meta' => ['defaults' => $this->terms->defaults()],
+        ]);
     }
 
     public function update(Request $request): JsonResponse
@@ -29,13 +32,15 @@ final class TerminologyController
         abort_unless($request->user()->can('settings.manage'), 403);
 
         $request->validate([
-            'terms' => ['required', 'array', 'min:1'],
+            // Only the nouns the product knows. Anything else would be stored and never shown.
+            'terms' => ['required', 'array', 'min:1', 'array:'.implode(',', $this->terms->keys())],
+            'terms.*' => ['required', 'array:singular,plural'],
             'terms.*.singular' => ['required', 'string', 'max:60'],
             'terms.*.plural' => ['required', 'string', 'max:60'],
         ]);
 
         $this->terms->set($request->collect('terms')
-            ->map(fn (array $t) => [$t['singular'], $t['plural']])
+            ->map(fn (array $t) => [trim($t['singular']), trim($t['plural'])])
             ->all());
 
         return response()->json([
