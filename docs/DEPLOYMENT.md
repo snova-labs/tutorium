@@ -51,24 +51,29 @@ run.
 ## Images and the staging branch
 
 ```
- main ──(Actions → Deploy to staging)──▶ staging branch ──▶ Images: build :staging ──▶ Portainer webhook ──▶ staging stack redeploys
-                                                                                     Promote to production ──▶ :production
+ main ──(Actions → Deploy to staging)──▶ build :sha-abc1234 ──▶ staging branch (pinned to sha-abc1234)
+                                                                   │
+                                     Portainer polls the branch ◀──┘ ──▶ pulls sha-abc1234, redeploys
+                                     Promote to production ──▶ :production
 ```
 
-The **`staging` branch is what staging runs**. Nobody merges into it: it is a pointer that the
-**Deploy to staging** workflow moves.
+The **`staging` branch is what staging runs**. Nobody merges into it or pushes to it: it is a
+pointer that the **Deploy to staging** workflow moves.
 
-- **Deploy to staging** (Actions → Deploy to staging → Run workflow, ref `main` by default) checks
-  that CI passed on that commit, moves `staging` to it, builds the `linux/arm64` images and calls
-  Portainer's webhook for the staging stack. To go back, run it with an older commit or tag.
-- A person pushing to `staging` directly gets the same thing, after CI passes on the push.
+- **Deploy to staging** (Actions → Deploy to staging → Run workflow, ref `main` by default):
+  1. checks that CI passed on that commit;
+  2. builds the `linux/arm64` images from it;
+  3. moves `staging` to it, plus one commit that pins the stack file to that build's image tag.
+- Portainer (CE) follows the `staging` branch by **polling** (no webhook needed). Because every
+  deploy has a new tag, the redeploy pulls the new images by itself.
+- To go back, run it with an older commit or tag.
 - The images go to GitHub Container Registry:
-  - `ghcr.io/snova-labs/tutorium-api:staging` and `:sha-<7 chars>`
-  - `ghcr.io/snova-labs/tutorium-web:staging` and `:sha-<7 chars>`
+  - `ghcr.io/snova-labs/tutorium-api:sha-<7 chars>` and `:staging` (the latest build)
+  - `ghcr.io/snova-labs/tutorium-web:sha-<7 chars>` and `:staging`
 - **Promote to production** (Actions → Promote to production → Run workflow) points `:production`
   at `staging` or at any `sha-…` tag, without rebuilding.
 
-Merging to `main` no longer changes staging by itself: deploy when you want to show it.
+Merging to `main` doesn't change staging by itself: deploy when you want to show it.
 
 Nothing is built on the server.
 
@@ -76,10 +81,11 @@ Nothing is built on the server.
 
 ## One-time setup: staging
 
-### 1. Check the images exist
+### 1. Build the first images
 
-After this is merged and the **Images** workflow is green: GitHub → snova-labs → **Packages** →
-`tutorium-api` and `tutorium-web` each have a `staging` tag.
+GitHub → **Actions** → **Deploy to staging** → **Run workflow** (ref `main`). When it is green,
+GitHub → snova-labs → **Packages** → `tutorium-api` and `tutorium-web` each have a `sha-…` and a
+`staging` tag, and the `staging` branch exists for the stack to follow.
 
 The first build takes longer (the PHP extensions compile under ARM emulation); later builds use the
 cache. If native ARM runners are available to the repository, set the repository variable
@@ -161,8 +167,8 @@ Portainer → **Stacks** → **Add stack**
     uses `refs/heads/main`)
   - Compose path: `deploy/portainer/stack.yml`
   - Authentication: on, with a GitHub token that can read the repository
-  - **GitOps updates**: on, mechanism **Webhook**, with **Re-pull image** on. Copy the webhook URL
-    it shows (see "Automatic redeploys" below).
+  - **GitOps updates**: on, mechanism **Polling**, fetch interval `5m`. That is what makes Deploy
+    to staging reach the server.
 - **Environment variables** → **Advanced mode** → paste
   `deploy/portainer/staging.env.example`, then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `APP_KEY` and
   `DB_PASSWORD`. Keep `COMPOSE_PROFILES=tunnel`: it is what starts the tunnel container.
@@ -179,18 +185,18 @@ which is correct), then starts the rest. In Portainer → Containers they should
 
 ### 7. Create an academy and sign in
 
-Portainer → Containers → `tutorium-staging-api` → **Console** → Connect (`/bin/sh`), then:
+On the server, from the repository clone ("Commands on the server" below):
 
 ```bash
-php artisan platform:provision-academy "Test Academy" you@example.com "Your Name" --timezone=Asia/Kathmandu
+make academy ENV=staging NAME="Test Academy" EMAIL=you@example.com OWNER="Your Name"
 ```
 
 It prints a temporary password once. Open `https://tutorium-staging.jayshyampatel.com.np`, pass
 Cloudflare Access, then sign in.
 
 Owners, managers and accountants confirm each sign-in with an emailed code. Staging doesn't send
-mail (`MAIL_MAILER=log`), so the code is in Portainer → Containers → `tutorium-staging-api` → **Logs**:
-search for `sign-in code`. To send real mail instead, set the `MAIL_*` SMTP variables and update the
+mail (`MAIL_MAILER=log`), so get the code with `make codes ENV=staging` (or Portainer → Containers →
+`tutorium-staging-api` → **Logs**, search for `sign-in code`). To send real mail instead, set the `MAIL_*` SMTP variables and update the
 stack.
 
 Or sign up like a customer would, at `https://tutorium-staging.jayshyampatel.com.np/sign-up`. The
@@ -245,29 +251,46 @@ proxy hosts in NPM and the two A records (the tunnel creates its own DNS records
 1. Merge to `main` and wait for **CI** to go green.
 2. GitHub → **Actions** → **Deploy to staging** → **Run workflow** (ref: `main`).
 
-That's all: the workflow builds the images and calls the stack's webhook, and Portainer pulls them
-and redeploys. Without the webhook secret, finish by hand: Portainer → Stacks → `tutorium-staging`
-→ **Pull and redeploy**, with **Re-pull image** ticked.
+Within the polling interval (5 minutes) Portainer sees the moved branch, pulls the new images and
+redeploys. To skip the wait: Portainer → Stacks → `tutorium-staging` → **Pull and redeploy**.
 
 Migrations run on every redeploy, before the app starts. If one fails, `tutorium-staging-migrate`
 shows **exited (1)** and the app doesn't start on a half-migrated database; its **Logs** show why.
 
 Variable changes: Stacks → `tutorium-staging` → Environment variables → edit → **Update the stack**.
 
-### Automatic redeploys (one-time)
+## Commands on the server: `make`
 
-1. Portainer → Stacks → `tutorium-staging` → **GitOps updates**: on, **Webhook**, **Re-pull
-   image** on → **Update the stack**. Copy the webhook URL
-   (`https://<portainer>/api/stacks/webhooks/<id>`).
-2. GitHub → Settings → Secrets and variables → Actions → **New repository secret**:
-   `PORTAINER_STAGING_WEBHOOK` = that URL.
-3. GitHub has to reach it. If Portainer sits behind Cloudflare Access, add a **Bypass** policy for
-   the path `/api/stacks/webhooks/*` on Portainer's hostname: the URL itself is the secret, and
-   the endpoint only triggers a redeploy of that one stack.
+Every routine command has a `make` target that runs in the right container. On the server, clone
+the repository once (read-only use; a GitHub token that can read it):
+
+**Server**
+```bash
+git clone https://github.com/snova-labs/tutorium.git ~/tutorium
+```
+
+Then, from `~/tutorium` (`git pull` now and then for new targets), add `ENV=staging` or
+`ENV=production`. Without `ENV`, the same targets run against the local docker compose setup.
+
+| Task | Command |
+|---|---|
+| List the commands | `make help` |
+| Create an academy | `make academy ENV=production NAME="Test Academy" EMAIL=you@example.com OWNER="Your Name"` |
+| Rebuild the demo academy | `make demo ENV=staging PASSWORD='…'` (refused for production) |
+| Sign-in codes and confirmation links (log mailer) | `make codes ENV=staging` |
+| Backups and drills | `make backups ENV=production`, `make backup …`, `make drill …` |
+| Dump the database before a release | `make db-dump ENV=production` |
+| Containers, health and memory | `make status ENV=staging` |
+| Follow the logs | `make logs ENV=staging` |
+| A shell in the API container | `make shell ENV=staging` |
+| Any other artisan command | `make artisan ENV=staging CMD="about"` |
+
+Without a clone, run the underlying command in Portainer → Containers → `<slug>-api` → **Console**:
+`make -n <target> …` on any machine with the repository prints exactly what a target runs.
 
 ## Demo academy
 
-`php artisan platform:demo-academy` builds **Himalayan Scholars Academy**: two locations
+`make demo` (`php artisan platform:demo-academy`) builds **Himalayan Scholars Academy**: two locations
 (Baneshwor and Pulchowk, Asia/Kathmandu), eight staff, five courses, six classes on their
 timetables, 82 students with their parents, and a term already two months in: registers taken
 (including late arrivals, excused absences and a few registers still open), homework, classwork,
@@ -300,14 +323,9 @@ Staff sign in with `DEMO_PASSWORD`:
 | Nirmala Rai | `nirmala@himalayan-scholars.example` | Teacher, Computer |
 | Prakash Joshi | `prakash@himalayan-scholars.example` | Accountant (emailed code) |
 
-Emailed codes are in Portainer → Containers → `tutorium-staging-api` → **Logs** (search for
-`sign-in code`). To rebuild by hand, in that container's console:
-
-```bash
-php artisan platform:demo-academy --fresh --password='…'
-```
-
-The command refuses to run with `APP_ENV=production`.
+Emailed codes: `make codes ENV=staging` (or Portainer → Containers → `tutorium-staging-api` →
+**Logs**, search for `sign-in code`). To rebuild it by hand: `make demo ENV=staging PASSWORD='…'`.
+Locally: `make demo`. It refuses to run with `APP_ENV=production`.
 
 ---
 
@@ -328,7 +346,7 @@ Repeat the staging setup with production values:
 7. Portainer stack `tutorium`: same repository and compose path, reference `refs/heads/main`, no
    GitOps updates (production moves only when you promote), variables from
    `deploy/portainer/production.env.example`.
-8. Create the first academy with `platform:provision-academy` in the `tutorium-api` container's console.
+8. Create the first academy: `make academy ENV=production NAME="…" EMAIL=… OWNER="…"`.
 
 ### Each release
 
@@ -337,8 +355,7 @@ Repeat the staging setup with production values:
 
    **Server**
    ```bash
-   docker exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -u root --single-transaction --routines tutorium' \
-     | gzip > ~/backups/mysql-tutorium_predeploy_$(date +%F_%H-%M).sql.gz
+   make db-dump ENV=production
    ```
 3. Actions → **Promote to production** → tag `staging` (or the exact `sha-…` you tested).
 4. Portainer → Stacks → `tutorium` → **Pull and redeploy** with **Re-pull image**.
@@ -396,11 +413,10 @@ SQL
 ```
 
 For production, `tutorium_drill` and the user `tutorium`. The stack variable is
-`BACKUP_DRILL_DATABASE`. Then prove it once by hand: Portainer → Containers → `<slug>-api` →
-Console:
+`BACKUP_DRILL_DATABASE`. Then prove it once by hand:
 
 ```bash
-php artisan platform:backup && php artisan platform:restore-drill && php artisan platform:backups
+make backup ENV=staging && make drill ENV=staging && make backups ENV=staging
 ```
 
 ### Off the machine
@@ -444,11 +460,11 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 
 | Task | How |
 |---|---|
-| Logs | Portainer → Containers → `<slug>-api` (or `-web`, `-queue`, `-scheduler`, `-tunnel`) → Logs |
-| Artisan | Portainer → Containers → `<slug>-api` → Console, then `php artisan …` |
+| Logs | `make logs ENV=…`, or Portainer → Containers → `<slug>-api` (or `-web`, `-queue`, `-scheduler`, `-tunnel`) → Logs |
+| Artisan | `make artisan ENV=… CMD="…"` |
 | Health | `https://<api host>/up` (alive) and `/ready` (database and cache) |
-| Memory | `docker stats --no-stream \| grep tutorium` |
-| Backups | `php artisan platform:backups` in `<slug>-api` |
+| Containers and memory | `make status ENV=…` |
+| Backups | `make backups ENV=…` |
 
 ## Troubleshooting
 
@@ -463,5 +479,5 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | `exec format error` | An image not built for arm64; check the Images workflow ran for this tag. |
 | Links in emails or the admin panel are `http://` | `TRUSTED_PROXIES` overridden or empty. The stack default trusts Docker's private ranges. |
 | No sign-in code in the logs | `MAIL_MAILER` must be `log` and `LOG_LEVEL` `debug` (the log mailer writes at debug level). |
-| Backup or drill failure email | `php artisan platform:backups`, then the `<slug>-scheduler` logs. "BACKUP_DRILL_DATABASE is not set" or "Access denied" means the drill database setup above is missing. |
+| Backup or drill failure email | `make backups ENV=…`, then the `<slug>-scheduler` logs. "BACKUP_DRILL_DATABASE is not set" or "Access denied" means the drill database setup above is missing. |
 | Signed out on every request | `APP_KEY` changed, or `SESSION_SECURE_COOKIE=true` without HTTPS. Behind the tunnel, HTTPS is always on. |

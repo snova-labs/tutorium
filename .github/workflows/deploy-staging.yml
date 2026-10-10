@@ -2,9 +2,15 @@ name: Deploy to staging
 
 # The button that puts a commit on staging: Actions → Deploy to staging → Run workflow.
 #
-# Moves the staging branch to the chosen commit (main by default), builds the images from it and
-# asks Portainer to redeploy the staging stack, which follows the staging branch. Only a commit
-# whose CI passed can be deployed. To go back, run it again with an older commit or tag.
+# 1. Checks CI passed on the chosen commit (main by default).
+# 2. Builds the images from it (Images workflow): ...:sha-<7> and ...:staging.
+# 3. Points the staging branch at it, plus one commit that pins the staging stack to that exact
+#    image tag.
+#
+# The Portainer staging stack follows the staging branch with GitOps polling (Portainer CE has no
+# webhooks for stacks). The branch moves only after the images exist, and every deploy has a new
+# tag, so the poll that notices it always pulls the new images. To go back, run this again with an
+# older commit or tag.
 
 on:
   workflow_dispatch:
@@ -18,15 +24,14 @@ permissions:
   contents: write
   packages: write
   actions: read
-  checks: read
 
 concurrency:
   group: deploy-staging
   cancel-in-progress: false
 
 jobs:
-  branch:
-    name: Move the staging branch
+  check:
+    name: Check the commit
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
@@ -51,25 +56,46 @@ jobs:
           SHA: ${{ steps.resolve.outputs.sha }}
         run: |
           set -euo pipefail
-          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$SHA" \
+          passed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$SHA" \
             --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
-          if [ "$conclusion" -eq 0 ]; then
+          if [ "$passed" -eq 0 ]; then
             echo "::error::CI has not passed on ${SHA::7}. Wait for CI on that commit (or fix it), then deploy again."
             exit 1
           fi
 
-      - name: Point staging at it
-        env:
-          SHA: ${{ steps.resolve.outputs.sha }}
-        run: |
-          # Forced: the staging branch is only ever a pointer to what staging runs, so going back
-          # to an older commit is a normal deploy, not a rewrite of anyone's work.
-          git push --force origin "${SHA}:refs/heads/staging"
-
   images:
-    name: Build and redeploy
-    needs: branch
+    name: Build
+    needs: check
     uses: ./.github/workflows/images.yml
     with:
-      sha: ${{ needs.branch.outputs.sha }}
+      sha: ${{ needs.check.outputs.sha }}
     secrets: inherit
+
+  branch:
+    name: Move the staging branch
+    needs: [check, images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+
+      - name: Pin the stack to this build and point staging at it
+        env:
+          SHA: ${{ needs.check.outputs.sha }}
+        run: |
+          set -euo pipefail
+          tag="sha-${SHA::7}"
+          # Only the staging branch carries this commit. main keeps ${IMAGE_TAG:-staging}, which is
+          # what production's stack (IMAGE_TAG=production) reads.
+          sed -i "s/\${IMAGE_TAG:-staging}/${tag}/g" deploy/portainer/stack.yml
+          grep -q "tutorium-api}:${tag}" deploy/portainer/stack.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "deploy: staging runs ${tag}" -m "Built from ${SHA}."
+          # Forced: the staging branch is only ever a pointer to what staging runs, so going back
+          # to an older commit is a normal deploy, not a rewrite of anyone's work.
+          git push --force origin HEAD:refs/heads/staging
+          {
+            echo "Staging branch → ${tag}. Portainer picks it up on its next poll (within the stack's interval)."
+          } >> "$GITHUB_STEP_SUMMARY"

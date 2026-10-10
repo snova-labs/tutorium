@@ -1,20 +1,13 @@
 name: Images
 
-# Builds the deployable images from the staging branch and tags them "staging", then asks Portainer
-# to redeploy the staging stack. Two ways in:
-#   - Actions → "Deploy to staging" (deploy-staging.yml): moves the staging branch to a commit whose
-#     CI passed, then calls this workflow. The usual way.
-#   - A push to the staging branch by a person: CI runs on it, and this runs once CI is green.
-# Pull requests that change how the images are built get the same ARM build, without pushing, so a
+# Builds the deployable linux/arm64 images and tags them "staging" and "sha-<7>". Called by
+# "Deploy to staging" (deploy-staging.yml), which then points the staging branch at the new tag.
+# Pull requests that change how the images are built get the same build, without pushing, so a
 # broken build is found before it reaches main.
 # Production runs ...:production, which only "Promote to production" moves (to an image staging
 # has already run).
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [staging]
   workflow_call:
     inputs:
       sha:
@@ -46,12 +39,6 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.image }} (linux/arm64)
-    # Only after a green CI run on a push to staging (not on a PR run that targets it).
-    if: >-
-      inputs.sha != '' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     # Emulated ARM on the standard runner by default. If native ARM runners are available to this
     # repository, set the repository variable IMAGE_RUNNER=ubuntu-24.04-arm for much faster builds.
     runs-on: ${{ vars.IMAGE_RUNNER || 'ubuntu-latest' }}
@@ -68,13 +55,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.sha || github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ inputs.sha || github.sha }}
 
       - name: Image name and tags
         id: meta
         env:
           OWNER: ${{ github.repository_owner }}
-          SHA: ${{ inputs.sha || github.event.workflow_run.head_sha || github.sha }}
+          SHA: ${{ inputs.sha || github.sha }}
         run: |
           name="ghcr.io/${OWNER,,}/tutorium-${{ matrix.image }}"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
@@ -101,7 +88,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ inputs.sha || github.event.workflow_run.head_sha || github.sha }}
+            org.opencontainers.image.revision=${{ inputs.sha || github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope={0}', matrix.image) || '' }}
 
@@ -111,22 +98,3 @@ jobs:
           echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.meta.outputs.tags }}\`" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"
 
-  redeploy:
-    name: Redeploy staging in Portainer
-    needs: build
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      # The staging stack's webhook (Portainer → Stacks → tutorium-staging → GitOps updates →
-      # Webhook), saved as the repository secret PORTAINER_STAGING_WEBHOOK. Without it, redeploy
-      # by hand: Stacks → tutorium-staging → Pull and redeploy, with Re-pull image.
-      - name: Call the stack webhook
-        env:
-          WEBHOOK: ${{ secrets.PORTAINER_STAGING_WEBHOOK }}
-        run: |
-          if [ -z "$WEBHOOK" ]; then
-            echo "::notice::PORTAINER_STAGING_WEBHOOK is not set. Redeploy in Portainer: Stacks → tutorium-staging → Pull and redeploy (Re-pull image)."
-            exit 0
-          fi
-          curl -fsS -X POST --max-time 60 "$WEBHOOK"
-          echo "Portainer is pulling the new images and redeploying staging." >> "$GITHUB_STEP_SUMMARY"
