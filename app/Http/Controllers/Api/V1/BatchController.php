@@ -12,7 +12,9 @@ use App\Http\Resources\TimetableSlotResource;
 use App\Models\Batch;
 use App\Models\Branch;
 use App\Models\Course;
+use App\Models\TimetableSlot;
 use App\Services\BatchService;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -74,13 +76,29 @@ final class BatchController
         return (new TimetableSlotResource($slot->load('sessionType')))->response()->setStatusCode(201);
     }
 
+    /**
+     * Take a slot off the timetable. Sessions it already generated stay: some may have registers
+     * taken, and the rest can be cancelled one by one with a reason.
+     */
+    public function removeSlot(Request $request, Batch $batch, TimetableSlot $slot): JsonResponse
+    {
+        abort_unless($request->user()->can('update', $batch), 403);
+        abort_unless($slot->batch_id === $batch->getKey(), 404);
+
+        $slot->delete();
+
+        return response()->json(['data' => [
+            'message' => 'Removed from the timetable. Sessions already generated from it are kept; cancel any that will not happen.',
+        ]]);
+    }
+
     public function assignTeachers(Request $request, Batch $batch): BatchResource
     {
         abort_unless($request->user()->can('update', $batch), 403);
 
         $validated = $request->validate([
             'teachers' => ['required', 'array'],
-            'teachers.*.user_id' => ['required', 'integer', 'exists:users,id'],
+            'teachers.*.user_id' => ['required', 'integer', TenantRule::exists('users')],
             'teachers.*.role' => ['nullable', 'in:lead,assistant'],
         ]);
 

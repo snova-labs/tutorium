@@ -47,12 +47,13 @@ export function termChanges(current: Terms, edited: Terms): { changes: TermEdits
   return { changes, errors };
 }
 
-/** Where the client does each setup step, or null for steps done in the operator console. */
+/** Where the client does each setup step, or null for steps done elsewhere (brand and locations). */
 export function stepHref(key: string): string | null {
   switch (key) {
     case "course":
+      return "/courses";
     case "batch":
-      return "/batches";
+      return "/batches/new";
     case "staff":
       return "/team";
     case "learners":

@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1;
 use App\Enums\PeriodType;
 use App\Models\Course;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -22,7 +23,7 @@ final class StoreCourseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'brand_id' => ['required', 'integer', Rule::exists('brands', 'id')],
+            'brand_id' => ['required', 'integer', TenantRule::exists('brands')],
             'name' => ['required', 'string', 'max:160'],
             'code' => [
                 'required', 'string', 'max:32', 'alpha_dash',

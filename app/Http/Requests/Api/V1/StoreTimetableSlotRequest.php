@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1;
 
 use App\Enums\Weekday;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreTimetableSlotRequest extends FormRequest
 {
@@ -27,7 +27,7 @@ final class StoreTimetableSlotRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'session_type_id' => ['required', 'integer', Rule::exists('session_types', 'id')],
+            'session_type_id' => ['required', 'integer', TenantRule::exists('session_types')],
             'weekday' => ['required', 'integer', 'between:1,7'],
             // Wall-clock time in the batch timezone. The instant is derived per occurrence.
             'start_time_local' => ['required', 'date_format:H:i'],

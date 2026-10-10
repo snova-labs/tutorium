@@ -42,7 +42,8 @@ describe("terminology", () => {
 
 describe("setup steps", () => {
   it("links the steps the client can do", () => {
-    expect(stepHref("batch")).toBe("/batches");
+    expect(stepHref("course")).toBe("/courses");
+    expect(stepHref("batch")).toBe("/batches/new");
     expect(stepHref("staff")).toBe("/team");
     expect(stepHref("learners")).toBe("/learners");
   });

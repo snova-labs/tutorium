@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class SaveAttendanceRequest extends FormRequest
 {
@@ -19,8 +19,8 @@ final class SaveAttendanceRequest extends FormRequest
     {
         return [
             'marks' => ['required', 'array', 'min:1'],
-            'marks.*.enrollment_id' => ['required', 'integer', Rule::exists('enrollments', 'id')],
-            'marks.*.status_id' => ['required', 'integer', Rule::exists('attendance_statuses', 'id')],
+            'marks.*.enrollment_id' => ['required', 'integer', TenantRule::exists('enrollments')],
+            'marks.*.status_id' => ['required', 'integer', TenantRule::exists('attendance_statuses')],
             'marks.*.minutes_late' => ['nullable', 'integer', 'between:0,600'],
             'marks.*.note' => ['nullable', 'string', 'max:500'],
         ];

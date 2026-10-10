@@ -13,6 +13,7 @@ use App\Models\SubmissionStatus;
 use App\Services\AssessmentService;
 use App\Services\GradeBookService;
 use App\Support\Grading\GradeBookCalculator;
+use App\Support\Tenancy\TenantRule;
 use App\Support\Time\PeriodService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -114,8 +115,8 @@ final class GradeBookController
         abort_unless($request->user()->can('view', $batch), 403);
 
         $validated = $request->validate([
-            'assessment_type_id' => ['required', 'integer', 'exists:assessment_types,id'],
-            'grading_scheme_id' => ['required', 'integer', 'exists:grading_schemes,id'],
+            'assessment_type_id' => ['required', 'integer', TenantRule::exists('assessment_types')],
+            'grading_scheme_id' => ['required', 'integer', TenantRule::exists('grading_schemes')],
             'title' => ['required', 'string', 'max:190'],
             'description' => ['nullable', 'string', 'max:2000'],
             'assigned_local_date' => ['nullable', 'date_format:Y-m-d'],

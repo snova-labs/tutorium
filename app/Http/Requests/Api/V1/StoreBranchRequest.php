@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1;
 
 use App\Models\Branch;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,7 @@ final class StoreBranchRequest extends FormRequest
         $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
         return [
-            'brand_id' => ['required', 'integer', Rule::exists('brands', 'id')],
+            'brand_id' => ['required', 'integer', TenantRule::exists('brands')],
             'name' => ['required', 'string', 'max:120'],
             'code' => [
                 'required', 'string', 'max:32', 'alpha_dash',

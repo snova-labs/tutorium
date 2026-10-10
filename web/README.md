@@ -47,6 +47,14 @@ every sign-in will appear to come from one address.
 - **Accept an invitation** (`/invitations/{token}`, public): the page the invitation email opens;
   the newcomer sets a password, and their browser's timezone is stored.
 - **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
+- **Courses** (`/courses`): what is taught, with how its reports are divided (month, quarter, block
+  of weeks, or terms); adding one, with a code suggested from the name.
+- **New batch** (`/batches/new`): course, location (whose timezone becomes the batch's clock),
+  dates, places, and in person or online. It opens on its own page, ready for the next part.
+- **Batch setup** (on the batch's page, for whoever manages batches): the weekly timetable in the
+  batch's clock (add and remove slots), its teachers, and generating sessions for a stretch of
+  dates (safe to repeat; closures are skipped). Each scheduled session can be cancelled, with a
+  reason that stays on the record, or moved.
 - **Register** (`/sessions/{id}/register`): one large button per status (44px or more, for a phone in
   a classroom), minutes late for a late mark, "mark the rest present", one save for the class.
   The batch's attendance rules sit above it, each with its provenance. Leaving with unsaved marks

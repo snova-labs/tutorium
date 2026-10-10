@@ -3,34 +3,39 @@ import { notFound } from "next/navigation";
 
 import Link from "next/link";
 
+import { BatchSetup } from "@/app/(app)/batches/[id]/batch-setup";
+import { SessionActions } from "@/app/(app)/batches/[id]/session-actions";
+import { SetupSection } from "@/app/(app)/batches/[id]/setup-section";
 import { PageHeader } from "@/components/app/page-header";
 import { ProvenanceChip } from "@/components/app/provenance-chip";
 import { SessionTime } from "@/components/app/session-time";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
 import { isApiError } from "@/lib/api-error";
-import { getMe } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
-import type { Batch, ClassSession } from "@/lib/types";
+import type { BatchDetail, ClassSession, SessionTypeOption, StaffMember } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Batch" };
 
-export default async function BatchPage({ params }: PageProps<"/batches/[id]">) {
+export default async function BatchPage({ params, searchParams }: PageProps<"/batches/[id]">) {
   const { id } = await params;
+  const justCreated = (await searchParams).created === "1";
 
   if (!/^\d+$/.test(id)) {
     notFound();
   }
 
-  let batch: Batch;
+  let batch: BatchDetail;
   let sessions: Paginated<ClassSession>;
 
   try {
     [batch, sessions] = await Promise.all([
-      api<{ data: Batch }>(`batches/${id}`).then((r) => r.data),
+      api<{ data: BatchDetail }>(`batches/${id}`).then((r) => r.data),
       api<Paginated<ClassSession>>(`batches/${id}/sessions`),
     ]);
   } catch (error) {
@@ -42,7 +47,16 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
     throw error;
   }
 
-  const me = await getMe();
+  const [me, terms] = await Promise.all([getMe(), getTerms()]);
+  const manages = can(me, "batches.manage");
+  const schedules = can(me, "sessions.manage");
+  const [sessionTypes, staff] = manages
+    ? await Promise.all([
+        api<{ data: SessionTypeOption[] }>("session-types").then((r) => r.data),
+        api<{ data: StaffMember[] }>("staff").then((r) => r.data),
+      ])
+    : [[], []];
+  const needsSetup = batch.timetable.length === 0 || (batch.sessions_count ?? 0) === 0;
 
   return (
     <>
@@ -76,8 +90,20 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
         }
       />
 
+      {justCreated && (
+        <Alert className="mb-6">
+          <AlertDescription>Created. Now give it a timetable and teachers, then generate its sessions.</AlertDescription>
+        </Alert>
+      )}
+
+      {manages && (
+        <SetupSection initiallyOpen={needsSetup || justCreated}>
+          <BatchSetup batch={batch} sessionTypes={sessionTypes} staff={staff} canSchedule={schedules} today={new Date().toISOString().slice(0, 10)} />
+        </SetupSection>
+      )}
+
       <p className="mb-4 text-sm text-muted-foreground">
-        Times are in the batch&apos;s clock, as agreed with families.
+        Times are in the {terms.batch.singular.toLowerCase()}&apos;s clock, as agreed with families.
         {me.timezone && me.timezone !== batch.timezone && " Your own time is shown underneath where it differs."}
       </p>
 
@@ -114,13 +140,18 @@ export default async function BatchPage({ params }: PageProps<"/batches/[id]">) 
                   )}
                 </TableCell>
                 <TableCell className="pr-4 text-right">
-                  {session.status !== "cancelled" && can(me, "attendance.view") && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/sessions/${session.id}/register`}>
-                        {can(me, "attendance.record") ? "Take register" : "View register"}
-                      </Link>
-                    </Button>
-                  )}
+                  <div className="flex flex-wrap items-center justify-end gap-1">
+                    {session.status !== "cancelled" && can(me, "attendance.view") && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/sessions/${session.id}/register`}>
+                          {can(me, "attendance.record") ? "Take register" : "View register"}
+                        </Link>
+                      </Button>
+                    )}
+                    {schedules && session.status === "scheduled" && (
+                      <SessionActions batchId={batch.id} sessionId={session.id} date={session.local.date} time={session.local.time} />
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

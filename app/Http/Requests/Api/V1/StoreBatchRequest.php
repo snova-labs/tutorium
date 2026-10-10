@@ -8,6 +8,7 @@ use App\Enums\BatchStatus;
 use App\Enums\DeliveryMode;
 use App\Models\Batch;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -23,8 +24,8 @@ final class StoreBatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'course_id' => ['required', 'integer', Rule::exists('courses', 'id')],
-            'branch_id' => ['required', 'integer', Rule::exists('branches', 'id')],
+            'course_id' => ['required', 'integer', TenantRule::exists('courses')],
+            'branch_id' => ['required', 'integer', TenantRule::exists('branches')],
             'name' => ['required', 'string', 'max:160'],
             'code' => [
                 'required', 'string', 'max:32', 'alpha_dash',
