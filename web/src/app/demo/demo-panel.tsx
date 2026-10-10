@@ -110,7 +110,7 @@ export function DemoPanel({ status }: { status: DemoStatus }) {
               the sign-in page
             </Link>{" "}
             with any account below and the demo password. Owners, managers and accountants confirm with an emailed code, which
-            on staging is in the API log (<code>make staging codes</code>).
+            on staging arrives in the staging mail inbox (Mailpit), or <code>make staging codes</code>.
           </p>
           {status.academies.map((academy) => (
             <Card key={academy.academy}>

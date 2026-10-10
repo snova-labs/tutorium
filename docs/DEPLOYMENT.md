@@ -18,7 +18,7 @@ Portainer-managed stacks, a shared `mysql` stack on the external `db` network, a
 
 | | Cloudflare Tunnel (default) | Nginx Proxy Manager |
 |---|---|---|
-| Variable | `COMPOSE_PROFILES=tunnel` and `CLOUDFLARE_TUNNEL_TOKEN` | leave both out |
+| Variable | `COMPOSE_PROFILES=tunnel` (plus `,mailpit` on staging) and `CLOUDFLARE_TUNNEL_TOKEN` | no `tunnel` in `COMPOSE_PROFILES`, no token |
 | Certificates | Cloudflare | NPM (Let's Encrypt) |
 | Open ports | none | the server's existing 80/443 |
 | Keep strangers out of staging | Cloudflare Access (email login) | an NPM Access List (password or IP) |
@@ -38,6 +38,7 @@ One Portainer stack per environment, all from the same file, `deploy/portainer/s
 | `<slug>-scheduler` | Laravel scheduler (trials, dunning, metering, clean-up) | 192 MB |
 | `<slug>-web` | Next.js staff client | 384 MB |
 | `<slug>-tunnel` | Cloudflare Tunnel connector (tunnel mode only) | 128 MB |
+| `<slug>-mailpit` | Staging mail inbox: catches every email ("Mailpit: the staging inbox") | 96 MB |
 
 `<slug>` is `tutorium-staging` for staging and `tutorium` for production. Measured idle use is about
 250 MB for the whole stack.
@@ -119,12 +120,15 @@ Cloudflare dashboard → **Zero Trust** → **Networks** → **Tunnels** → **C
 On the install screen, pick **Docker**, and copy only the token (the long string after `--token`).
 Don't run the command; the stack runs the connector.
 
-**Public hostnames** (tab on the tunnel), add two:
+**Public hostnames** (tab on the tunnel), add three:
 
 | Subdomain | Domain | Service type | URL |
 |---|---|---|---|
 | `tutorium-staging` | `jayshyampatel.com.np` | HTTP | `tutorium-staging-web:3000` |
 | `tutorium-staging-api` | `jayshyampatel.com.np` | HTTP | `tutorium-staging-api:8080` |
+| `tutorium-staging-mail` | `jayshyampatel.com.np` | HTTP | `tutorium-staging-mailpit:8025` |
+
+The third is the staging mail inbox ("Mailpit: the staging inbox" below).
 
 Cloudflare creates the DNS records itself. The names are one level deep (`tutorium-staging-api`, not
 `api.tutorium-staging`) so Cloudflare's free certificate covers them.
@@ -137,8 +141,8 @@ the prefix is what keeps the staging tunnel on staging when production runs next
 Zero Trust → **Access** → **Applications** → **Add an application** → **Self-hosted**
 
 - Name: `Tutorium staging`
-- Application domains: `tutorium-staging.jayshyampatel.com.np` and
-  `tutorium-staging-api.jayshyampatel.com.np`
+- Application domains: `tutorium-staging.jayshyampatel.com.np`,
+  `tutorium-staging-api.jayshyampatel.com.np` and `tutorium-staging-mail.jayshyampatel.com.np`
 - Policy: **Allow**, Include → **Emails** → your address (and any testers)
 
 Anyone else gets Cloudflare's login page before reaching the app. The app's own sign-in still
@@ -195,8 +199,8 @@ It prints a temporary password once. Open `https://tutorium-staging.jayshyampate
 Cloudflare Access, then sign in.
 
 Owners, managers and accountants confirm each sign-in with an emailed code. Staging doesn't send
-mail (`MAIL_MAILER=log`), so get the code with `make staging codes` (or Portainer → Containers →
-`tutorium-staging-api` → **Logs**, search for `sign-in code`). To send real mail instead, set the `MAIL_*` SMTP variables and update the
+mail anywhere real: every email lands in the staging inbox,
+`https://tutorium-staging-mail.jayshyampatel.com.np` (or `make staging codes`). To send real mail instead, set the `MAIL_*` SMTP variables and update the
 stack.
 
 Or sign up like a customer would, at `https://tutorium-staging.jayshyampatel.com.np/sign-up`. The
@@ -259,6 +263,73 @@ Migrations run on every redeploy, before the app starts. If one fails, `tutorium
 shows **exited (1)** and the app doesn't start on a half-migrated database; its **Logs** show why.
 
 Variable changes: Stacks → `tutorium-staging` → Environment variables → edit → **Update the stack**.
+
+## Mailpit: the staging inbox
+
+Staging never sends real email. Its stack runs its own **Mailpit**, a mail catcher: the app hands
+every email to it (sign-in codes, signup confirmations, invitations, reports with their PDFs) and
+you read them in a web inbox. Nothing goes further, so the demo academies' made-up addresses and
+any real address are equally safe. Production never runs it: the service sits behind the
+`mailpit` profile, which only the staging variables turn on.
+
+```
+ tutorium-staging-api ──SMTP :1025──▶ tutorium-staging-mailpit ◀──https── you
+                         (stack network)        inbox :8025 ◀── tunnel or NPM
+```
+
+### Step by step
+
+1. **Turn it on in the stack's variables.** Portainer → **Stacks** → `tutorium-staging` →
+   **Editor** → **Environment variables** (Advanced mode). Set:
+
+   ```
+   COMPOSE_PROFILES=tunnel,mailpit
+   MAIL_MAILER=smtp
+   MAIL_HOST=mailpit
+   MAIL_PORT=1025
+   MAIL_SCHEME=
+   MAIL_USERNAME=
+   MAIL_PASSWORD=
+   ```
+
+   With Nginx Proxy Manager instead of the tunnel, `COMPOSE_PROFILES=mailpit`.
+   Optional: `MAILPIT_UI_AUTH=user:password` puts a password on the inbox (useful with NPM; with
+   Cloudflare Access in front, leave it empty). `MAILPIT_MAX_MESSAGES` (default 5000) is how many
+   it keeps; older ones are deleted, so it cannot fill the disk.
+
+2. **Update the stack** (button at the bottom), with **Re-pull image** ticked. A new container,
+   `tutorium-staging-mailpit`, starts and turns **healthy** within half a minute. The app, queue
+   and scheduler restart with the new mail settings.
+
+3. **Give the inbox an address.**
+   - *Cloudflare Tunnel*: Zero Trust → **Networks** → **Tunnels** → `tutorium-staging` →
+     **Public hostnames** → **Add**: subdomain `tutorium-staging-mail`, domain
+     `jayshyampatel.com.np`, type **HTTP**, URL `tutorium-staging-mailpit:8025`.
+   - *Nginx Proxy Manager*: **Hosts** → **Proxy hosts** → **Add**: domain
+     `tutorium-staging-mail.jayshyampatel.com.np`, scheme `http`, forward hostname
+     `tutorium-staging-mailpit`, port `8025`, **Websockets support** on (the inbox updates live
+     through it). SSL tab: request a certificate, Force SSL on.
+
+4. **Keep strangers out.**
+   - *Cloudflare*: Zero Trust → **Access** → **Applications** → `Tutorium staging` → **Edit** →
+     add `tutorium-staging-mail.jayshyampatel.com.np` to its domains → Save. Same people, same
+     login as the rest of staging.
+   - *NPM*: give the proxy host the same **Access List** as staging, or set `MAILPIT_UI_AUTH`
+     (step 1).
+
+5. **Check it.** Open `https://tutorium-staging.jayshyampatel.com.np/sign-in` and sign in as an
+   owner (the demo's `sunita@himalayan-scholars.example`, for example). The code arrives at
+   `https://tutorium-staging-mail.jayshyampatel.com.np` within a second or two. From a terminal,
+   `make staging codes` lists the latest messages and their codes.
+
+### Day to day
+
+- Every staging email is in the inbox, newest first, with HTML, text and attachments (report
+  PDFs open in the browser). Search by recipient, for example `to:megan@summitlearning.example`.
+- Clear it any time: the inbox's **Delete all**. Removing the demo academies doesn't clear their
+  mail; do it here.
+- To go back to the log mailer: `MAIL_MAILER=log`, remove `mailpit` from `COMPOSE_PROFILES`,
+  update the stack. `make staging codes` reads the logs again by itself.
 
 ## Commands on the server: `make`
 
@@ -474,6 +545,8 @@ Never run `docker compose down -v` or delete these volumes without a backup.
 | Pull fails: `denied` / `unauthorized` | Portainer's `ghcr` registry is missing or its token expired (step 2). |
 | `exec format error` | An image not built for arm64; check the Images workflow ran for this tag. |
 | Links in emails or the admin panel are `http://` | `TRUSTED_PROXIES` overridden or empty. The stack default trusts Docker's private ranges. |
-| No sign-in code in the logs | `MAIL_MAILER` must be `log` and `LOG_LEVEL` `debug` (the log mailer writes at debug level). |
+| No email in Mailpit | `MAIL_MAILER=smtp`, `MAIL_HOST=mailpit`, `MAIL_PORT=1025`, and `mailpit` in `COMPOSE_PROFILES`; then `make staging status` should list `tutorium-staging-mailpit` as healthy. Failed sends are in `make staging logs`. |
+| Mailpit inbox shows Cloudflare 502 | The tunnel hostname must point at `tutorium-staging-mailpit:8025` (HTTP). |
+| No sign-in code in the logs (log mailer) | `MAIL_MAILER` must be `log` and `LOG_LEVEL` `debug` (the log mailer writes at debug level). |
 | Backup or drill failure email | `make production backups`, then the `<slug>-scheduler` logs. "BACKUP_DRILL_DATABASE is not set" or "Access denied" means the drill database setup above is missing. |
 | Signed out on every request | `APP_KEY` changed, or `SESSION_SECURE_COOKIE=true` without HTTPS. Behind the tunnel, HTTPS is always on. |
