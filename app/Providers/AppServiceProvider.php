@@ -10,7 +10,10 @@ use App\Support\Payments\FakePaymentProvider;
 use App\Support\Payments\ManualPaymentProvider;
 use App\Support\Payments\PaymentProvider;
 use App\Support\Payments\StripePaymentProvider;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Laravel\Sanctum\Sanctum;
@@ -40,6 +43,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The demo page: its status is checked every few seconds while a build runs, so it gets a
+        // limit of its own, apart from the password-guarded changes.
+        RateLimiter::for('demo-status', fn (Request $request) => Limit::perMinute(60)->by('demo-status|'.$request->ip()));
+        RateLimiter::for('demo-change', fn (Request $request) => Limit::perMinute(5)->by('demo-change|'.$request->ip()));
+
         // Who is signed in decides the tenant, so finding them cannot wait for a tenant to be bound.
         Auth::provider('tenant-eloquent', fn ($app, array $config): TenantUserProvider => new TenantUserProvider(
             $app['hash'],

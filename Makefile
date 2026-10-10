@@ -23,7 +23,7 @@ ifneq ($(ENV),)
 endif
 
 .PHONY: help setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm \
-	demo academy artisan backup backups drill codes db-dump status staging production deploy promote
+	demo academy artisan backup backups drill codes db-dump status staging production deploy promote demo-remove
 
 # `make staging <task>` / `make production <task>`: the environment word only selects where <task>
 # runs; on its own it does nothing.
@@ -68,9 +68,13 @@ fresh:         ## drop everything and rebuild with seed data
 seed:
 	docker compose exec app php artisan db:seed
 
-demo:          ## (re)build the demo academy: make demo, or make staging demo [PASSWORD=…]
-	@test "$(ENV)" != production || { echo "The demo academy is never built on production."; exit 1; }
-	$(ARTISAN) platform:demo-academy --fresh $(if $(PASSWORD),--password='$(PASSWORD)')
+demo:          ## (re)build the four demo academies: make demo, or make staging demo [PASSWORD=…]
+	@test "$(ENV)" != production || { echo "Demo academies are never built on production."; exit 1; }
+	$(ARTISAN) platform:demo --fresh $(if $(PASSWORD),--password='$(PASSWORD)')
+
+demo-remove:   ## remove the demo academies: make demo-remove, or make staging demo-remove
+	@test "$(ENV)" != production || { echo "There are no demo academies on production."; exit 1; }
+	$(ARTISAN) platform:demo --remove
 
 # ── Deploying (from any machine with the GitHub CLI signed in: gh auth login) ────────────────
 
