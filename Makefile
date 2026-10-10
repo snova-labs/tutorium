@@ -1,10 +1,10 @@
 export WWW_UID := $(shell id -u)
 export WWW_GID := $(shell id -g)
 
-# Where commands run. Without ENV: the local docker compose app. With ENV=staging or
-# ENV=production: the deployed containers on the server (run from a clone of this repository there),
-# e.g. `make demo ENV=staging`, `make academy ENV=production NAME=… EMAIL=… OWNER=…`.
-ENV ?=
+# Where commands run. Name the environment first to use the deployed containers on the server
+# (from a clone of this repository there): `make staging codes`, `make production academy`.
+# Without it, the same targets run against the local docker compose app. ENV=staging also works.
+ENV ?= $(firstword $(filter staging production,$(MAKECMDGOALS)))
 ifeq ($(ENV),)
   ARTISAN = docker compose exec app php artisan
 else ifeq ($(ENV),staging)
@@ -23,7 +23,12 @@ ifneq ($(ENV),)
 endif
 
 .PHONY: help setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm \
-	demo academy artisan backup backups drill codes db-dump status
+	demo academy artisan backup backups drill codes db-dump status staging production deploy promote
+
+# `make staging <task>` / `make production <task>`: the environment word only selects where <task>
+# runs; on its own it does nothing.
+staging production:
+	@:
 
 help:          ## list the commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | expand -t 16
@@ -63,19 +68,39 @@ fresh:         ## drop everything and rebuild with seed data
 seed:
 	docker compose exec app php artisan db:seed
 
-demo:          ## (re)build the demo academy; ENV=staging on the server; PASSWORD=… (default demo-password)
+demo:          ## (re)build the demo academy: make demo, or make staging demo [PASSWORD=…]
 	@test "$(ENV)" != production || { echo "The demo academy is never built on production."; exit 1; }
 	$(ARTISAN) platform:demo-academy --fresh $(if $(PASSWORD),--password='$(PASSWORD)')
 
-# ── Running an environment (local, or the server with ENV=staging|production) ──────────────────
+# ── Deploying (from any machine with the GitHub CLI signed in: gh auth login) ────────────────
 
-academy:       ## create an academy: NAME="…" EMAIL=… OWNER="…" [TZ=Asia/Kathmandu] [PRESET=…]
-	@test -n "$(NAME)" -a -n "$(EMAIL)" -a -n "$(OWNER)" || { echo 'Usage: make academy NAME="Academy" EMAIL=owner@… OWNER="Full Name" [TZ=…] [PRESET=…] [ENV=…]'; exit 1; }
-	$(ARTISAN) platform:provision-academy "$(NAME)" "$(EMAIL)" "$(OWNER)" --timezone=$(or $(TZ),Asia/Kathmandu) $(if $(PRESET),--preset=$(PRESET))
+deploy:        ## put main (or REF=…) on staging, and wait until it is built
+	@command -v gh >/dev/null || { echo "Needs the GitHub CLI: https://cli.github.com, then gh auth login"; exit 1; }
+	gh workflow run deploy-staging.yml --repo snova-labs/tutorium -f ref=$(or $(REF),main)
+	@sleep 5
+	@gh run watch --repo snova-labs/tutorium --exit-status \
+		$$(gh run list --repo snova-labs/tutorium --workflow deploy-staging.yml --limit 1 --json databaseId -q '.[0].databaseId')
+	@echo "Built. Portainer redeploys staging on its next poll (within 5 minutes)."
 
-artisan:       ## any artisan command: make artisan CMD="route:list"
-	@test -n "$(CMD)" || { echo 'Usage: make artisan CMD="…" [ENV=…]'; exit 1; }
-	$(ARTISAN) $(CMD)
+promote:       ## put what staging runs (or TAG=sha-…) on production, after asking
+	@command -v gh >/dev/null || { echo "Needs the GitHub CLI: https://cli.github.com, then gh auth login"; exit 1; }
+	@read -p "Promote $(or $(TAG),staging) to production? Take a dump first (make production db-dump). [y/N] " ok; [ "$$ok" = y ]
+	gh workflow run promote.yml --repo snova-labs/tutorium -f tag=$(or $(TAG),staging)
+	@echo "Then in Portainer: Stacks → tutorium → Pull and redeploy, with Re-pull image."
+
+# ── Running an environment (local, or the server: make staging <task>, make production <task>) ──
+
+academy:       ## create an academy; asks for the name, owner's email and name
+	@name="$(NAME)"; email="$(EMAIL)"; owner="$(OWNER)"; \
+	[ -n "$$name" ] || read -p "Academy name: " name; \
+	[ -n "$$owner" ] || read -p "Owner's full name: " owner; \
+	[ -n "$$email" ] || read -p "Owner's email: " email; \
+	[ -n "$$name" ] && [ -n "$$email" ] && [ -n "$$owner" ] || { echo "All three are needed."; exit 1; }; \
+	$(ARTISAN) platform:provision-academy "$$name" "$$email" "$$owner" \
+		--timezone=$(or $(TZ),Asia/Kathmandu) $(if $(PRESET),--preset=$(PRESET))
+
+artisan:       ## any artisan command; asks which (or CMD="…")
+	@cmd="$(CMD)"; [ -n "$$cmd" ] || read -p "php artisan " cmd; $(ARTISAN) $$cmd
 
 backup:        ## take a backup now
 	$(ARTISAN) platform:backup
@@ -86,19 +111,19 @@ backups:       ## recent backups and restore drills
 drill:         ## restore last night's backup into the drill database and check it
 	$(ARTISAN) platform:restore-drill
 
-codes:         ## emailed sign-in codes and links from the last hour (server, MAIL_MAILER=log)
-	@test -n "$(ENV)" || { echo "Locally, mail is in Mailpit: http://localhost:8025"; exit 1; }
+codes:         ## sign-in codes and confirmation links from the last hour: make staging codes
+	@test -n "$(ENV)" || { echo "Locally, mail is in Mailpit: http://localhost:8025 (on the server: make staging codes)"; exit 1; }
 	@docker logs --since 1h $(SLUG)-api 2>&1 | grep -E -B1 "^Subject: Your sign-in code" | grep -E "^(To|Subject): " | tail -n 20
 	@docker logs --since 1h $(SLUG)-api 2>&1 | grep -Eo "https?://[^ \"<]+/(sign-up/confirm|invitations)/[A-Za-z0-9]+" | tail -n 5
 
-db-dump:       ## dump the environment's database to ~/backups before a release (server)
-	@test -n "$(ENV)" || { echo "Use ENV=staging or ENV=production"; exit 1; }
+db-dump:       ## dump the database to ~/backups before a release: make production db-dump
+	@test -n "$(ENV)" || { echo "Say which: make production db-dump, or make staging db-dump"; exit 1; }
 	@mkdir -p $(HOME)/backups
 	docker exec mysql sh -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqldump -u root --single-transaction --routines $(DB)' \
 		| gzip > $(HOME)/backups/mysql-$(DB)_predeploy_$$(date +%F_%H-%M).sql.gz
 	@ls -lh $(HOME)/backups | tail -n 1
 
-status:        ## containers, health and memory for the environment (server)
+status:        ## containers, health and memory: make staging status
 	@test -n "$(ENV)" || { docker compose ps; exit 0; }
 	@docker ps --filter name=$(SLUG)- --format 'table {{.Names}}\t{{.Status}}'
 	@docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}' $$(docker ps -q --filter name=$(SLUG)-)
@@ -118,10 +143,10 @@ fmt:
 fmt-check:
 	docker compose exec app ./vendor/bin/pint --test
 
-shell:         ## a shell in the app container (ENV=… for the server)
+shell:         ## a shell in the app container (make staging shell on the server)
 	$(if $(ENV),docker exec -it $(SLUG)-api sh,docker compose exec app sh)
 
-logs:          ## follow the app's logs (ENV=… for the server)
+logs:          ## follow the app's logs (make staging logs on the server)
 	$(if $(ENV),docker logs -f --tail 100 $(SLUG)-api,docker compose logs -f app worker)
 
 
