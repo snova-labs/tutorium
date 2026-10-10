@@ -1,0 +1,75 @@
+name: Deploy to staging
+
+# The button that puts a commit on staging: Actions → Deploy to staging → Run workflow.
+#
+# Moves the staging branch to the chosen commit (main by default), builds the images from it and
+# asks Portainer to redeploy the staging stack, which follows the staging branch. Only a commit
+# whose CI passed can be deployed. To go back, run it again with an older commit or tag.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to deploy (main for the latest merged work)
+        required: true
+        default: main
+
+permissions:
+  contents: write
+  packages: write
+  actions: read
+  checks: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  branch:
+    name: Move the staging branch
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve the commit
+        id: resolve
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse --verify "origin/${REF}^{commit}" 2>/dev/null || git rev-parse --verify "${REF}^{commit}")
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "Deploying \`${REF}\` → ${sha::7}: $(git log -1 --format=%s "$sha")" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check CI passed on it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$SHA" \
+            --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          if [ "$conclusion" -eq 0 ]; then
+            echo "::error::CI has not passed on ${SHA::7}. Wait for CI on that commit (or fix it), then deploy again."
+            exit 1
+          fi
+
+      - name: Point staging at it
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          # Forced: the staging branch is only ever a pointer to what staging runs, so going back
+          # to an older commit is a normal deploy, not a rewrite of anyone's work.
+          git push --force origin "${SHA}:refs/heads/staging"
+
+  images:
+    name: Build and redeploy
+    needs: branch
+    uses: ./.github/workflows/images.yml
+    with:
+      sha: ${{ needs.branch.outputs.sha }}
+    secrets: inherit

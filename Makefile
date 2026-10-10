@@ -1,7 +1,7 @@
 export WWW_UID := $(shell id -u)
 export WWW_GID := $(shell id -g)
 
-.PHONY: setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm
+.PHONY: setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm demo
 
 setup:         ## one command for a new developer
 	@test -f .env || cp .env.example .env
@@ -37,6 +37,9 @@ fresh:         ## drop everything and rebuild with seed data
 
 seed:
 	docker compose exec app php artisan db:seed
+
+demo:          ## (re)build the demo academy: a term in progress, password demo-password
+	docker compose exec app php artisan platform:demo-academy --fresh
 
 test:          ## full suite
 	docker compose exec app php artisan test

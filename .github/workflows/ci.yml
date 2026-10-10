@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # staging: a person pushing there directly still gets CI before Images builds from it.
+    branches: [main, staging]
   pull_request:
 
 concurrency:

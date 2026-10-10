@@ -48,16 +48,27 @@ from the same repository path, with the production variables
 runs the image tag `production`, which only moves when you promote an image staging has already
 run.
 
-## Images
+## Images and the staging branch
 
-GitHub Actions builds `linux/arm64` images after CI passes on `main` (workflow **Images**) and pushes
-them to GitHub Container Registry:
+```
+ main ──(Actions → Deploy to staging)──▶ staging branch ──▶ Images: build :staging ──▶ Portainer webhook ──▶ staging stack redeploys
+                                                                                     Promote to production ──▶ :production
+```
 
-- `ghcr.io/snova-labs/tutorium-api:staging` and `:sha-<7 chars>`
-- `ghcr.io/snova-labs/tutorium-web:staging` and `:sha-<7 chars>`
+The **`staging` branch is what staging runs**. Nobody merges into it: it is a pointer that the
+**Deploy to staging** workflow moves.
 
-The workflow **Promote to production** (Actions → Promote to production → Run workflow) points
-`:production` at `staging` or at any `sha-…` tag, without rebuilding.
+- **Deploy to staging** (Actions → Deploy to staging → Run workflow, ref `main` by default) checks
+  that CI passed on that commit, moves `staging` to it, builds the `linux/arm64` images and calls
+  Portainer's webhook for the staging stack. To go back, run it with an older commit or tag.
+- A person pushing to `staging` directly gets the same thing, after CI passes on the push.
+- The images go to GitHub Container Registry:
+  - `ghcr.io/snova-labs/tutorium-api:staging` and `:sha-<7 chars>`
+  - `ghcr.io/snova-labs/tutorium-web:staging` and `:sha-<7 chars>`
+- **Promote to production** (Actions → Promote to production → Run workflow) points `:production`
+  at `staging` or at any `sha-…` tag, without rebuilding.
+
+Merging to `main` no longer changes staging by itself: deploy when you want to show it.
 
 Nothing is built on the server.
 
@@ -146,9 +157,12 @@ Portainer → **Stacks** → **Add stack**
 - Name: `tutorium-staging`
 - Build method: **Repository**
   - Repository URL: `https://github.com/snova-labs/tutorium`
-  - Repository reference: `refs/heads/main`
+  - Repository reference: `refs/heads/staging` (the branch Deploy to staging moves; production
+    uses `refs/heads/main`)
   - Compose path: `deploy/portainer/stack.yml`
   - Authentication: on, with a GitHub token that can read the repository
+  - **GitOps updates**: on, mechanism **Webhook**, with **Re-pull image** on. Copy the webhook URL
+    it shows (see "Automatic redeploys" below).
 - **Environment variables** → **Advanced mode** → paste
   `deploy/portainer/staging.env.example`, then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `APP_KEY` and
   `DB_PASSWORD`. Keep `COMPOSE_PROFILES=tunnel`: it is what starts the tunnel container.
@@ -183,8 +197,7 @@ Or sign up like a customer would, at `https://tutorium-staging.jayshyampatel.com
 confirmation link goes to the same log (search for `sign-up/confirm`). Production keeps
 `SIGNUP_OPEN=false` until you open it; see `SIGN-UP.md`.
 
-For demo data instead: `php artisan db:seed --force` creates two sample academies whose owners sign
-in with `owner@sample-one.test` / `password`. **Staging only**: never run it on production.
+With `DEMO_ACADEMY=true` (the staging template's default), the demo academy below is already there.
 
 The admin panel is at `https://tutorium-staging-api.jayshyampatel.com.np/admin`.
 
@@ -229,13 +242,72 @@ proxy hosts in NPM and the two A records (the tunnel creates its own DNS records
 
 ## Updating staging
 
-1. Merge to `main`. Wait for **CI**, then **Images**, to go green.
-2. Portainer → Stacks → `tutorium-staging` → **Pull and redeploy**, with **Re-pull image** ticked.
+1. Merge to `main` and wait for **CI** to go green.
+2. GitHub → **Actions** → **Deploy to staging** → **Run workflow** (ref: `main`).
+
+That's all: the workflow builds the images and calls the stack's webhook, and Portainer pulls them
+and redeploys. Without the webhook secret, finish by hand: Portainer → Stacks → `tutorium-staging`
+→ **Pull and redeploy**, with **Re-pull image** ticked.
 
 Migrations run on every redeploy, before the app starts. If one fails, `tutorium-staging-migrate`
 shows **exited (1)** and the app doesn't start on a half-migrated database; its **Logs** show why.
 
 Variable changes: Stacks → `tutorium-staging` → Environment variables → edit → **Update the stack**.
+
+### Automatic redeploys (one-time)
+
+1. Portainer → Stacks → `tutorium-staging` → **GitOps updates**: on, **Webhook**, **Re-pull
+   image** on → **Update the stack**. Copy the webhook URL
+   (`https://<portainer>/api/stacks/webhooks/<id>`).
+2. GitHub → Settings → Secrets and variables → Actions → **New repository secret**:
+   `PORTAINER_STAGING_WEBHOOK` = that URL.
+3. GitHub has to reach it. If Portainer sits behind Cloudflare Access, add a **Bypass** policy for
+   the path `/api/stacks/webhooks/*` on Portainer's hostname: the URL itself is the secret, and
+   the endpoint only triggers a redeploy of that one stack.
+
+## Demo academy
+
+`php artisan platform:demo-academy` builds **Himalayan Scholars Academy**: two locations
+(Baneshwor and Pulchowk, Asia/Kathmandu), eight staff, five courses, six classes on their
+timetables, 82 students with their parents, and a term already two months in: registers taken
+(including late arrivals, excused absences and a few registers still open), homework, classwork,
+quizzes and monthly projects marked, month-end teacher notes, a pause, a withdrawal and a transfer
+with their reasons, three cancelled classes, a closure day ahead, and last month's reports, sent for
+two classes and generated but unsent for two more.
+
+Every name is invented, every email is on a reserved domain (`example.com`,
+`himalayan-scholars.example`) and every phone number is in one unused block, so nothing reaches a
+real person.
+
+On staging it runs by itself after migrations, controlled by the stack variables:
+
+| `DEMO_ACADEMY` | What happens on each deploy |
+|---|---|
+| `false` | Nothing (production's only behaviour, whatever the variable says) |
+| `true` | Built once; kept afterwards, with any changes you make |
+| `fresh` | Removed and rebuilt, so the term always ends today |
+
+Staff sign in with `DEMO_PASSWORD`:
+
+| Who | Email | Role |
+|---|---|---|
+| Sunita Adhikari | `sunita@himalayan-scholars.example` | Owner (emailed code) |
+| Rajesh Shrestha | `rajesh@himalayan-scholars.example` | Management (emailed code) |
+| Anisha Maharjan | `anisha@himalayan-scholars.example` | Front desk, Baneshwor |
+| Bikash Thapa | `bikash@himalayan-scholars.example` | Teacher, Maths |
+| Pooja Gurung | `pooja@himalayan-scholars.example` | Teacher, Science |
+| Suman Karki | `suman@himalayan-scholars.example` | Teacher, English |
+| Nirmala Rai | `nirmala@himalayan-scholars.example` | Teacher, Computer |
+| Prakash Joshi | `prakash@himalayan-scholars.example` | Accountant (emailed code) |
+
+Emailed codes are in Portainer → Containers → `tutorium-staging-api` → **Logs** (search for
+`sign-in code`). To rebuild by hand, in that container's console:
+
+```bash
+php artisan platform:demo-academy --fresh --password='…'
+```
+
+The command refuses to run with `APP_ENV=production`.
 
 ---
 
@@ -253,7 +325,8 @@ Repeat the staging setup with production values:
 4. A **new** `APP_KEY`: never reuse staging's.
 5. Real SMTP settings: production must deliver sign-in codes.
 6. GitHub → Actions → **Promote to production** → Run workflow with tag `staging`.
-7. Portainer stack `tutorium`: same repository and compose path, variables from
+7. Portainer stack `tutorium`: same repository and compose path, reference `refs/heads/main`, no
+   GitOps updates (production moves only when you promote), variables from
    `deploy/portainer/production.env.example`.
 8. Create the first academy with `platform:provision-academy` in the `tutorium-api` container's console.
 

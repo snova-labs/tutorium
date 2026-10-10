@@ -12,6 +12,7 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -94,6 +95,27 @@ final class TenantLifecycleService
                     }
                 }
             }
+        });
+    }
+
+    /**
+     * Remove the demonstration academy outright, so it can be built again.
+     *
+     * Bypasses the export and retention rules that protect a customer, which is why it only
+     * accepts the one tenant the demo builder creates, and never on production.
+     */
+    public function removeDemo(Tenant $tenant): void
+    {
+        if ($tenant->slug !== DemoAcademyBuilder::SLUG || app()->isProduction()) {
+            throw new RuntimeException('Only the demo academy can be removed this way, and never on production.');
+        }
+
+        DB::transaction(function () use ($tenant): void {
+            $this->tenancy->withoutScoping(function () use ($tenant): void {
+                $this->deleteTenantRows($tenant);
+                AuditLog::query()->where('tenant_id', $tenant->getKey())->delete();
+                $tenant->forceDelete();
+            });
         });
     }
 
