@@ -23,7 +23,7 @@
 # environment (~/scripts/my-create-db.sh <name>). See docs/DEPLOYMENT.md.
 
 x-laravel: &laravel
-  image: ${API_IMAGE:-ghcr.io/snova-labs/tutorium-api}:${IMAGE_TAG:-staging}
+  image: ${API_IMAGE:-ghcr.io/snova-labs/tutorium-api}:sha-5159783
   # Every setting is passed explicitly from the stack's variables. The ones marked :? must be set,
   # or the stack refuses to deploy rather than starting half-configured.
   environment:
@@ -142,7 +142,7 @@ services:
       start_period: 15s
 
   web:
-    image: ${WEB_IMAGE:-ghcr.io/snova-labs/tutorium-web}:${IMAGE_TAG:-staging}
+    image: ${WEB_IMAGE:-ghcr.io/snova-labs/tutorium-web}:sha-5159783
     container_name: ${APP_SLUG}-web
     restart: unless-stopped
     mem_limit: 384m
