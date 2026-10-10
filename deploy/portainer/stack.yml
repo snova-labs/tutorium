@@ -8,7 +8,8 @@
 #   scheduler  Laravel scheduler (trials, dunning, metering, cleanup)
 #   web        Next.js staff client                                     (port 3000, not published)
 #   tunnel     Cloudflare Tunnel connector; only with COMPOSE_PROFILES=tunnel
-#   migrate    one-off: runs database migrations, then exits; app, queue and scheduler wait for it
+#   migrate    one-off: runs database migrations (and, on staging, builds the demo academy), then
+#              exits; app, queue and scheduler wait for it
 #
 # Nothing publishes a port. Traffic comes in one of two ways, chosen per stack:
 #   - Cloudflare Tunnel (COMPOSE_PROFILES=tunnel): the tunnel's public hostnames point at
@@ -69,6 +70,10 @@ x-laravel: &laravel
     BACKUP_DRILL_DATABASE: ${BACKUP_DRILL_DATABASE:-}
     BACKUP_ALERT_TO: ${BACKUP_ALERT_TO:-}
     BACKUP_KEEP: ${BACKUP_KEEP:-14}
+    # Demo academy after migrations (php artisan platform:demo-academy): false, true (build once,
+    # keep it) or fresh (rebuild on every deploy, dated to that day). Never runs on production.
+    DEMO_ACADEMY: ${DEMO_ACADEMY:-false}
+    DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-password}
   volumes:
     - storage:/var/www/html/storage/app
     - backups:/var/www/html/storage/backups
@@ -85,7 +90,18 @@ services:
   migrate:
     <<: *laravel
     container_name: ${APP_SLUG:?Set APP_SLUG, e.g. tutorium-staging}-migrate
-    command: ["php", "/var/www/html/artisan", "migrate", "--force", "--no-interaction"]
+    # $$ is a literal $ for the shell inside the container, not a stack variable.
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        php /var/www/html/artisan migrate --force --no-interaction
+        if [ "$$APP_ENV" != production ] && [ "$$DEMO_ACADEMY" = true ]; then
+          php /var/www/html/artisan platform:demo-academy --password="$$DEMO_PASSWORD"
+        elif [ "$$APP_ENV" != production ] && [ "$$DEMO_ACADEMY" = fresh ]; then
+          php /var/www/html/artisan platform:demo-academy --fresh --password="$$DEMO_PASSWORD"
+        fi
     restart: "no"
     mem_limit: 256m
 

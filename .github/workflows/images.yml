@@ -1,16 +1,19 @@
 name: Images
 
-# Builds the deployable images once CI has passed on main, and tags them "staging". Pull requests
-# that change how the images are built get the same ARM build, without pushing, so a broken build
-# is found before it reaches main.
-# The staging stack in Portainer runs ...:staging; production runs ...:production, which only the
-# "Promote to production" workflow moves (to an image staging has already run).
+# Builds the deployable linux/arm64 images and tags them "staging" and "sha-<7>". Called by
+# "Deploy to staging" (deploy-staging.yml), which then points the staging branch at the new tag.
+# Pull requests that change how the images are built get the same build, without pushing, so a
+# broken build is found before it reaches main.
+# Production runs ...:production, which only "Promote to production" moves (to an image staging
+# has already run).
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_call:
+    inputs:
+      sha:
+        description: Commit to build
+        required: true
+        type: string
   workflow_dispatch:
   pull_request:
     paths:
@@ -30,17 +33,12 @@ permissions:
 
 concurrency:
   # Pushes to the registry queue behind each other; a PR's check build is replaced by its next push.
-  group: images-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  group: images-${{ github.event_name == 'pull_request' && github.ref || 'staging' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     name: Build ${{ matrix.image }} (linux/arm64)
-    # Only after a green CI run on a push to main (not on a PR run that happens to target main).
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     # Emulated ARM on the standard runner by default. If native ARM runners are available to this
     # repository, set the repository variable IMAGE_RUNNER=ubuntu-24.04-arm for much faster builds.
     runs-on: ${{ vars.IMAGE_RUNNER || 'ubuntu-latest' }}
@@ -57,13 +55,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ inputs.sha || github.sha }}
 
       - name: Image name and tags
         id: meta
         env:
           OWNER: ${{ github.repository_owner }}
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          SHA: ${{ inputs.sha || github.sha }}
         run: |
           name="ghcr.io/${OWNER,,}/tutorium-${{ matrix.image }}"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
@@ -90,7 +88,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
+            org.opencontainers.image.revision=${{ inputs.sha || github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope={0}', matrix.image) || '' }}
 
@@ -99,3 +97,4 @@ jobs:
         run: |
           echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.meta.outputs.tags }}\`" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"
+
