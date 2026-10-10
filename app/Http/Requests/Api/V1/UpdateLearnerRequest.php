@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class UpdateLearnerRequest extends FormRequest
 {
@@ -27,7 +27,7 @@ final class UpdateLearnerRequest extends FormRequest
             'home_timezone' => ['nullable', 'timezone:all'],
             'email' => ['nullable', 'email', 'max:190'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'status_id' => ['sometimes', 'integer', Rule::exists('learner_statuses', 'id')],
+            'status_id' => ['sometimes', 'integer', TenantRule::exists('learner_statuses')],
             'status_reason' => ['nullable', 'string', 'max:255'],
             'custom' => ['nullable', 'array'],
         ];

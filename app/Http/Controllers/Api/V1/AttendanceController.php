@@ -12,6 +12,7 @@ use App\Models\Enrollment;
 use App\Services\AttendanceService;
 use App\Support\Attendance\AttendanceCalculator;
 use App\Support\Attendance\AttendancePolicyResolver;
+use App\Support\Tenancy\TenantRule;
 use App\Support\Time\PeriodService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -95,7 +96,7 @@ final class AttendanceController
         abort_unless($request->user()->can('record', $session), 403);
 
         $validated = $request->validate([
-            'status_id' => ['required', 'integer', 'exists:attendance_statuses,id'],
+            'status_id' => ['required', 'integer', TenantRule::exists('attendance_statuses')],
         ]);
 
         $result = $this->attendance->markRemaining(

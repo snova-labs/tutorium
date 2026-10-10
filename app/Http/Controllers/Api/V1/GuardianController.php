@@ -8,6 +8,7 @@ use App\Http\Resources\GuardianResource;
 use App\Models\Guardian;
 use App\Models\Learner;
 use App\Services\GuardianService;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -37,11 +38,11 @@ final class GuardianController
         abort_unless($request->user()->can('create', Guardian::class), 403);
 
         $validated = $request->validate([
-            'guardian_id' => ['nullable', 'integer', 'exists:guardians,id'],
+            'guardian_id' => ['nullable', 'integer', TenantRule::exists('guardians')],
             'name' => ['required_without:guardian_id', 'string', 'max:190'],
             'email' => ['nullable', 'email', 'max:190'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'relation_type_id' => ['nullable', 'integer', 'exists:relation_types,id'],
+            'relation_type_id' => ['nullable', 'integer', TenantRule::exists('relation_types')],
             'is_primary' => ['boolean'],
             'receives_reports' => ['boolean'],
         ]);

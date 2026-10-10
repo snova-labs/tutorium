@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\InvitationService;
 use App\Services\TrialService;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
@@ -54,7 +55,7 @@ final class InvitationController
             'role_name' => ['required', 'string', 'max:120'],
             'scope_all_branches' => ['boolean'],
             'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['integer', 'exists:branches,id'],
+            'branch_ids.*' => ['integer', TenantRule::exists('branches')],
         ]);
 
         $invitation = $this->invitations->invite($request->user(), $validated);

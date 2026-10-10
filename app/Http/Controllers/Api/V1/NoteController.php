@@ -9,6 +9,7 @@ use App\Models\Enrollment;
 use App\Models\NoteCategory;
 use App\Models\TeacherNote;
 use App\Services\TeacherNoteService;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -49,7 +50,7 @@ final class NoteController
         abort_unless($request->user()->can('notes.write'), 403);
 
         $validated = $request->validate([
-            'note_category_id' => ['required', 'integer', 'exists:note_categories,id'],
+            'note_category_id' => ['required', 'integer', TenantRule::exists('note_categories')],
             'body' => ['required', 'string', 'max:4000'],
             'is_report_visible' => ['nullable', 'boolean'],
             'period' => ['nullable', 'string', 'max:60'],
@@ -78,7 +79,7 @@ final class NoteController
             'period' => ['nullable', 'string', 'max:60'],
             'notes' => ['required', 'array', 'min:1'],
             'notes.*.enrollment_id' => ['required', 'integer'],
-            'notes.*.note_category_id' => ['required', 'integer', 'exists:note_categories,id'],
+            'notes.*.note_category_id' => ['required', 'integer', TenantRule::exists('note_categories')],
             'notes.*.body' => ['nullable', 'string', 'max:4000'],
             'notes.*.is_report_visible' => ['nullable', 'boolean'],
         ]);

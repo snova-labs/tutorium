@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Learner;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreLearnerRequest extends FormRequest
 {
@@ -29,7 +29,7 @@ final class StoreLearnerRequest extends FormRequest
             'home_timezone' => ['nullable', 'timezone:all'],
             'email' => ['nullable', 'email', 'max:190'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'status_id' => ['nullable', 'integer', Rule::exists('learner_statuses', 'id')],
+            'status_id' => ['nullable', 'integer', TenantRule::exists('learner_statuses')],
             'custom' => ['nullable', 'array'],
 
             // Optional guardian, created or matched in the same request — the front desk enters a
@@ -38,11 +38,11 @@ final class StoreLearnerRequest extends FormRequest
             'guardian.name' => ['required_with:guardian', 'string', 'max:190'],
             'guardian.email' => ['nullable', 'email', 'max:190'],
             'guardian.phone' => ['nullable', 'string', 'max:32'],
-            'guardian.relation_type_id' => ['nullable', 'integer', Rule::exists('relation_types', 'id')],
+            'guardian.relation_type_id' => ['nullable', 'integer', TenantRule::exists('relation_types')],
             'guardian.receives_reports' => ['boolean'],
 
             // Optional immediate enrollment.
-            'batch_id' => ['nullable', 'integer', Rule::exists('batches', 'id')],
+            'batch_id' => ['nullable', 'integer', TenantRule::exists('batches')],
 
             // Set after reviewing the duplicate warning. Never a default.
             'force' => ['boolean'],

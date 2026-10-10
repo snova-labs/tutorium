@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\EnrollmentStatus;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class ChangeEnrollmentStatusRequest extends FormRequest
@@ -20,7 +20,7 @@ final class ChangeEnrollmentStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status_id' => ['required', 'integer', Rule::exists('enrollment_statuses', 'id')],
+            'status_id' => ['required', 'integer', TenantRule::exists('enrollment_statuses')],
             'reason' => ['nullable', 'string', 'max:255'],
         ];
     }

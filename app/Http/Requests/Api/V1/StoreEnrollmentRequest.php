@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Enrollment;
+use App\Support\Tenancy\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreEnrollmentRequest extends FormRequest
 {
@@ -19,10 +19,10 @@ final class StoreEnrollmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'learner_id' => ['required', 'integer', Rule::exists('learners', 'id')],
-            'batch_id' => ['required', 'integer', Rule::exists('batches', 'id')],
+            'learner_id' => ['required', 'integer', TenantRule::exists('learners')],
+            'batch_id' => ['required', 'integer', TenantRule::exists('batches')],
             'enrolled_on' => ['nullable', 'date_format:Y-m-d'],
-            'status_id' => ['nullable', 'integer', Rule::exists('enrollment_statuses', 'id')],
+            'status_id' => ['nullable', 'integer', TenantRule::exists('enrollment_statuses')],
         ];
     }
 }

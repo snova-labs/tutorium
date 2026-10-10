@@ -4,10 +4,12 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { ProvenanceChip } from "@/components/app/provenance-chip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
-import { getTerms } from "@/lib/me";
+import { getMe, getTerms } from "@/lib/me";
+import { can } from "@/lib/permissions";
 import type { Batch } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,13 +17,27 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BatchesPage() {
-  const [batches, terms] = await Promise.all([api<Paginated<Batch>>("batches"), getTerms()]);
+  const [batches, terms, me] = await Promise.all([api<Paginated<Batch>>("batches"), getTerms(), getMe()]);
 
   return (
     <>
       <PageHeader
         title={terms.batch.plural}
         description="Each one runs on its own clock: its location's, unless one was set on it directly."
+        actions={
+          <>
+            {can(me, "courses.manage") && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/courses">{terms.course.plural}</Link>
+              </Button>
+            )}
+            {can(me, "batches.manage") && (
+              <Button asChild size="sm">
+                <Link href="/batches/new">New {terms.batch.singular.toLowerCase()}</Link>
+              </Button>
+            )}
+          </>
+        }
       />
 
       <Card className="py-0">

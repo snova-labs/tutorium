@@ -24,7 +24,7 @@ export interface Learner {
 export interface Branch {
   id: number;
   name: string;
-  locale_rules: { timezone: string };
+  locale_rules: { timezone: string; week_start?: string; weekend_days?: string[] };
 }
 
 export interface Batch {
@@ -340,4 +340,49 @@ export interface Onboarding {
   steps: OnboardingStep[];
   sample_data_loaded: boolean;
   preset: string | null;
+}
+
+export interface CourseSummary {
+  id: number;
+  brand_id: number;
+  name: string;
+  code: string;
+  audience: string | null;
+  description: string | null;
+  periods: { type: string; label: string; anchor_month: number; block_weeks: number; is_computed: boolean };
+  is_active: boolean;
+  batches_count?: number;
+}
+
+export interface TimetableSlot {
+  id: number;
+  session_type: { id: number; name?: string };
+  weekday: { iso: number; name: string };
+  start_time_local: string;
+  duration_min: number;
+  effective_from: string | null;
+  effective_to: string | null;
+}
+
+export interface StaffMember {
+  id: number;
+  name: string;
+  email: string;
+  is_active: boolean;
+  roles: string[];
+}
+
+export interface SessionTypeOption {
+  id: number;
+  name: string;
+  code: string | null;
+  counts_in_attendance: boolean;
+}
+
+/** A batch as its own page loads it, with what the setup tools need. */
+export interface BatchDetail extends Batch {
+  capacity: number | null;
+  timetable: TimetableSlot[];
+  teachers: { id: number; name: string; email: string }[];
+  sessions_count?: number;
 }

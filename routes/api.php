@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
+use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
 use App\Http\Controllers\Public\DemoController;
@@ -96,8 +97,13 @@ Route::prefix('v1')->group(function (): void {
             ->only(['index', 'store', 'show', 'update'])->names('api.batches');
         Route::post('batches/{batch}/timetable', [BatchController::class, 'addSlot'])
             ->name('api.batches.timetable.store');
+        Route::delete('batches/{batch}/timetable/{slot}', [BatchController::class, 'removeSlot'])
+            ->name('api.batches.timetable.destroy');
         Route::put('batches/{batch}/teachers', [BatchController::class, 'assignTeachers'])
             ->name('api.batches.teachers');
+
+        Route::get('staff', [StaffController::class, 'index'])->name('api.staff.index');
+        Route::get('session-types', [StaffController::class, 'sessionTypes'])->name('api.session-types.index');
 
         // Scheduling
         Route::get('batches/{batch}/sessions', [ScheduleController::class, 'sessions'])->name('api.batches.sessions');
