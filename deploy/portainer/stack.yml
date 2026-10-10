@@ -8,6 +8,8 @@
 #   scheduler  Laravel scheduler (trials, dunning, metering, cleanup)
 #   web        Next.js staff client                                     (port 3000, not published)
 #   tunnel     Cloudflare Tunnel connector; only with COMPOSE_PROFILES=tunnel
+#   mailpit    staging only: catches every email the app sends, with a web inbox (port 8025, not
+#              published); only with "mailpit" in COMPOSE_PROFILES. Never on production.
 #   migrate    one-off: runs database migrations, then exits; app, queue and scheduler wait for it
 #
 # Nothing publishes a port. Traffic comes in one of two ways, chosen per stack:
@@ -182,6 +184,36 @@ services:
       - internal
     logging: *logging
 
+  # A mail catcher for staging: every email the app sends lands in its inbox and goes no further.
+  # The app reaches it as `mailpit` on this stack's own network (MAIL_HOST=mailpit, MAIL_PORT=1025);
+  # the inbox is http://<APP_SLUG>-mailpit:8025 for the tunnel or Nginx Proxy Manager.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ${APP_SLUG}-mailpit
+    profiles: ["mailpit"]
+    environment:
+      # Kept on disk across redeploys, and pruned to the newest messages so it never fills it.
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: ${MAILPIT_MAX_MESSAGES:-5000}
+      # Optional password on the inbox, as "user:password". Leave empty behind Cloudflare Access.
+      MP_UI_AUTH: ${MAILPIT_UI_AUTH:-}
+      # Whatever the app sends as SMTP login is accepted; nothing here is a real mail server.
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    volumes:
+      - mailpit:/data
+    restart: unless-stopped
+    mem_limit: 96m
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+      - proxy
+    logging: *logging
+
 volumes:
   # Uploaded logos, generated report PDFs, exports and imports. Named so backups can find it.
   storage:
@@ -189,6 +221,9 @@ volumes:
   # Nightly backups: database dump, files archive and manifest, one folder per night.
   backups:
     name: ${APP_SLUG}_backups
+  # Mailpit's inbox (staging only).
+  mailpit:
+    name: ${APP_SLUG}_mailpit
 
 networks:
   # This stack's own network: the containers talk to each other here, and the tunnel reaches web and

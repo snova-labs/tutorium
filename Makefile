@@ -117,8 +117,15 @@ drill:         ## restore last night's backup into the drill database and check 
 
 codes:         ## sign-in codes and confirmation links from the last hour: make staging codes
 	@test -n "$(ENV)" || { echo "Locally, mail is in Mailpit: http://localhost:8025 (on the server: make staging codes)"; exit 1; }
-	@docker logs --since 1h $(SLUG)-api 2>&1 | grep -E -B1 "^Subject: Your sign-in code" | grep -E "^(To|Subject): " | tail -n 20
-	@docker logs --since 1h $(SLUG)-api 2>&1 | grep -Eo "https?://[^ \"<]+/(sign-up/confirm|invitations)/[A-Za-z0-9]+" | tail -n 5
+	@if docker ps --format '{{.Names}}' | grep -qx '$(SLUG)-mailpit'; then \
+		echo "From Mailpit (newest first):"; \
+		docker exec $(SLUG)-mailpit sh -c 'a=$${MP_UI_AUTH%% *}; wget -qO- "http://$${a:+$$a@}localhost:8025/api/v1/messages?limit=20"' \
+			| sed 's/{"ID"/\n/g' \
+			| sed -n 's/.*"To":\[{"Name":"[^"]*","Address":"\([^"]*\)".*"Subject":"\([^"]*\)".*/  \1   \2/p'; \
+	else \
+		docker logs --since 1h $(SLUG)-api 2>&1 | grep -E -B1 "^Subject: Your sign-in code" | grep -E "^(To|Subject): " | tail -n 20; \
+		docker logs --since 1h $(SLUG)-api 2>&1 | grep -Eo "https?://[^ \"<]+/(sign-up/confirm|invitations)/[A-Za-z0-9]+" | tail -n 5; \
+	fi
 
 db-dump:       ## dump the database to ~/backups before a release: make production db-dump
 	@test -n "$(ENV)" || { echo "Say which: make production db-dump, or make staging db-dump"; exit 1; }

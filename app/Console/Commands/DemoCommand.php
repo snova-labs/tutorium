@@ -66,7 +66,7 @@ final class DemoCommand extends Command
             $this->table(['Who', 'Email', 'Role'], array_map(fn ($a) => [$a['name'], $a['email'], $a['role']], $academy['accounts']));
         }
 
-        $this->line('Owners, managers and accountants confirm sign-in with an emailed code: in the API log while MAIL_MAILER=log.');
+        $this->line('Owners, managers and accountants confirm sign-in with an emailed code: on staging it is in the Mailpit inbox (or make staging codes).');
 
         return self::SUCCESS;
     }
