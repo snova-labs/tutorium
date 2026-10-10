@@ -4,7 +4,7 @@ const SESSION_COOKIE = "tutorium_session";
 
 /**
  * Send anyone without a session to sign in, before any page renders. Signing up, confirming an emailed
- * signup link and accepting an invitation are open to everyone, signed in or not.
+ * signup link, accepting an invitation and the demo page are open to everyone, signed in or not.
  *
  * A first gate only: it checks that a session cookie exists, not that it is valid. The API decides
  * that on every call, and a rejected token sends the person back here through /sign-out.
@@ -13,7 +13,9 @@ export function proxy(request: NextRequest) {
   const signedIn = request.cookies.has(SESSION_COOKIE);
   const onSignIn = request.nextUrl.pathname.startsWith("/sign-in");
 
-  if (request.nextUrl.pathname.startsWith("/sign-up") || request.nextUrl.pathname.startsWith("/invitations/")) {
+  const open = ["/sign-up", "/invitations/", "/demo"];
+
+  if (open.some((path) => request.nextUrl.pathname.startsWith(path))) {
     return NextResponse.next();
   }
 

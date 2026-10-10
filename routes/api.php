@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
+use App\Http\Controllers\Public\DemoController;
 use App\Http\Controllers\Public\InvitationController as PublicInvitationController;
 use App\Http\Controllers\Public\SignupController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,13 @@ Route::prefix('v1')->group(function (): void {
 
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
     Route::get('ping', fn () => response()->json(['data' => ['status' => 'ok']]))->name('api.ping');
+
+    // Demo academies (staging only; 404 on production and until DEMO_PASSWORD is set).
+    Route::get('demo', [DemoController::class, 'show'])->middleware('throttle:demo-status')->name('public.demo.show');
+    Route::middleware('throttle:demo-change')->group(function (): void {
+        Route::post('demo', [DemoController::class, 'build'])->name('public.demo.build');
+        Route::delete('demo', [DemoController::class, 'remove'])->name('public.demo.remove');
+    });
 
     Route::middleware('throttle:20,1')->group(function (): void {
         Route::get('signup/options', [SignupController::class, 'options'])->name('public.signup.options');

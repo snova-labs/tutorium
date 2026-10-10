@@ -67,6 +67,8 @@ every sign-in will appear to come from one address.
 - **Sign up** (`/sign-up`, public): the self-serve form; nothing is created until the emailed link
   is confirmed (`/sign-up/confirm/{token}`), and opening that page alone creates nothing.
 - **Billing**: payment method, card or invoice, converting a trial.
+- **Demo data** (`/demo`, public, staging only): load or remove the four demo academies with the
+  demo password, then a list of every demo account to sign in with.
 - **Settings** (`/settings`): the academy's own words for learners, batches and the rest (used for
   every label, from the nav down), presets with what each would set, and bringing back a hidden
   setup guide.

@@ -203,7 +203,7 @@ Or sign up like a customer would, at `https://tutorium-staging.jayshyampatel.com
 confirmation link goes to the same log (search for `sign-up/confirm`). Production keeps
 `SIGNUP_OPEN=false` until you open it; see `SIGN-UP.md`.
 
-With `DEMO_ACADEMY=true` (the staging template's default), the demo academy below is already there.
+Or load the demo academies at `https://tutorium-staging.jayshyampatel.com.np/demo` ("Demo academies" below).
 
 The admin panel is at `https://tutorium-staging-api.jayshyampatel.com.np/admin`.
 
@@ -280,7 +280,7 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 | Deploy `main` to staging | `make deploy` (any machine with `gh auth login`; `REF=…` for another commit) |
 | Promote staging to production | `make promote` (asks first; `TAG=sha-…` for an older build) |
 | Create an academy | `make production academy` (asks for the name, owner and email) |
-| Rebuild the demo academy | `make staging demo` (refused for production) |
+| Load or remove the demo academies | the `/demo` page, or `make staging demo` / `make staging demo-remove` |
 | Sign-in codes and confirmation links | `make staging codes` |
 | Backups and drills | `make production backups`, `make production backup`, `make production drill` |
 | Dump the database before a release | `make production db-dump` |
@@ -292,46 +292,37 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 Without a clone, run the underlying command in Portainer → Containers → `<slug>-api` → **Console**:
 `make -n <target> …` on any machine with the repository prints exactly what a target runs.
 
-## Demo academy
+## Demo academies
 
-`make demo` (`php artisan platform:demo-academy`) builds **Himalayan Scholars Academy**: two locations
-(Baneshwor and Pulchowk, Asia/Kathmandu), eight staff, five courses, six classes on their
-timetables, 82 students with their parents, and a term already two months in: registers taken
-(including late arrivals, excused absences and a few registers still open), homework, classwork,
-quizzes and monthly projects marked, month-end teacher notes, a pause, a withdrawal and a transfer
-with their reasons, three cancelled classes, a closure day ahead, and last month's reports, sent for
-two classes and generated but unsent for two more.
+Four example academies, one of each kind of customer the platform serves, each two months into a
+term: registers taken (late arrivals, excused absences, a few still open), work marked in that
+academy's own scheme, end-of-period notes, a withdrawal, a transfer and a pause with their reasons,
+cancelled sessions, a closure day ahead, and the last finished period's reports, sent for some
+classes and waiting for others.
 
-Every name is invented, every email is on a reserved domain (`example.com`,
-`himalayan-scholars.example`) and every phone number is in one unused block, so nothing reaches a
-real person.
-
-On staging it runs by itself after migrations, controlled by the stack variables:
-
-| `DEMO_ACADEMY` | What happens on each deploy |
-|---|---|
-| `false` | Nothing (production's only behaviour, whatever the variable says) |
-| `true` | Built once; kept afterwards, with any changes you make |
-| `fresh` | Removed and rebuilt, so the term always ends today |
-
-Staff sign in with `DEMO_PASSWORD`:
-
-| Who | Email | Role |
+| Academy | Kind (preset) | What it shows |
 |---|---|---|
-| Sunita Adhikari | `sunita@himalayan-scholars.example` | Owner (emailed code) |
-| Rajesh Shrestha | `rajesh@himalayan-scholars.example` | Management (emailed code) |
-| Anisha Maharjan | `anisha@himalayan-scholars.example` | Front desk, Baneshwor |
-| Bikash Thapa | `bikash@himalayan-scholars.example` | Teacher, Maths |
-| Pooja Gurung | `pooja@himalayan-scholars.example` | Teacher, Science |
-| Suman Karki | `suman@himalayan-scholars.example` | Teacher, English |
-| Nirmala Rai | `nirmala@himalayan-scholars.example` | Teacher, Computer |
-| Prakash Joshi | `prakash@himalayan-scholars.example` | Accountant (emailed code) |
+| Himalayan Scholars Academy, Kathmandu | Kids tutoring | Students and parents (siblings share them), monthly reports, points and rubrics |
+| Lingua Bridge Language Centre, Dubai | Language school | Adult learners who receive their own reports, CEFR levels, 8-week terms, Friday–Saturday weekend, an online group |
+| CodeCraft Institute, Lalitpur | IT and skills institute | Trainees in cohorts, 4-week blocks, labs and block projects, employers as sponsors |
+| Summit Corporate Learning, Toronto | Corporate training | Participants sent by client companies whose contacts receive the reports, a virtual classroom, another timezone |
 
-Emailed codes: `make staging codes` (or Portainer → Containers → `tutorium-staging-api` →
-**Logs**, search for `sign-in code`). To rebuild it by hand: `make staging demo` (`PASSWORD=…` to change it).
-Locally: `make demo`. It refuses to run with `APP_ENV=production`.
+Every name is invented, every email is on a reserved domain (`example.com`, `*.example`) and every
+phone number is in an unused or reserved block, so nothing reaches a real person.
 
----
+### Loading and removing them
+
+1. Set `DEMO_PASSWORD` in the staging stack's variables (Portainer → Stacks → `tutorium-staging` →
+   Environment variables → **Update the stack**). Without it the page doesn't exist; on production
+   it never does.
+2. Open `https://tutorium-staging.jayshyampatel.com.np/demo`, enter the password and press
+   **Load demo data**. It takes a minute or two (the page updates itself), then lists every account.
+3. Sign in with any of them and the same password. Owners, managers and accountants confirm with an
+   emailed code: `make staging codes`.
+4. When you're done: the same page → **Remove demo data**. It removes the four demo academies and
+   nothing else.
+
+From a terminal instead: `make staging demo` and `make staging demo-remove` (locally: `make demo`).
 
 ## Production: the same stack, promoted
 

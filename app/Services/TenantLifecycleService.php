@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Operator;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Demo\DemoProfiles;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -102,11 +103,11 @@ final class TenantLifecycleService
      * Remove the demonstration academy outright, so it can be built again.
      *
      * Bypasses the export and retention rules that protect a customer, which is why it only
-     * accepts the one tenant the demo builder creates, and never on production.
+     * accepts the tenants the demo builder creates, and never on production.
      */
     public function removeDemo(Tenant $tenant): void
     {
-        if ($tenant->slug !== DemoAcademyBuilder::SLUG || app()->isProduction()) {
+        if (! in_array($tenant->slug, DemoProfiles::slugs(), true) || app()->isProduction()) {
             throw new RuntimeException('Only the demo academy can be removed this way, and never on production.');
         }
 
