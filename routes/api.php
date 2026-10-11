@@ -89,6 +89,10 @@ Route::prefix('v1')->group(function (): void {
 
         // Organisation
         Route::apiResource('brands', BrandController::class)->names('api.brands');
+        Route::get('brands/{brand}/logo', [BrandController::class, 'logo'])->name('api.brands.logo.show');
+        Route::post('brands/{brand}/logo', [BrandController::class, 'storeLogo'])->name('api.brands.logo.store');
+        Route::delete('brands/{brand}/logo', [BrandController::class, 'destroyLogo'])
+            ->name('api.brands.logo.destroy');
         Route::apiResource('branches', BranchController::class)->names('api.branches');
 
         // Academic structure

@@ -77,8 +77,12 @@ final class OnboardingChecklist
                 'key' => 'brand',
                 'title' => 'Your details and logo',
                 'hint' => 'The name and colours that appear on reports.',
+                // A brand exists from the moment the account does, so this step is about going and
+                // checking it: the detail says whether there is a logo yet rather than implying one.
                 'done' => $brand !== null,
-                'detail' => $brand?->name,
+                'detail' => $brand === null
+                    ? null
+                    : $brand->name.($brand->logo_path === null ? ' · no logo yet' : ' · logo set'),
             ],
             [
                 'key' => 'branch',

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Reporting;
 
+use App\Models\Brand;
 use App\Models\Report;
 use App\Models\ReportTemplate;
 use App\Models\SubmissionStatus;
 use App\Services\AssessmentService;
+use App\Services\BrandService;
 use App\Services\GradeBookService;
 use App\Services\ReportService;
 use App\Support\Reporting\ReportRenderer;
@@ -15,6 +17,7 @@ use App\Support\Tenancy\TenantContext;
 use App\Support\Time\PeriodService;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
@@ -213,6 +216,47 @@ final class ReportSnapshotTest extends TestCase
             $this->assertStringContainsString('From the teacher', $renderer->preview($withNotes));
             $this->assertStringNotContainsString('From the teacher', $renderer->preview($withoutNotes));
             $this->assertStringNotContainsString('This period', $renderer->preview($withoutNotes));
+        });
+    }
+
+    #[Test]
+    public function the_report_carries_the_brands_logo_and_colour(): void
+    {
+        Storage::fake('local');
+        config(['branding.logo.disk' => 'local']);
+
+        $this->inTenant(function (): void {
+            $this->markAllPresent();
+
+            $brand = Brand::query()->firstOrFail();
+            $brand->update(['colors' => ['primary' => '#7C3AED']]);
+            app(BrandService::class)->setLogo($brand, UploadedFile::fake()->image('mark.png', 240, 120));
+
+            $html = app(ReportService::class)->html($this->generate(['require_complete' => false]));
+
+            // Embedded rather than linked: the PDF engine fetches nothing, and an authenticated
+            // URL would render as an empty box.
+            $this->assertStringContainsString('src="data:image/png;base64,', $html);
+            $this->assertStringContainsString('#7C3AED', $html);
+        });
+    }
+
+    #[Test]
+    public function a_report_renders_without_a_logo_or_a_usable_colour(): void
+    {
+        Storage::fake('local');
+
+        $this->inTenant(function (): void {
+            $this->markAllPresent();
+
+            // Nonsense in the colour field must not reach the stylesheet.
+            Brand::query()->firstOrFail()->update(['colors' => ['primary' => 'red; } body { display:none']]);
+
+            $html = app(ReportService::class)->html($this->generate(['require_complete' => false]));
+
+            $this->assertStringNotContainsString('display:none', $html);
+            $this->assertStringNotContainsString('<img', $html);
+            $this->assertStringContainsString('#1B5FAA', $html);
         });
     }
 

@@ -34,7 +34,7 @@ every sign-in will appear to come from one address.
 
 ## Screens
 
-- **Home**: trial status and the setup checklist. Each unfinished step links to where it is done;
+- **Home**: trial status and the setup checklist. Each step links to where it is done, finished or not;
   whoever manages settings can load or remove the sample class, or hide the guide.
 - **Learners**: list and search, add (with the duplicate warning), spreadsheet import.
 - **Learner** (`/learners/{id}`): classes with this period's attendance and average, enrolling in
@@ -46,6 +46,11 @@ every sign-in will appear to come from one address.
   again, withdraw, or invite an expired address again.
 - **Accept an invitation** (`/invitations/{token}`, public): the page the invitation email opens;
   the newcomer sets a password, and their browser's timezone is stored.
+- **Your academy** (`/organisation`): the name, reply-to address and colours that appear on reports,
+  the logo (uploaded here, served through this app rather than from a public URL), and the
+  locations you teach at. A location holds the timezone and week structure everything taught there
+  is scheduled by, set when it is added (`/organisation/locations/new`) and changed on its own page
+  (`/organisation/locations/{id}`); archiving one blocks new enrollments and keeps every record.
 - **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
 - **Courses** (`/courses`): what is taught, with how its reports are divided (month, quarter, block
   of weeks, or terms); adding one, with a code suggested from the name.

@@ -62,7 +62,9 @@ export default async function HomePage() {
           <CardContent>
             <ol className="space-y-3">
               {onboarding.steps.map((step) => {
-                const href = step.done ? null : stepHref(step.key);
+                // Linked whether or not it is done: the tick says it is done, and a finished step
+                // is still where someone goes to change what it set.
+                const href = stepHref(step.key);
 
                 return (
                   <li key={step.key} className="flex gap-3">

@@ -25,6 +25,23 @@ export interface Branch {
   id: number;
   name: string;
   locale_rules: { timezone: string; week_start?: string; weekend_days?: string[] };
+  code?: string;
+  brand_id?: number;
+  is_active?: boolean;
+  contact?: { phone: string | null; email: string | null; address: Record<string, string> | null };
+  brand?: { id: number; name: string };
+}
+
+export interface Brand {
+  id: number;
+  name: string;
+  code: string;
+  is_default: boolean;
+  locale: string | null;
+  colors: Record<string, string> | null;
+  logo_url: string | null;
+  sender: { name: string | null; email: string | null };
+  branches_count?: number;
 }
 
 export interface Batch {

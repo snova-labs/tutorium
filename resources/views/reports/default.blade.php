@@ -36,9 +36,21 @@
 <body>
 
 <div class="head">
-    <div class="brand">{{ $snapshot['brand_name'] }}</div>
-    <div class="sub">{{ $snapshot['course_name'] }} · {{ $snapshot['batch_name'] }}
-        · {{ $snapshot['period']['label'] }}</div>
+    {{-- A table, not flexbox: the pure-PHP engine lays tables out reliably and little else. --}}
+    <table>
+        <tr>
+            <td>
+                <div class="brand">{{ $snapshot['brand_name'] }}</div>
+                <div class="sub">{{ $snapshot['course_name'] }} · {{ $snapshot['batch_name'] }}
+                    · {{ $snapshot['period']['label'] }}</div>
+            </td>
+            @if (! empty($logo))
+                <td style="width: 140px; text-align: right; vertical-align: top;">
+                    <img src="{{ $logo }}" alt="{{ $snapshot['brand_name'] }}" style="max-height: 44px; max-width: 140px;">
+                </td>
+            @endif
+        </tr>
+    </table>
 </div>
 
 <p><strong>Dear {{ $recipientName }},</strong></p>

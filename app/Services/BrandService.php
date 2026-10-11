@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Brand;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -42,6 +44,78 @@ final class BrandService
 
             return $brand->refresh();
         });
+    }
+
+    /**
+     * Replace the brand's logo, discarding the one it had.
+     *
+     * Stored under the tenant with a random name: the file is served through an authenticated
+     * endpoint, and a guessable path would still be worth guessing if the disk ever became public.
+     */
+    public function setLogo(Brand $brand, UploadedFile $logo): Brand
+    {
+        $previous = $brand->logo_path;
+
+        $path = $logo->store(sprintf('branding/tenant-%d', $brand->tenant_id), $this->logoDisk());
+
+        if ($path === false) {
+            throw ValidationException::withMessages(['logo' => 'The image could not be saved. Try again.']);
+        }
+
+        $brand->update(['logo_path' => $path]);
+
+        $this->forget($previous);
+
+        return $brand->refresh();
+    }
+
+    public function clearLogo(Brand $brand): Brand
+    {
+        $previous = $brand->logo_path;
+
+        $brand->update(['logo_path' => null]);
+
+        $this->forget($previous);
+
+        return $brand->refresh();
+    }
+
+    /**
+     * The logo as a data URI, for a renderer that cannot reach the disk — the PDF engine reads
+     * HTML with no credentials, so an authenticated URL would come back as the sign-in page.
+     */
+    public function logoDataUri(Brand $brand): ?string
+    {
+        if ($brand->logo_path === null) {
+            return null;
+        }
+
+        $disk = Storage::disk($this->logoDisk());
+
+        if (! $disk->exists($brand->logo_path)) {
+            return null;
+        }
+
+        $contents = $disk->get($brand->logo_path);
+
+        if ($contents === null) {
+            return null;
+        }
+
+        return 'data:'.($disk->mimeType($brand->logo_path) ?: 'image/png').';base64,'.base64_encode($contents);
+    }
+
+    public function logoDisk(): string
+    {
+        return (string) config('branding.logo.disk');
+    }
+
+    /** Deleting the old file is housekeeping: a failure here must not fail the request. */
+    private function forget(?string $path): void
+    {
+        if ($path !== null && $path !== '') {
+            Storage::disk($this->logoDisk())->delete($path);
+        }
     }
 
     /**
