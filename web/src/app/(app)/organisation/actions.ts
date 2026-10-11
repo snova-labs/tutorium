@@ -168,3 +168,31 @@ export async function reopenLocation(id: number): Promise<OrgResult> {
     return "Location reopened.";
   });
 }
+
+/**
+ * Close a location for a day. Sessions already generated for it are only cancelled when asked
+ * for: a closure can be the office shutting while classes go ahead.
+ */
+export async function addClosure(branchId: number, _: OrgResult, formData: FormData): Promise<OrgResult> {
+  return attempt(async () => {
+    const { meta } = await api<{ meta: { message: string } }>(`branches/${branchId}/closures`, {
+      method: "POST",
+      json: {
+        date: text(formData, "date"),
+        name: text(formData, "name"),
+        blocks_sessions: formData.get("blocks_sessions") !== null,
+        cancel_sessions: formData.get("cancel_sessions") !== null,
+      },
+    });
+
+    return meta.message;
+  });
+}
+
+export async function removeClosure(id: number): Promise<OrgResult> {
+  return attempt(async () => {
+    const { data } = await api<{ data: { message: string } }>(`closures/${id}`, { method: "DELETE" });
+
+    return data.message;
+  });
+}

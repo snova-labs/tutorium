@@ -32,6 +32,15 @@ export interface Branch {
   brand?: { id: number; name: string };
 }
 
+export interface Closure {
+  id: number;
+  branch_id: number;
+  /** A local date: a branch is closed for its own day, with no time and no zone. */
+  date: string;
+  name: string;
+  blocks_sessions: boolean;
+}
+
 export interface Brand {
   id: number;
   name: string;

@@ -51,6 +51,11 @@ every sign-in will appear to come from one address.
   locations you teach at. A location holds the timezone and week structure everything taught there
   is scheduled by, set when it is added (`/organisation/locations/new`) and changed on its own page
   (`/organisation/locations/{id}`); archiving one blocks new enrollments and keeps every record.
+  A location's own page also holds the days it is closed: generation skips them and says which
+  days it skipped, and a closure added after the sessions were generated can cancel the ones
+  already on the calendar, each keeping its record with the closure as the reason. A closure can
+  also be a note that does not stop teaching. Past dates are not listed, because they change
+  nothing from here on.
 - **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
 - **Courses** (`/courses`): what is taught, with how its reports are divided (month, quarter, block
   of weeks, or terms); adding one, with a code suggested from the name.
