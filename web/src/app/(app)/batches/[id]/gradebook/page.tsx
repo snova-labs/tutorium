@@ -3,14 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { GradeGrid } from "@/app/(app)/batches/[id]/gradebook/grade-grid";
+import { NewAssessment } from "@/app/(app)/batches/[id]/gradebook/new-assessment";
+import { SetupSection } from "@/app/(app)/batches/[id]/setup-section";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { isApiError } from "@/lib/api-error";
 import { getMe } from "@/lib/me";
 import { can } from "@/lib/permissions";
 import { formatLocalDate } from "@/lib/time";
-import type { GradeBook } from "@/lib/types";
+import type { GradeBook, GradingVocabularies } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Grade book" };
 
@@ -45,6 +48,11 @@ export default async function GradeBookPage({ params, searchParams }: PageProps<
   }
 
   const me = await getMe();
+  const manages = can(me, "assessments.manage");
+  // Only for whoever may add one: the lists are the vocabularies that form picks from.
+  const vocabularies = manages
+    ? await api<{ data: GradingVocabularies }>("grading/vocabularies").then((r) => r.data)
+    : null;
   const index = periods.all.findIndex((p) => p.label === book.period.label);
   const previous = index > 0 ? periods.all[index - 1] : undefined;
   const next = index >= 0 && index < periods.all.length - 1 ? periods.all[index + 1] : undefined;
@@ -74,6 +82,16 @@ export default async function GradeBookPage({ params, searchParams }: PageProps<
           </>
         }
       />
+
+      {vocabularies && vocabularies.assessment_types.length > 0 && (
+        <SetupSection initiallyOpen={book.assessments.length === 0} label="Add an assessment">
+          <Card>
+            <CardContent className="pt-6">
+              <NewAssessment batchId={Number(id)} period={book.period} vocabularies={vocabularies} />
+            </CardContent>
+          </Card>
+        </SetupSection>
+      )}
 
       <GradeGrid key={JSON.stringify(book.rows)} book={book} batchId={Number(id)} canEnter={can(me, "grades.enter")} />
     </>

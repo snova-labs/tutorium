@@ -32,6 +32,7 @@ final class ReportService
         private readonly PdfRenderer $pdf,
         private readonly PeriodService $periods,
         private readonly IdSequenceService $sequences,
+        private readonly BrandService $brands,
     ) {}
 
     /**
@@ -141,16 +142,24 @@ final class ReportService
      */
     public function rerender(Report $report): string
     {
-        $report->loadMissing(['template', 'enrollment.learner']);
+        return $this->pdf->render($this->html($report), new PdfOptions(title: $report->number));
+    }
 
-        $html = $this->renderer->render(
+    /** The same page before the PDF engine sees it: what the header and styling are checked against. */
+    public function html(Report $report): string
+    {
+        $report->loadMissing(['template', 'enrollment.learner', 'enrollment.batch.course.brand']);
+
+        [$accent, $logo] = $this->look($report->enrollment);
+
+        return $this->renderer->render(
             $report->stats_snapshot,
             $report->template ?? $this->templateFor($report->enrollment),
             'Sample Guardian',
             $report->number,
+            $accent,
+            $logo,
         );
-
-        return $this->pdf->render($html, new PdfOptions(title: $report->number));
     }
 
     /**
@@ -159,11 +168,15 @@ final class ReportService
      */
     private function store(Report $report, ReportTemplate $template, array $snapshot, Enrollment $enrollment): array
     {
+        [$accent, $logo] = $this->look($enrollment);
+
         $html = $this->renderer->render(
             $snapshot,
             $template,
             $this->salutationFor($enrollment),
             $report->number,
+            $accent,
+            $logo,
         );
 
         $pdf = $this->pdf->render($html, new PdfOptions(title: $report->number));
@@ -180,6 +193,30 @@ final class ReportService
         Storage::disk($disk)->put($path, $pdf);
 
         return ['file_path' => $path, 'file_disk' => $disk];
+    }
+
+    /**
+     * The brand's colour and logo, as the header needs them.
+     *
+     * Read live rather than frozen into the snapshot: a re-send after a rebrand should carry the
+     * current logo, while every figure on the page stays exactly as it was sent (FR-RPT-5).
+     *
+     * @return array{0: string, 1: string|null}
+     */
+    private function look(Enrollment $enrollment): array
+    {
+        $brand = $enrollment->batch?->course?->brand;
+
+        if ($brand === null) {
+            return ['#1B5FAA', null];
+        }
+
+        $accent = $brand->colors['primary'] ?? null;
+
+        return [
+            is_string($accent) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $accent) === 1 ? $accent : '#1B5FAA',
+            $this->brands->logoDataUri($brand),
+        ];
     }
 
     /** How the report opens. Falls back gracefully when a learner has no guardian on file. */

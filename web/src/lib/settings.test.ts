@@ -46,11 +46,12 @@ describe("setup steps", () => {
     expect(stepHref("batch")).toBe("/batches/new");
     expect(stepHref("staff")).toBe("/team");
     expect(stepHref("learners")).toBe("/learners");
+    expect(stepHref("brand")).toBe("/organisation");
+    expect(stepHref("branch")).toBe("/organisation/locations/new");
   });
 
-  it("does not link steps done elsewhere", () => {
-    expect(stepHref("brand")).toBeNull();
-    expect(stepHref("branch")).toBeNull();
+  it("has nothing to offer for a step it does not know", () => {
+    expect(stepHref("something-new")).toBeNull();
   });
 });
 

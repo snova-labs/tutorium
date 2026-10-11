@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\Api\V1\StoreBrandLogoRequest;
 use App\Http\Requests\Api\V1\StoreBrandRequest;
 use App\Http\Requests\Api\V1\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
@@ -12,6 +13,8 @@ use App\Services\BrandService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class BrandController
 {
@@ -48,6 +51,38 @@ final class BrandController
     public function update(UpdateBrandRequest $request, Brand $brand): BrandResource
     {
         return new BrandResource($this->brands->update($brand, $request->validated()));
+    }
+
+    /**
+     * The logo itself, for an <img> in the client.
+     *
+     * Served rather than linked: the file sits on a private disk, so this endpoint is what applies
+     * the account's own permissions to it.
+     */
+    public function logo(Request $request, Brand $brand): StreamedResponse
+    {
+        $this->authorizeOr403($request, 'view', $brand);
+
+        $disk = Storage::disk($this->brands->logoDisk());
+
+        abort_if($brand->logo_path === null || ! $disk->exists($brand->logo_path), 404);
+
+        return $disk->response($brand->logo_path, null, [
+            // Private: a shared cache must not hand one academy's logo to another's browser.
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
+    public function storeLogo(StoreBrandLogoRequest $request, Brand $brand): BrandResource
+    {
+        return new BrandResource($this->brands->setLogo($brand, $request->file('logo')));
+    }
+
+    public function destroyLogo(Request $request, Brand $brand): BrandResource
+    {
+        $this->authorizeOr403($request, 'update', $brand);
+
+        return new BrandResource($this->brands->clearLogo($brand));
     }
 
     public function destroy(Request $request, Brand $brand): JsonResponse

@@ -24,6 +24,7 @@ final class ReportRenderer
         string $recipientName,
         string $reportNumber,
         string $accent = '#1B5FAA',
+        ?string $logo = null,
     ): string {
         return $this->views->make('reports.default', [
             'snapshot' => $snapshot,
@@ -31,6 +32,9 @@ final class ReportRenderer
             'recipientName' => $recipientName,
             'reportNumber' => $reportNumber,
             'accent' => $accent,
+            // A data URI, not a URL: the PDF engine fetches images with no credentials, so a link
+            // to the authenticated logo endpoint would render as nothing at all.
+            'logo' => $logo,
             'locale' => $template->locale ?? 'en',
             'termFor' => [],
         ])->render();

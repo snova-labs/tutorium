@@ -25,6 +25,32 @@ export interface Branch {
   id: number;
   name: string;
   locale_rules: { timezone: string; week_start?: string; weekend_days?: string[] };
+  code?: string;
+  brand_id?: number;
+  is_active?: boolean;
+  contact?: { phone: string | null; email: string | null; address: Record<string, string> | null };
+  brand?: { id: number; name: string };
+}
+
+export interface Closure {
+  id: number;
+  branch_id: number;
+  /** A local date: a branch is closed for its own day, with no time and no zone. */
+  date: string;
+  name: string;
+  blocks_sessions: boolean;
+}
+
+export interface Brand {
+  id: number;
+  name: string;
+  code: string;
+  is_default: boolean;
+  locale: string | null;
+  colors: Record<string, string> | null;
+  logo_url: string | null;
+  sender: { name: string | null; email: string | null };
+  branches_count?: number;
 }
 
 export interface Batch {
@@ -143,6 +169,28 @@ export interface Register {
 }
 
 export type SchemeKind = "points" | "percentage" | "pass_fail" | "letter" | "level" | "rubric";
+
+/** A scheme as the grade book's vocabularies list it, for the form that creates an assessment. */
+export interface GradingSchemeOption {
+  id: number;
+  name: string;
+  kind: SchemeKind;
+  label: string;
+  needs_maximum: boolean;
+  config: { bands?: { label: string }[]; ladder?: string[] } | null;
+}
+
+export interface AssessmentTypeOption {
+  id: number;
+  name: string;
+  code: string;
+  counts_in_submission_rate?: boolean;
+}
+
+export interface GradingVocabularies {
+  assessment_types: AssessmentTypeOption[];
+  grading_schemes: GradingSchemeOption[];
+}
 
 export interface GradeCell {
   grade_id: number;

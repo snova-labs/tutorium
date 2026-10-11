@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\BrandController;
+use App\Http\Controllers\Api\V1\ClosureController;
 use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\EnrollmentController;
 use App\Http\Controllers\Api\V1\GradeBookController;
@@ -89,7 +90,14 @@ Route::prefix('v1')->group(function (): void {
 
         // Organisation
         Route::apiResource('brands', BrandController::class)->names('api.brands');
+        Route::get('brands/{brand}/logo', [BrandController::class, 'logo'])->name('api.brands.logo.show');
+        Route::post('brands/{brand}/logo', [BrandController::class, 'storeLogo'])->name('api.brands.logo.store');
+        Route::delete('brands/{brand}/logo', [BrandController::class, 'destroyLogo'])
+            ->name('api.brands.logo.destroy');
         Route::apiResource('branches', BranchController::class)->names('api.branches');
+        Route::get('branches/{branch}/closures', [ClosureController::class, 'index'])->name('api.closures.index');
+        Route::post('branches/{branch}/closures', [ClosureController::class, 'store'])->name('api.closures.store');
+        Route::delete('closures/{closure}', [ClosureController::class, 'destroy'])->name('api.closures.destroy');
 
         // Academic structure
         Route::apiResource('courses', CourseController::class)->names('api.courses');

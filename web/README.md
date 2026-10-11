@@ -34,7 +34,7 @@ every sign-in will appear to come from one address.
 
 ## Screens
 
-- **Home**: trial status and the setup checklist. Each unfinished step links to where it is done;
+- **Home**: trial status and the setup checklist. Each step links to where it is done, finished or not;
   whoever manages settings can load or remove the sample class, or hide the guide.
 - **Learners**: list and search, add (with the duplicate warning), spreadsheet import.
 - **Learner** (`/learners/{id}`): classes with this period's attendance and average, enrolling in
@@ -46,6 +46,16 @@ every sign-in will appear to come from one address.
   again, withdraw, or invite an expired address again.
 - **Accept an invitation** (`/invitations/{token}`, public): the page the invitation email opens;
   the newcomer sets a password, and their browser's timezone is stored.
+- **Your academy** (`/organisation`): the name, reply-to address and colours that appear on reports,
+  the logo (uploaded here, served through this app rather than from a public URL), and the
+  locations you teach at. A location holds the timezone and week structure everything taught there
+  is scheduled by, set when it is added (`/organisation/locations/new`) and changed on its own page
+  (`/organisation/locations/{id}`); archiving one blocks new enrollments and keeps every record.
+  A location's own page also holds the days it is closed: generation skips them and says which
+  days it skipped, and a closure added after the sessions were generated can cancel the ones
+  already on the calendar, each keeping its record with the closure as the reason. A closure can
+  also be a note that does not stop teaching. Past dates are not listed, because they change
+  nothing from here on.
 - **Batches**: each batch's clock with its provenance; a batch's sessions in batch time.
 - **Courses** (`/courses`): what is taught, with how its reports are divided (month, quarter, block
   of weeks, or terms); adding one, with a code suggested from the name.
@@ -59,7 +69,12 @@ every sign-in will appear to come from one address.
   a classroom), minutes late for a late mark, "mark the rest present", one save for the class.
   The batch's attendance rules sit above it, each with its provenance. Leaving with unsaved marks
   asks first.
-- **Grade book** (`/batches/{id}/gradebook`): one period at a time, in the batch's clock. Each cell
+- **Grade book** (`/batches/{id}/gradebook`): whoever manages assessments can add one here — its
+  kind, how it is marked (the form says what a mark will look like, and asks for a maximum only
+  where the scheme has one), its due date inside the period on screen, and a rubric's criteria with
+  their running total. It is published as it is created, so it appears in the grid at once; an
+  assessment with no due date would show in no period's grade book, so a date is required.
+  One period at a time, in the batch's clock. Each cell
   takes a result in its scheme's own terms (a score, a letter, a level, pass or fail) and a
   submission status; typing a result marks it submitted. Changed cells save together, and a value
   the scheme rejects comes back with the scheme's own message. Rubric totals are shown but

@@ -21,6 +21,9 @@ final class BrandResource extends JsonResource
             'is_default' => $this->is_default,
             'locale' => $this->locale,
             'colors' => $this->colors,
+            // Where to fetch the logo, not where it is stored: the disk is private, and the path
+            // on it is nobody's business outside the server.
+            'logo_url' => $this->logo_path === null ? null : route('api.brands.logo.show', $this->id),
             'sender' => [
                 'name' => $this->sender_name,
                 'email' => $this->sender_email,
