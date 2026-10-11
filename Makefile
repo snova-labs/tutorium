@@ -23,7 +23,7 @@ ifneq ($(ENV),)
 endif
 
 .PHONY: help setup up down restart build install migrate fresh seed test stan fmt fmt-check shell logs isolation assets npm \
-	demo academy artisan backup backups drill codes db-dump status staging production deploy promote demo-remove
+	demo academy artisan verify backup backups drill codes db-dump status staging production deploy promote demo-remove
 
 # `make staging <task>` / `make production <task>`: the environment word only selects where <task>
 # runs; on its own it does nothing.
@@ -105,6 +105,9 @@ academy:       ## create an academy; asks for the name, owner's email and name
 
 artisan:       ## any artisan command; asks which (or CMD="…")
 	@cmd="$(CMD)"; [ -n "$$cmd" ] || read -p "php artisan " cmd; $(ARTISAN) $$cmd
+
+verify:        ## is this release fit to serve: make staging verify
+	$(ARTISAN) platform:verify
 
 backup:        ## take a backup now
 	$(ARTISAN) platform:backup

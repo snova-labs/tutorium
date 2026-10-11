@@ -259,6 +259,14 @@ proxy hosts in NPM and the two A records (the tunnel creates its own DNS records
 Within the polling interval (5 minutes) Portainer sees the moved branch, pulls the new images and
 redeploys. To skip the wait: Portainer → Stacks → `tutorium-staging` → **Pull and redeploy**.
 
+3. `make staging verify` once it is up. It checks the things a deploy can break without anything
+   looking wrong: the database and whether a migration is still pending, the cache, the queue and
+   any failed jobs, that the mail server actually answers, that the PDF engine produces a PDF, and
+   that each storage disk can be written to and read back. It exits non-zero if any check fails, so
+   a monitor can run it too (`make staging verify` on a timer, or
+   `php artisan platform:verify --json`). A yellow **look** is worth reading and does not fail:
+   a queue running in `sync` mode, or failed jobs waiting.
+
 Migrations run on every redeploy, before the app starts. If one fails, `tutorium-staging-migrate`
 shows **exited (1)** and the app doesn't start on a half-migrated database; its **Logs** show why.
 
@@ -348,6 +356,7 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 | Task | Command |
 |---|---|
 | List the commands | `make help` |
+| Check a release is fit to serve | `make staging verify` (after every deploy) |
 | Deploy `main` to staging | `make deploy` (any machine with `gh auth login`; `REF=…` for another commit) |
 | Promote staging to production | `make promote` (asks first; `TAG=sha-…` for an older build) |
 | Create an academy | `make production academy` (asks for the name, owner and email) |
