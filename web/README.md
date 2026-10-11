@@ -64,7 +64,12 @@ every sign-in will appear to come from one address.
   a classroom), minutes late for a late mark, "mark the rest present", one save for the class.
   The batch's attendance rules sit above it, each with its provenance. Leaving with unsaved marks
   asks first.
-- **Grade book** (`/batches/{id}/gradebook`): one period at a time, in the batch's clock. Each cell
+- **Grade book** (`/batches/{id}/gradebook`): whoever manages assessments can add one here — its
+  kind, how it is marked (the form says what a mark will look like, and asks for a maximum only
+  where the scheme has one), its due date inside the period on screen, and a rubric's criteria with
+  their running total. It is published as it is created, so it appears in the grid at once; an
+  assessment with no due date would show in no period's grade book, so a date is required.
+  One period at a time, in the batch's clock. Each cell
   takes a result in its scheme's own terms (a score, a letter, a level, pass or fail) and a
   submission status; typing a result marks it submitted. Changed cells save together, and a value
   the scheme rejects comes back with the scheme's own message. Rubric totals are shown but

@@ -161,6 +161,28 @@ export interface Register {
 
 export type SchemeKind = "points" | "percentage" | "pass_fail" | "letter" | "level" | "rubric";
 
+/** A scheme as the grade book's vocabularies list it, for the form that creates an assessment. */
+export interface GradingSchemeOption {
+  id: number;
+  name: string;
+  kind: SchemeKind;
+  label: string;
+  needs_maximum: boolean;
+  config: { bands?: { label: string }[]; ladder?: string[] } | null;
+}
+
+export interface AssessmentTypeOption {
+  id: number;
+  name: string;
+  code: string;
+  counts_in_submission_rate?: boolean;
+}
+
+export interface GradingVocabularies {
+  assessment_types: AssessmentTypeOption[];
+  grading_schemes: GradingSchemeOption[];
+}
+
 export interface GradeCell {
   grade_id: number;
   submission_status_id: number;
