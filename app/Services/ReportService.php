@@ -33,6 +33,7 @@ final class ReportService
         private readonly PeriodService $periods,
         private readonly IdSequenceService $sequences,
         private readonly BrandService $brands,
+        private readonly ReportTemplateService $templates,
     ) {}
 
     /**
@@ -70,8 +71,10 @@ final class ReportService
                 'report_template_id' => $template->getKey(),
                 'report_run_id' => $options['run_id'] ?? null,
                 'number' => $number,
-                // Frozen here and never recomputed. This is the evidence.
-                'stats_snapshot' => $snapshot->toArray(),
+                // Frozen here and never recomputed. This is the evidence — including which
+                // sections the page carried, so editing the template later cannot rewrite a
+                // report somebody has already read.
+                'stats_snapshot' => $snapshot->toArray() + ['template' => $this->templates->frozen($template)],
                 'generated_by' => Auth::id(),
                 'generated_at' => now(),
             ]);
@@ -154,7 +157,7 @@ final class ReportService
 
         return $this->renderer->render(
             $report->stats_snapshot,
-            $report->template ?? $this->templateFor($report->enrollment),
+            $this->templateAsSent($report),
             'Sample Guardian',
             $report->number,
             $accent,
@@ -193,6 +196,29 @@ final class ReportService
         Storage::disk($disk)->put($path, $pdf);
 
         return ['file_path' => $path, 'file_disk' => $disk];
+    }
+
+    /**
+     * The template as the report was sent, not as it stands now.
+     *
+     * Reports generated before the shape was frozen have no record of it, so they fall back to
+     * the template they point at — the best that can be said about them.
+     */
+    private function templateAsSent(Report $report): ReportTemplate
+    {
+        $frozen = $report->stats_snapshot['template'] ?? null;
+
+        if (! is_array($frozen) || ! isset($frozen['blocks'])) {
+            return $report->template ?? $this->templateFor($report->enrollment);
+        }
+
+        // Never saved: it exists to answer shows(), closing and locale while rendering.
+        return new ReportTemplate([
+            'name' => $report->template->name ?? 'As sent',
+            'blocks' => $frozen['blocks'],
+            'closing' => $frozen['closing'] ?? null,
+            'locale' => $frozen['locale'] ?? null,
+        ]);
     }
 
     /**

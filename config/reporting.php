@@ -32,6 +32,18 @@ return [
     ],
 
     /*
+    | The blocks a report can carry, in display order, and what each one puts on the page. The
+    | only list of them: the template screen offers these, and a template may hold nothing else.
+    */
+    'blocks' => [
+        'summary' => 'Attendance and average, as four figures',
+        'engagement' => 'Engagement stars, where the teacher gave them',
+        'highlights' => 'What went well, in sentences',
+        'work' => 'Every graded piece of work, with its result',
+        'notes' => 'The teacher\'s note for the period',
+    ],
+
+    /*
     | The blocks a new tenant's default template carries. Order is display order.
     */
     'default_blocks' => ['summary', 'engagement', 'highlights', 'work', 'notes'],

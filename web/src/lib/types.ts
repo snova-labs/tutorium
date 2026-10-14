@@ -32,6 +32,16 @@ export interface Branch {
   brand?: { id: number; name: string };
 }
 
+export interface ReportTemplate {
+  id: number;
+  name: string;
+  blocks: string[];
+  closing: string | null;
+  locale: string | null;
+  is_default: boolean;
+  applies_to: { brand_id: number | null; brand: string | null; course_id: number | null; course: string | null };
+}
+
 export interface Closure {
   id: number;
   branch_id: number;

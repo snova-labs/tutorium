@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\LearnerController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\TerminologyController;
@@ -197,6 +198,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('report-deliveries/{delivery}/retry', [ReportController::class, 'retryDelivery'])
             ->name('api.reports.retry');
 
+        Route::get('report-templates', [ReportTemplateController::class, 'index'])
+            ->name('api.report-templates.index');
+        Route::post('report-templates', [ReportTemplateController::class, 'store'])
+            ->name('api.report-templates.store');
+        Route::patch('report-templates/{template}', [ReportTemplateController::class, 'update'])
+            ->name('api.report-templates.update');
         Route::get('report-templates/{template}/preview', [ReportController::class, 'preview'])
             ->name('api.reports.preview');
 

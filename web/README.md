@@ -92,6 +92,13 @@ every sign-in will appear to come from one address.
 - **Billing**: payment method, card or invoice, converting a trial.
 - **Demo data** (`/demo`, public, staging only): load or remove the four demo academies with the
   demo password, then a list of every demo account to sign in with.
+- **What reports contain** (`/settings/reports`): the templates a report is rendered from — which
+  sections it carries (in print order, each with what it puts on the page), the sign-off, and
+  which reports the template answers for (narrowest match wins: a course's template beats a
+  brand's, which beats the account default). One template is always the default, and a template
+  that matches nothing says so. "See a sample" opens the page rendered from neutral sample data,
+  never a real learner. Reports already sent keep the sections they were sent with, so changing a
+  template never rewrites what a guardian has read.
 - **Settings** (`/settings`): the academy's own words for learners, batches and the rest (used for
   every label, from the nav down), presets with what each would set, and bringing back a hidden
   setup guide.
