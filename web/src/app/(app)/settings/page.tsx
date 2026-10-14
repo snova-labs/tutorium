@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ActionButton } from "@/app/(app)/settings/action-button";
@@ -6,6 +7,7 @@ import { applyPreset, loadSampleData, removeSampleData, reopenSetupGuide } from 
 import { TerminologyForm } from "@/app/(app)/settings/terminology-form";
 import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getMe } from "@/lib/me";
@@ -83,6 +85,21 @@ export default async function SettingsPage() {
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>What reports contain</CardTitle>
+            <CardDescription>
+              Which sections a report carries, and which reports each template answers for. Reports already sent keep the
+              sections they were sent with.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/settings/reports">Report templates</Link>
+            </Button>
           </CardContent>
         </Card>
 
