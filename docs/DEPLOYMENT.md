@@ -189,13 +189,36 @@ which is correct), then starts the rest. In Portainer → Containers they should
 
 ### 7. Create an academy and sign in
 
-On the server, from the repository clone ("Commands on the server" below):
+A new environment has no academy, and the only way to make one is to be signed in to one — so the
+stack makes the first. In Portainer → **Stacks** → `tutorium-staging` → **Editor** →
+**Environment variables**, fill in:
 
-```bash
-make staging academy
+```
+FIRST_RUN_ACADEMY=Sunrise Academy
+FIRST_RUN_OWNER_NAME=Jay Shyam Patel
+FIRST_RUN_OWNER_EMAIL=you@example.com
+FIRST_RUN_TIMEZONE=Asia/Kathmandu
 ```
 
-It prints a temporary password once. Open `https://tutorium-staging.jayshyampatel.com.np`, pass
+**Update the stack**. The migrate step runs the migrations and then `platform:first-run`, which
+creates the academy, its first brand and location, and the owner. Open Portainer → Containers →
+`tutorium-staging-migrate` → **Logs** to read the temporary password; it is printed once and
+nowhere else. Set `FIRST_RUN_PASSWORD` instead if you would rather choose it (and clear it again
+afterwards).
+
+Then empty `FIRST_RUN_ACADEMY`. Leaving it set is harmless — the command does nothing once that
+academy exists, which is why it can run on every deploy — but an empty variable says plainly that
+this environment is past its first run. A *different* name creates another academy.
+
+Nothing here needs a clone of the repository, a shell, or a typed command. If you do have a clone,
+`make staging academy` creates further academies interactively, and so does
+`platform:provision-academy` in Portainer → Containers → `tutorium-staging-api` → **Console**:
+
+```bash
+php artisan platform:provision-academy "Second Academy" owner@example.com "Owner Name" --timezone=Asia/Kathmandu
+```
+
+Either way it prints a temporary password once. Open `https://tutorium-staging.jayshyampatel.com.np`, pass
 Cloudflare Access, then sign in.
 
 Owners, managers and accountants confirm each sign-in with an emailed code. Staging doesn't send
@@ -341,8 +364,14 @@ any real address are equally safe. Production never runs it: the service sits be
 
 ## Commands on the server: `make`
 
-Every routine command has a `make` target that runs in the right container. On the server, clone
-the repository once (read-only use; a GitHub token that can read it):
+A clone on the server is a convenience, not a requirement. Nothing in setup needs one: the stack
+file comes from GitHub through Portainer, the settings are the stack's environment variables, and
+the first academy is created by the deploy (step 7 above). Every command below can also be typed in
+Portainer → Containers → `<slug>-api` → **Console** as `php artisan …`.
+
+With that said, every routine command has a `make` target that runs it in the right container,
+which is shorter to type and harder to get wrong. On the server, clone the repository once
+(read-only use; a GitHub token that can read it):
 
 **Server**
 ```bash
@@ -359,7 +388,8 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 | Check a release is fit to serve | `make staging verify` (after every deploy) |
 | Deploy `main` to staging | `make deploy` (any machine with `gh auth login`; `REF=…` for another commit) |
 | Promote staging to production | `make promote` (asks first; `TAG=sha-…` for an older build) |
-| Create an academy | `make production academy` (asks for the name, owner and email) |
+| Create the first academy | the `FIRST_RUN_*` stack variables (step 7); no clone needed |
+| Create another academy | `make production academy` (asks for the name, owner and email) |
 | Load or remove the demo academies | the `/demo` page, or `make staging demo` / `make staging demo-remove` |
 | Sign-in codes and confirmation links | `make staging codes` |
 | Backups and drills | `make production backups`, `make production backup`, `make production drill` |
@@ -369,8 +399,9 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 | A shell in the API container | `make staging shell` |
 | Any other artisan command | `make staging artisan` (asks which) |
 
-Without a clone, run the underlying command in Portainer → Containers → `<slug>-api` → **Console**:
-`make -n <target> …` on any machine with the repository prints exactly what a target runs.
+Without a clone, run the underlying command in Portainer → Containers → `<slug>-api` → **Console**
+(`php artisan platform:verify`, `php artisan platform:demo`, `php artisan platform:backup`, and so
+on). `make -n <target> …` on any machine with the repository prints exactly what a target runs.
 
 ## Demo academies
 
@@ -421,7 +452,10 @@ Repeat the staging setup with production values:
 7. Portainer stack `tutorium`: same repository and compose path, reference `refs/heads/main`, no
    GitOps updates (production moves only when you promote), variables from
    `deploy/portainer/production.env.example`.
-8. Create the first academy: `make production academy`.
+8. Create the first academy: fill in `FIRST_RUN_ACADEMY`, `FIRST_RUN_OWNER_NAME`,
+   `FIRST_RUN_OWNER_EMAIL` and `FIRST_RUN_TIMEZONE` and update the stack, exactly as in staging's
+   step 7. The password is in the `tutorium-migrate` container's log. Empty `FIRST_RUN_ACADEMY`
+   afterwards.
 
 ### Each release
 
