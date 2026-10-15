@@ -32,7 +32,7 @@ One Portainer stack per environment, all from the same file, `deploy/portainer/s
 
 | Container | What it is | Memory limit |
 |---|---|---|
-| `<slug>-migrate` | Runs `php artisan migrate --force`, then exits. The others wait for it. | 256 MB |
+| `<slug>-migrate` | Runs `php artisan platform:deploy` (migrations, then the first academy and demo data if their variables ask), then exits. The others wait for it. | 256 MB |
 | `<slug>-api` | Laravel: API, admin panel (`/admin`), Livewire screens, payment webhooks | 512 MB |
 | `<slug>-queue` | Laravel queue worker | 256 MB |
 | `<slug>-scheduler` | Laravel scheduler (trials, dunning, metering, clean-up) | 192 MB |
@@ -49,32 +49,29 @@ from the same repository path, with the production variables
 runs the image tag `production`, which only moves when you promote an image staging has already
 run.
 
-## Images and the staging branch
+## Images: built by CI, pulled by Portainer
 
 ```
- main ──(Actions → Deploy to staging)──▶ build :sha-abc1234 ──▶ staging branch (pinned to sha-abc1234)
-                                                                   │
-                                     Portainer polls the branch ◀──┘ ──▶ pulls sha-abc1234, redeploys
-                                     Promote to production ──▶ :production
+ merge to main ──▶ CI green ──▶ Images builds :staging and :sha-abc1234 ──▶ ghcr.io
+                                                                              │
+             Portainer → Pull and redeploy (or a poll with Re-pull image) ◀────┘
+             Promote to production ──▶ :production
 ```
 
-The **`staging` branch is what staging runs**. Nobody merges into it or pushes to it: it is a
-pointer that the **Deploy to staging** workflow moves.
+There is no deploy branch and no file to edit to ship. Two moving tags, one per environment:
 
-- **Deploy to staging** (Actions → Deploy to staging → Run workflow, ref `main` by default):
-  1. checks that CI passed on that commit;
-  2. builds the `linux/arm64` images from it;
-  3. moves `staging` to it, plus one commit that pins the stack file to that build's image tag.
-- Portainer (CE) follows the `staging` branch by **polling** (no webhook needed). Because every
-  deploy has a new tag, the redeploy pulls the new images by itself.
-- To go back, run it with an older commit or tag.
-- The images go to GitHub Container Registry:
-  - `ghcr.io/snova-labs/tutorium-api:sha-<7 chars>` and `:staging` (the latest build)
-  - `ghcr.io/snova-labs/tutorium-web:sha-<7 chars>` and `:staging`
-- **Promote to production** (Actions → Promote to production → Run workflow) points `:production`
-  at `staging` or at any `sha-…` tag, without rebuilding.
+- `ghcr.io/snova-labs/tutorium-api:staging` and `-web:staging` — whatever CI last built from `main`.
+- `:production` — whatever **Promote to production** last moved there, always an image staging has
+  already run. Nothing is rebuilt for production, so it runs the bytes that were tested.
+- Every build also gets `:sha-<7 chars>`, which is how you pin or roll back: set `IMAGE_TAG` to it
+  in the stack's variables and redeploy.
 
-Merging to `main` doesn't change staging by itself: deploy when you want to show it.
+**Images** (`.github/workflows/images.yml`) runs itself when CI passes on `main`, so every merged
+commit has an image waiting and a red CI never gets one. Run it by hand (Actions → **Images** → Run
+workflow, on any branch or tag, or `make deploy REF=…`) to build an older or unmerged commit; that
+moves the `staging` tag too.
+
+A deploy, then, is Portainer pulling the tag again — see "Shipping a change".
 
 Nothing is built on the server.
 
@@ -84,9 +81,10 @@ Nothing is built on the server.
 
 ### 1. Build the first images
 
-`make deploy` (or GitHub → **Actions** → **Deploy to staging** → **Run workflow**). When it is green,
-GitHub → snova-labs → **Packages** → `tutorium-api` and `tutorium-web` each have a `sha-…` and a
-`staging` tag, and the `staging` branch exists for the stack to follow.
+GitHub → **Actions** → **Images** → **Run workflow** (on `main`), or `make deploy`. When it is
+green, GitHub → snova-labs → **Packages** → `tutorium-api` and `tutorium-web` each have a `sha-…`
+and a `staging` tag. After this first one you need not come back here: CI passing on `main` builds
+them from then on.
 
 The first build takes longer (the PHP extensions compile under ARM emulation); later builds use the
 cache. If native ARM runners are available to the repository, set the repository variable
@@ -167,12 +165,13 @@ Portainer → **Stacks** → **Add stack**
 - Name: `tutorium-staging`
 - Build method: **Repository**
   - Repository URL: `https://github.com/snova-labs/tutorium`
-  - Repository reference: `refs/heads/staging` (the branch Deploy to staging moves; production
-    uses `refs/heads/main`)
+  - Repository reference: `refs/heads/main` (production too: one branch, and the image tag in the
+    variables is what differs)
   - Compose path: `deploy/portainer/stack.yml`
   - Authentication: on, with a GitHub token that can read the repository
-  - **GitOps updates**: on, mechanism **Polling**, fetch interval `5m`. That is what makes Deploy
-    to staging reach the server.
+  - **GitOps updates**: leave off, and ship with **Pull and redeploy** (see "Shipping a change").
+    Turn it on — **Polling**, `5m`, with **Re-pull image** and **Force redeployment** — if you want
+    staging to follow `:staging` with no press at all.
 - **Environment variables** → **Advanced mode** → paste
   `deploy/portainer/staging.env.example`, then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `APP_KEY` and
   `DB_PASSWORD`. Keep `COMPOSE_PROFILES=tunnel`: it is what starts the tunnel container.
@@ -273,14 +272,18 @@ proxy hosts in NPM and the two A records (the tunnel creates its own DNS records
 
 ---
 
-## Updating staging
+## Shipping a change
 
-1. Merge to `main` and wait for **CI** to go green.
-2. `make deploy`, from any machine with the GitHub CLI signed in (`gh auth login`). It waits
-   until the images are built. Or: GitHub → **Actions** → **Deploy to staging** → **Run workflow**.
+1. Merge to `main`. CI runs; when it goes green, **Images** builds and pushes `:staging` by itself
+   (about 10 minutes on the emulated ARM runner). Watch it in Actions, or run `make deploy` to
+   kick a build off and wait for it.
+2. Portainer → **Stacks** → `tutorium-staging` → **Pull and redeploy**, with **Re-pull image**
+   ticked. That is the deploy: it fetches `:staging` again and recreates the containers.
 
-Within the polling interval (5 minutes) Portainer sees the moved branch, pulls the new images and
-redeploys. To skip the wait: Portainer → Stacks → `tutorium-staging` → **Pull and redeploy**.
+   To do without even that press, turn on GitOps updates for the stack (**Polling**, every 5
+   minutes) with **Re-pull image** and **Force redeployment**: the stack then pulls the tag on
+   every poll and comes up on whatever CI last built. The cost is that it recreates the containers
+   on each poll whether or not anything changed, so it suits staging rather than production.
 
 3. `make staging verify` once it is up. It checks the things a deploy can break without anything
    looking wrong: the database and whether a migration is still pending, the cache, the queue and
@@ -386,7 +389,8 @@ local docker compose setup. Anything a target needs and you didn't give, it asks
 |---|---|
 | List the commands | `make help` |
 | Check a release is fit to serve | `make staging verify` (after every deploy) |
-| Deploy `main` to staging | `make deploy` (any machine with `gh auth login`; `REF=…` for another commit) |
+| Build an image now | `make deploy` (any machine with `gh auth login`; `REF=…` for another commit). Merging to `main` does it by itself |
+| Deploy what was built | Portainer → Stacks → the stack → **Pull and redeploy** |
 | Promote staging to production | `make promote` (asks first; `TAG=sha-…` for an older build) |
 | Create the first academy | the `FIRST_RUN_*` stack variables (step 7); no clone needed |
 | Create another academy | `make production academy` (asks for the name, owner and email) |
@@ -434,6 +438,11 @@ phone number is in an unused or reserved block, so nothing reaches a real person
    nothing else.
 
 From a terminal instead: `make staging demo` and `make staging demo-remove` (locally: `make demo`).
+
+Or have the deploy do it: set `SEED_DEMO=true` in the stack's variables and redeploy. It builds them
+if they are not there and says so if they are, so it is safe to leave on — but it costs a couple of
+minutes on every deploy, so set it back to `false` once you have them. Like the `/demo` page, it
+never runs with `APP_ENV=production`.
 
 ## Production: the same stack, promoted
 
