@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
+use App\Http\Controllers\Api\V1\VocabularyController;
 use App\Http\Controllers\Public\DemoController;
 use App\Http\Controllers\Public\InvitationController as PublicInvitationController;
 use App\Http\Controllers\Public\SignupController;
@@ -206,6 +207,16 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.report-templates.update');
         Route::get('report-templates/{template}/preview', [ReportController::class, 'preview'])
             ->name('api.reports.preview');
+
+        // The academy's own lists (config/vocabularies.php). The list key is in the path; an
+        // unknown one is a 404, because it is a route that does not exist.
+        Route::get('vocabularies', [VocabularyController::class, 'index'])->name('api.vocabularies.index');
+        Route::post('vocabularies/{list}', [VocabularyController::class, 'store'])
+            ->name('api.vocabularies.store');
+        Route::patch('vocabularies/{list}/{term}', [VocabularyController::class, 'update'])
+            ->whereNumber('term')->name('api.vocabularies.update');
+        Route::delete('vocabularies/{list}/{term}', [VocabularyController::class, 'destroy'])
+            ->whereNumber('term')->name('api.vocabularies.destroy');
 
         Route::get('onboarding', [OnboardingController::class, 'status'])->name('api.onboarding.status');
         Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('api.onboarding.dismiss');

@@ -42,6 +42,32 @@ export interface ReportTemplate {
   applies_to: { brand_id: number | null; brand: string | null; course_id: number | null; course: string | null };
 }
 
+export interface VocabularyTerm {
+  id: number;
+  name: string;
+  /** For imports and integrations. Made from the name once and never changed. */
+  code: string;
+  /** The one flag that changes behaviour; what it means is on the list, not the term. */
+  flag: boolean;
+  color: string | null;
+  sort: number;
+  is_active: boolean;
+  /** How many records point at this term. Nothing can be removed once this is above zero. */
+  used: number;
+}
+
+export interface Vocabulary {
+  key: string;
+  name: string;
+  singular: string;
+  about: string;
+  flag: { field: string; label: string; off: string; help: string; default: boolean };
+  /** Whether a term in use can be switched off instead of removed. */
+  deactivates: boolean;
+  can_manage: boolean;
+  terms: VocabularyTerm[];
+}
+
 export interface Closure {
   id: number;
   branch_id: number;
