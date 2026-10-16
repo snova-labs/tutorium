@@ -14,6 +14,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     ...(can(me, "users.manage") ? [{ href: "/team", label: "Team" }] : []),
     ...(can(me, "organisation.manage") ? [{ href: "/organisation", label: "Academy" }] : []),
     ...(can(me, "billing.manage") ? [{ href: "/billing", label: "Billing" }] : []),
+    // Whoever runs the academy without handling the money still needs the figure they are billed on.
+    ...(!can(me, "billing.manage") && can(me, "dashboard.tenant")
+      ? [{ href: "/billing/usage", label: "Usage" }]
+      : []),
     ...(can(me, "settings.manage") ? [{ href: "/settings", label: "Settings" }] : []),
   ];
 

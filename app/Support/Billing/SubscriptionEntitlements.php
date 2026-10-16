@@ -37,7 +37,7 @@ final class SubscriptionEntitlements implements EntitlementSource
 
         return new Entitlement(
             key: $key,
-            value: $feature->value['value'] ?? $feature->value,
+            value: $this->stored($feature->value),
             source: Entitlement::SOURCE_PLAN,
             isHard: $feature->isHard(),
         );
@@ -52,7 +52,7 @@ final class SubscriptionEntitlements implements EntitlementSource
         foreach ($subscription?->plan->features ?? [] as $feature) {
             $entitlements[$feature->feature_key] = new Entitlement(
                 key: $feature->feature_key,
-                value: $feature->value['value'] ?? $feature->value,
+                value: $this->stored($feature->value),
                 source: Entitlement::SOURCE_PLAN,
                 isHard: $feature->isHard(),
             );
@@ -61,7 +61,7 @@ final class SubscriptionEntitlements implements EntitlementSource
         foreach ($this->overrides($tenant) as $override) {
             $entitlements[$override->feature_key] = new Entitlement(
                 key: $override->feature_key,
-                value: $override->value['value'] ?? $override->value,
+                value: $this->stored($override->value),
                 source: Entitlement::SOURCE_OVERRIDE,
                 isHard: false,
                 reason: $override->reason,
@@ -86,7 +86,7 @@ final class SubscriptionEntitlements implements EntitlementSource
 
         return new Entitlement(
             key: $key,
-            value: $override->value['value'] ?? $override->value,
+            value: $this->stored($override->value),
             source: Entitlement::SOURCE_OVERRIDE,
             // A negotiated grant never blocks: it exists because someone decided this account
             // should be allowed more, not less.
@@ -114,5 +114,24 @@ final class SubscriptionEntitlements implements EntitlementSource
                 ->latest('id')
                 ->first(),
         );
+    }
+
+    /**
+     * The value out of its stored wrapper.
+     *
+     * A plan feature and an override both store `{"value": x}`, and x is null for "unlimited".
+     * `$row->value['value'] ?? $row->value` therefore handed back the wrapper array for exactly
+     * the unlimited case, which made Entitlement::isUnlimited() false and asInt() cast an array
+     * to 1 — an unlimited hard limit enforced as a limit of one.
+     *
+     * @param array<string, mixed>|null $stored
+     */
+    private function stored(?array $stored): mixed
+    {
+        if ($stored === null) {
+            return null;
+        }
+
+        return array_key_exists('value', $stored) ? $stored['value'] : $stored;
     }
 }
