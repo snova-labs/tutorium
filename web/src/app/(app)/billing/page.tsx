@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CollectionForm, ConvertTrialForm, PaymentMethodButton } from "@/app/(app)/billing/billing-forms";
 import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getMe } from "@/lib/me";
@@ -42,6 +44,20 @@ export default async function BillingPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>What you are billed for</CardTitle>
+            <CardDescription>
+              The live count this period, how it is counted, and every invoice with the day its figure came from.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/billing/usage">Usage and invoices</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Plan</CardTitle>

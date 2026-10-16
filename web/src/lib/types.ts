@@ -160,6 +160,49 @@ export interface Billing {
   available_plans: { code: string; name: string; unit_price: string; minimum: string; current: boolean }[];
 }
 
+export interface UsageMeter {
+  /** Active learners counted today. */
+  today: number;
+  /** The highest daily count so far this period: what the invoice will say. */
+  peak: number;
+  peak_on: string | null;
+  will_be_billed_for: number;
+  basis: string;
+  period: { start: string; end: string };
+  daily: { date: string; count: number; corrected: boolean }[];
+  measured_through: string;
+}
+
+export interface Usage {
+  meter: UsageMeter;
+  /** The counting rules, served with the figure so an invoice is never the first sight of it. */
+  what_counts: { counted: string[]; not_counted: string[]; rules: string[] };
+  plan: {
+    name: string | null;
+    status: string | null;
+    source: string;
+    /** value: a limit (null means unlimited), a boolean for a feature, or a string. */
+    entitlements: {
+      key: string;
+      value: number | boolean | string | null;
+      source: "plan" | "override" | "licence" | "default";
+      enforcement: "hard" | "soft";
+      reason: string | null;
+    }[];
+  };
+}
+
+export interface UsageInvoice {
+  number: string;
+  period: { start: string; end: string };
+  quantity: number;
+  /** How the quantity was arrived at: the peak, and the day it fell on. */
+  basis: string | null;
+  total: string;
+  status: string;
+  notes: string | null;
+}
+
 export interface AttendanceStatus {
   id: number;
   name: string;

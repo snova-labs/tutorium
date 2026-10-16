@@ -70,6 +70,44 @@ final class EntitlementTest extends TestCase
     }
 
     #[Test]
+    public function an_unlimited_hard_limit_is_unlimited_rather_than_a_limit_of_one(): void
+    {
+        // A plan feature stores {"value": x}, and x is null for unlimited. Reading it with
+        // `value['value'] ?? value` handed back the wrapper array for exactly that case, so
+        // isUnlimited() was false and asInt() cast an array to 1: unlimited enforced as one.
+        PlanFeature::query()->create([
+            'plan_id' => $this->growth->getKey(), 'feature_key' => 'max_branches',
+            'value' => ['value' => null], 'enforcement' => PlanFeature::HARD,
+        ]);
+
+        $entitlements = app(EntitlementService::class);
+
+        app(TenantContext::class)->runAs($this->tenant, function () use ($entitlements): void {
+            $entitlement = $entitlements->get('max_branches', $this->tenant);
+
+            $this->assertNull($entitlement->value);
+            $this->assertTrue($entitlement->isUnlimited());
+
+            // The thing that matters: having some already does not block the next one.
+            $entitlements->guardCreation('max_branches', 7, $this->tenant);
+        });
+    }
+
+    #[Test]
+    public function an_override_with_no_limit_is_unlimited_too(): void
+    {
+        app(TenantContext::class)->runAs($this->tenant, fn () => TenantEntitlementOverride::query()->create([
+            'feature_key' => 'max_brands', 'value' => ['value' => null], 'reason' => 'Agreed on the call',
+        ]));
+
+        $entitlement = app(EntitlementService::class)->get('max_brands', $this->tenant);
+
+        $this->assertNull($entitlement->value);
+        $this->assertTrue($entitlement->isUnlimited());
+        $this->assertSame(Entitlement::SOURCE_OVERRIDE, $entitlement->source);
+    }
+
+    #[Test]
     public function a_hard_limit_blocks_the_action_that_would_exceed_it(): void
     {
         $service = app(EntitlementService::class);

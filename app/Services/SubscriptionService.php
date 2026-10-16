@@ -297,7 +297,11 @@ final class SubscriptionService
 
         foreach ($target->features as $feature) {
             $key = $feature->feature_key;
-            $newValue = $feature->value['value'] ?? $feature->value;
+            // Unwrapped the same way as the entitlement source: null means unlimited, and the
+            // wrapper must not leak out as an array.
+            $newValue = array_key_exists('value', (array) $feature->value)
+                ? ((array) $feature->value)['value']
+                : $feature->value;
             $oldValue = $current[$key]->value ?? null;
 
             if (is_bool($oldValue) && $oldValue === true && $newValue === false) {
