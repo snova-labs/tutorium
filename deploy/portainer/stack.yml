@@ -23,6 +23,8 @@
 # environment (~/scripts/my-create-db.sh <name>). See docs/DEPLOYMENT.md.
 
 x-laravel: &laravel
+  # A moving tag: `staging` is whatever CI last built from main, `production` is whatever was
+  # promoted. A deploy is Portainer pulling the tag again — nothing here is ever edited to ship.
   image: ${API_IMAGE:-ghcr.io/snova-labs/tutorium-api}:${IMAGE_TAG:-staging}
   # Every setting is passed explicitly from the stack's variables. The ones marked :? must be set,
   # or the stack refuses to deploy rather than starting half-configured.
@@ -83,6 +85,8 @@ x-laravel: &laravel
     # Demo academies (staff client: WEB_URL/demo). The password unlocks that page and is every demo
     # account's password. Empty: the page does not exist. Never available with APP_ENV=production.
     DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    # true: the deploy builds the demo academies too, once. Turn it off once they are there.
+    SEED_DEMO: ${SEED_DEMO:-false}
   volumes:
     - storage:/var/www/html/storage/app
     - backups:/var/www/html/storage/backups
@@ -99,14 +103,10 @@ services:
   migrate:
     <<: *laravel
     container_name: ${APP_SLUG:?Set APP_SLUG, e.g. tutorium-staging}-migrate
-    # Migrations, then the first academy. platform:first-run does nothing unless FIRST_RUN_ACADEMY
-    # is set, and nothing a second time once that academy exists, so it is safe on every deploy;
-    # --no-fail keeps a mistyped variable from blocking the stack (the reason is in this log).
-    command:
-      - sh
-      - -c
-      - php /var/www/html/artisan migrate --force --no-interaction &&
-        php /var/www/html/artisan platform:first-run --no-fail --no-interaction
+    # Migrations, then the first academy and the demo data if their variables ask for it. All of it
+    # is in `platform:deploy` rather than in shell here, and all of it is safe to run on every
+    # deploy. This log is where a deploy says what it did.
+    command: ["php", "/var/www/html/artisan", "platform:deploy"]
     restart: "no"
     mem_limit: 256m
 

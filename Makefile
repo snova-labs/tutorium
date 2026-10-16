@@ -78,13 +78,13 @@ demo-remove:   ## remove the demo academies: make demo-remove, or make staging d
 
 # ── Deploying (from any machine with the GitHub CLI signed in: gh auth login) ────────────────
 
-deploy:        ## put main (or REF=…) on staging, and wait until it is built
+deploy:        ## build and tag an image from this commit (merging to main does it for you)
 	@command -v gh >/dev/null || { echo "Needs the GitHub CLI: https://cli.github.com, then gh auth login"; exit 1; }
-	gh workflow run deploy-staging.yml --repo snova-labs/tutorium -f ref=$(or $(REF),main)
+	gh workflow run images.yml --repo snova-labs/tutorium --ref $(or $(REF),main)
 	@sleep 5
 	@gh run watch --repo snova-labs/tutorium --exit-status \
-		$$(gh run list --repo snova-labs/tutorium --workflow deploy-staging.yml --limit 1 --json databaseId -q '.[0].databaseId')
-	@echo "Built. Portainer redeploys staging on its next poll (within 5 minutes)."
+		$$(gh run list --repo snova-labs/tutorium --workflow images.yml --limit 1 --json databaseId -q '.[0].databaseId')
+	@echo "Built and tagged staging. Deploy it: Portainer → Stacks → tutorium-staging → Pull and redeploy."
 
 promote:       ## put what staging runs (or TAG=sha-…) on production, after asking
 	@command -v gh >/dev/null || { echo "Needs the GitHub CLI: https://cli.github.com, then gh auth login"; exit 1; }

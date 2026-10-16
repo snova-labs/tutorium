@@ -12,6 +12,13 @@ return [
     'password' => env('DEMO_PASSWORD', ''),
 
     /*
+    | SEED_DEMO=true in a stack's environment variables: the deploy builds the demo academies
+    | (platform:deploy). They are built once and the flag is then yours to turn off; like the demo
+    | page, this never runs with APP_ENV=production.
+    */
+    'seed_on_deploy' => filter_var(env('SEED_DEMO', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
     | Build only these academies (DemoProfiles slugs). Empty for all four; tests use one.
     */
     'only' => [],

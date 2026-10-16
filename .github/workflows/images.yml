@@ -1,19 +1,24 @@
 name: Images
 
-# Builds the deployable linux/arm64 images and tags them "staging" and "sha-<7>". Called by
-# "Deploy to staging" (deploy-staging.yml), which then points the staging branch at the new tag.
-# Pull requests that change how the images are built get the same build, without pushing, so a
+# The deployable linux/arm64 images, tagged `staging` and `sha-<7>`.
+#
+# Built automatically when CI passes on main, so every merged commit has an image and no button
+# needs pressing to get one. Deploying is then Portainer pulling the `staging` tag again: nothing
+# in this repository is edited to ship (docs/DEPLOYMENT.md "Shipping a change").
+#
+# Production runs `...:production`, a tag only "Promote to production" moves, to an image staging
+# has already run.
+#
+# Run by hand (Actions → Images → Run workflow, on any branch or tag) to build a specific commit:
+# that also moves the `staging` tag, so it is how you put an older or unmerged commit on staging.
+# Pull requests that change how the images are built get the same build without pushing, so a
 # broken build is found before it reaches main.
-# Production runs ...:production, which only "Promote to production" moves (to an image staging
-# has already run).
 
 on:
-  workflow_call:
-    inputs:
-      sha:
-        description: Commit to build
-        required: true
-        type: string
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
   pull_request:
     paths:
@@ -39,6 +44,8 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.image }} (linux/arm64)
+    # A failed CI run gets no image: the `staging` tag should only ever name a tested commit.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     # Emulated ARM on the standard runner by default. If native ARM runners are available to this
     # repository, set the repository variable IMAGE_RUNNER=ubuntu-24.04-arm for much faster builds.
     runs-on: ${{ vars.IMAGE_RUNNER || 'ubuntu-latest' }}
@@ -55,13 +62,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.sha || github.sha }}
+          # On a workflow_run the checkout defaults to main's tip, which may already have moved
+          # past the commit CI passed on. Build the commit that was tested.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Image name and tags
         id: meta
         env:
           OWNER: ${{ github.repository_owner }}
-          SHA: ${{ inputs.sha || github.sha }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           name="ghcr.io/${OWNER,,}/tutorium-${{ matrix.image }}"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
@@ -88,7 +97,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ inputs.sha || github.sha }}
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope={0}', matrix.image) || '' }}
 
@@ -97,4 +106,4 @@ jobs:
         run: |
           echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.meta.outputs.tags }}\`" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"
-
+          echo "Deploy it: Portainer → Stacks → the stack → **Pull and redeploy**." >> "$GITHUB_STEP_SUMMARY"

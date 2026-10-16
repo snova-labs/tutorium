@@ -105,6 +105,21 @@ export default async function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Your lists</CardTitle>
+            <CardDescription>
+              Session types, note categories and learner statuses: the small lists the rest of the product chooses
+              from. A preset filled them in, and an academy always needs its own.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/settings/lists">Your lists</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Getting started</CardTitle>
             <CardDescription>
               Setup guide: {onboarding.done} of {onboarding.total} steps done
