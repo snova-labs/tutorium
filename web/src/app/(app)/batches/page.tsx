@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Paginated } from "@/lib/api";
+import { formatLocalDateShort } from "@/lib/time";
 import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
 import type { Batch } from "@/lib/types";
@@ -76,8 +77,9 @@ export default async function BatchesPage() {
                     setOn="this batch"
                   />
                 </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {batch.runs.starts_on} → {batch.runs.ends_on ?? "open"}
+                <TableCell className="text-xs">
+                  {formatLocalDateShort(batch.runs.starts_on)} →{" "}
+                  {batch.runs.ends_on ? formatLocalDateShort(batch.runs.ends_on) : "open"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{batch.status}</Badge>

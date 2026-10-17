@@ -10,16 +10,8 @@ import { api } from "@/lib/api";
 import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
 import type { Usage, UsageInvoice } from "@/lib/types";
-import {
-  dailyBars,
-  entitlementValue,
-  hasFallen,
-  inPlanOrder,
-  invoiceTone,
-  meterHeadline,
-  outstanding,
-  periodLabel,
-} from "@/lib/usage";
+import { formatLocalDateShort, formatLocalRange } from "@/lib/time";
+import { dailyBars, entitlementValue, hasFallen, inPlanOrder, invoiceTone, meterHeadline, outstanding } from "@/lib/usage";
 
 export const metadata: Metadata = { title: "What you are billed for" };
 
@@ -60,7 +52,8 @@ export default async function UsagePage() {
           <CardHeader>
             <CardTitle>This period</CardTitle>
             <CardDescription>
-              {periodLabel(usage.meter.period)} · measured through {usage.meter.measured_through}
+              {formatLocalRange(usage.meter.period.start, usage.meter.period.end)} · measured through{" "}
+              {formatLocalDateShort(usage.meter.measured_through)}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -84,15 +77,16 @@ export default async function UsagePage() {
                   {bars.map((day) => (
                     <li
                       key={day.date}
-                      title={`${day.date}: ${day.count}${day.corrected ? " (corrected)" : ""}`}
+                      title={`${formatLocalDateShort(day.date)}: ${day.count}${day.corrected ? " (corrected)" : ""}`}
                       style={{ height: `${day.percent}%` }}
                       className={`flex-1 rounded-sm ${day.corrected ? "bg-muted-foreground" : "bg-primary"}`}
                     />
                   ))}
                 </ul>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  One bar a day, {bars[0].date} to {bars[bars.length - 1].date}. A grey bar is a day whose count was
-                  corrected afterwards.
+                  One bar a day, {formatLocalDateShort(bars[0].date)} to{" "}
+                  {formatLocalDateShort(bars[bars.length - 1].date)}. A grey bar is a day whose count was corrected
+                  afterwards.
                 </p>
               </div>
             )}
@@ -184,9 +178,10 @@ export default async function UsagePage() {
                           </Badge>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {periodLabel(item.period)}
+                          {formatLocalRange(item.period.start, item.period.end)}
                           {/* The day the quantity came from, so a figure can always be traced. */}
-                          {item.basis && ` · ${item.basis}`}
+                          {item.basis_date &&
+                            ` · Peak of ${item.quantity} on ${formatLocalDateShort(item.basis_date)}`}
                         </p>
                         {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
                       </div>

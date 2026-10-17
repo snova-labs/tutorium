@@ -8,7 +8,6 @@ import {
   invoiceTone,
   meterHeadline,
   outstanding,
-  periodLabel,
 } from "@/lib/usage";
 import type { UsageInvoice, UsageMeter } from "@/lib/types";
 
@@ -28,7 +27,7 @@ const invoice = (overrides: Partial<UsageInvoice> = {}): UsageInvoice => ({
   number: "INV-0001",
   period: { start: "2026-09-01", end: "2026-09-30" },
   quantity: 40,
-  basis: "Peak of 40 on 2026-09-12",
+  basis_date: "2026-09-12",
   total: "4000.00",
   status: "paid",
   notes: null,
@@ -54,16 +53,6 @@ describe("meterHeadline", () => {
     expect(meterHeadline(meter({ today: 38, peak: 42, peak_on: null }))).toBe(
       "42 learners: the highest count so far. Today it is 38.",
     );
-  });
-});
-
-describe("periodLabel", () => {
-  it("reads as one month when it is one month", () => {
-    expect(periodLabel({ start: "2026-10-01", end: "2026-10-31" })).toBe("1–31 October 2026");
-  });
-
-  it("spells out both ends when the period crosses a month", () => {
-    expect(periodLabel({ start: "2026-10-15", end: "2026-11-14" })).toBe("15 October – 14 November");
   });
 });
 

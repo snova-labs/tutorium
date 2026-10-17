@@ -73,12 +73,9 @@ final class UsageController
                         'end' => $invoice->period_end->toDateString(),
                     ],
                     'quantity' => $invoice->quantity,
-                    // Traceable by design: the day the figure came from, on the invoice itself.
-                    'basis' => $invoice->quantity_basis_date === null ? null : sprintf(
-                        'Peak of %d on %s',
-                        $invoice->quantity,
-                        $invoice->quantity_basis_date->toDateString(),
-                    ),
+                    // Traceable by design: the day the figure came from. The date, not a sentence
+                    // about it — a screen writes the sentence, in the reader's own date format.
+                    'basis_date' => $invoice->quantity_basis_date?->toDateString(),
                     'total' => $invoice->total(),
                     'status' => $invoice->status,
                     'notes' => $invoice->notes,

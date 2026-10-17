@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api } from "@/lib/api";
 import { getMe } from "@/lib/me";
 import { can } from "@/lib/permissions";
+import { formatLocalDateShort } from "@/lib/time";
 import type { Billing } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -34,7 +35,9 @@ export default async function BillingPage() {
             <CardDescription>
               {billing.trial.ended
                 ? "The account is read-only until a plan starts. Nothing has been deleted."
-                : `The trial runs until ${billing.trial.ends_on}.`}
+                : billing.trial.ends_on
+                  ? `The trial runs until ${formatLocalDateShort(billing.trial.ends_on)}.`
+                  : "The trial has no end date set."}
             </CardDescription>
           </CardHeader>
           <CardContent>

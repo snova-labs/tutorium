@@ -196,8 +196,8 @@ export interface UsageInvoice {
   number: string;
   period: { start: string; end: string };
   quantity: number;
-  /** How the quantity was arrived at: the peak, and the day it fell on. */
-  basis: string | null;
+  /** The day the quantity came from, so any figure can be traced back to a day. */
+  basis_date: string | null;
   total: string;
   status: string;
   notes: string | null;

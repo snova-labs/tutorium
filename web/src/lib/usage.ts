@@ -22,19 +22,6 @@ export function hasFallen(meter: UsageMeter): boolean {
   return meter.peak > meter.today;
 }
 
-/** The period as a person would say it: "1–31 October". */
-export function periodLabel(period: { start: string; end: string }): string {
-  const start = new Date(`${period.start}T00:00:00`);
-  const end = new Date(`${period.end}T00:00:00`);
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-
-  if (sameMonth) {
-    return `${start.getDate()}–${end.getDate()} ${month(end)} ${end.getFullYear()}`;
-  }
-
-  return `${shortDate(period.start)} – ${shortDate(period.end)}`;
-}
-
 /** A day in the period, as a bar: the proportion of the peak, for a bar chart with no library. */
 export function dailyBars(meter: UsageMeter): { date: string; count: number; corrected: boolean; percent: number }[] {
   const highest = Math.max(...meter.daily.map((d) => d.count), 1);
@@ -100,12 +87,16 @@ function learners(count: number): string {
   return count === 1 ? "learner" : "learners";
 }
 
+/**
+ * "9 October" for a local calendar date.
+ *
+ * Built from the parts rather than parsed as an instant: a date parsed as midnight shifts a day
+ * behind a negative offset, which is what lib/time's formatters exist to avoid.
+ */
 function shortDate(date: string): string {
-  const parsed = new Date(`${date}T00:00:00`);
+  const [year, month, day] = date.split("-").map(Number);
 
-  return `${parsed.getDate()} ${month(parsed)}`;
-}
-
-function month(date: Date): string {
-  return date.toLocaleDateString("en-GB", { month: "long" });
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(Date.UTC(year, month - 1, day, 12)),
+  );
 }

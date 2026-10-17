@@ -7,6 +7,7 @@ import { saveGrades } from "@/app/(app)/batches/[id]/gradebook/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cellKey, changedCells, defaultStatusId, draftFrom, optionsFor, type Draft } from "@/lib/gradebook";
+import { formatLocalDateShort } from "@/lib/time";
 import type { GradeBook } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -89,7 +90,7 @@ export function GradeGrid({ book, batchId, canEnter }: { book: GradeBook; batchI
                     {assessment.scheme.max_points !== null && ` / ${Number(assessment.scheme.max_points)}`}
                   </div>
                   {assessment.due_local_date && (
-                    <div className="font-mono font-normal text-faint">due {assessment.due_local_date}</div>
+                    <div className="font-normal text-faint">due {formatLocalDateShort(assessment.due_local_date)}</div>
                   )}
                 </th>
               ))}
