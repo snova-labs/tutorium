@@ -203,6 +203,30 @@ export interface UsageInvoice {
   notes: string | null;
 }
 
+export interface AcademySetting {
+  key: string;
+  value: boolean | number | string | string[] | null;
+  type: "switch" | "number" | "choice" | "roles";
+  label: string;
+  help: string;
+  choices: Record<string, string> | null;
+  min: number | null;
+  max: number | null;
+  /** Which level answered: system, tenant, brand, branch, course, batch. */
+  source: string;
+  /** Whether the stored value was written by the preset or chosen here. */
+  origin: "preset" | "academy" | null;
+  set_here: boolean;
+  /** What the value would be with nothing stored, so a revert can be described. */
+  shipped_default: boolean | number | string | string[] | null;
+}
+
+export interface SettingGroup {
+  key: string;
+  name: string;
+  settings: AcademySetting[];
+}
+
 export interface AttendanceStatus {
   id: number;
   name: string;

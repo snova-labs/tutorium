@@ -44,6 +44,7 @@ final class SettingsResolver
                 source: $setting->scope_type,
                 sourceId: $setting->scope_id,
                 isInherited: $setting->scope_type !== ($scope?->mostSpecificType() ?? 'tenant'),
+                origin: $setting->origin,
             );
         }
 
@@ -56,8 +57,13 @@ final class SettingsResolver
         );
     }
 
-    public function set(string $key, mixed $value, string $scopeType = 'tenant', ?int $scopeId = null): Setting
-    {
+    public function set(
+        string $key,
+        mixed $value,
+        string $scopeType = 'tenant',
+        ?int $scopeId = null,
+        string $origin = Setting::ORIGIN_ACADEMY,
+    ): Setting {
         $setting = Setting::query()->updateOrCreate(
             [
                 'tenant_id' => $this->context->require()->getKey(),
@@ -65,7 +71,9 @@ final class SettingsResolver
                 'scope_type' => $scopeType,
                 'scope_id' => $scopeId,
             ],
-            ['value' => $value],
+            // Anything set through here was chosen by somebody, which is what separates it from
+            // the preset's own writes.
+            ['value' => $value, 'origin' => $origin],
         );
 
         $this->flush();

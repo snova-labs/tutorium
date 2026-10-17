@@ -20,6 +20,7 @@ use App\Models\Setting;
 use App\Models\SubmissionStatus;
 use App\Models\Tenant;
 use App\Models\TerminologyOverride;
+use App\Support\Settings\SettingsResolver;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,7 @@ final class PresetApplier
     public function __construct(
         private readonly PresetRepository $presets,
         private readonly TenantContext $tenancy,
+        private readonly SettingsResolver $settings,
     ) {}
 
     /** @return array<string, int> what was created, by section */
@@ -100,9 +102,16 @@ final class PresetApplier
         foreach ($values as $key => $value) {
             $created += Setting::query()->firstOrCreate(
                 ['key' => $key, 'scope_type' => 'tenant', 'scope_id' => null],
-                ['value' => $value],
+                // Marked as the preset's, so a settings screen can say "we chose this for you"
+                // rather than implying somebody here did (SL-ARC-002 §7).
+                ['value' => $value, 'origin' => Setting::ORIGIN_PRESET],
             )->wasRecentlyCreated ? 1 : 0;
         }
+
+        // Rows written here bypass SettingsResolver, which caches what it has loaded for the
+        // life of the request. Without this, applying a preset and then reading a setting in the
+        // same request answers with the pre-preset value.
+        $this->settings->flush();
 
         return $created;
     }

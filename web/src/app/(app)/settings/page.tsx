@@ -105,6 +105,21 @@ export default async function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>How the academy behaves</CardTitle>
+            <CardDescription>
+              Registers, guardians, grading, periods, reports and sign-in codes — each with where its current answer
+              came from: you, your preset, or the product&apos;s own default.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/settings/behaviour">Settings and their origin</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Your lists</CardTitle>
             <CardDescription>
               Session types, note categories and learner statuses: the small lists the rest of the product chooses

@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\V1\ScheduleController;
+use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\TerminologyController;
 use App\Http\Controllers\Api\V1\UsageController;
@@ -229,6 +230,11 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.onboarding.sample.load');
         Route::delete('onboarding/sample-data', [OnboardingController::class, 'removeSample'])
             ->name('api.onboarding.sample.remove');
+
+        // How the academy behaves, with where each value came from (config/settings.php "screen").
+        Route::get('settings', [SettingController::class, 'index'])->name('api.settings.index');
+        Route::put('settings/{key}', [SettingController::class, 'update'])->name('api.settings.update');
+        Route::delete('settings/{key}', [SettingController::class, 'destroy'])->name('api.settings.destroy');
 
         Route::get('terminology', [TerminologyController::class, 'index'])->name('api.terminology.index');
         Route::put('terminology', [TerminologyController::class, 'update'])->name('api.terminology.update');
