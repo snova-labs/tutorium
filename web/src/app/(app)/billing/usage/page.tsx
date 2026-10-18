@@ -11,7 +11,16 @@ import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
 import type { Usage, UsageInvoice } from "@/lib/types";
 import { formatLocalDateShort, formatLocalRange } from "@/lib/time";
-import { dailyBars, entitlementValue, hasFallen, inPlanOrder, invoiceTone, meterHeadline, outstanding } from "@/lib/usage";
+import {
+  dailyBars,
+  entitlementValue,
+  hasFallen,
+  inPlanOrder,
+  invoiceTone,
+  licenceNotice,
+  meterHeadline,
+  outstanding,
+} from "@/lib/usage";
 
 export const metadata: Metadata = { title: "What you are billed for" };
 
@@ -32,6 +41,7 @@ export default async function UsagePage() {
   const learners = terms.learner.plural.toLowerCase();
   const bars = dailyBars(usage.meter);
   const owed = outstanding(invoices);
+  const licence = licenceNotice(usage.licence);
 
   return (
     <>
@@ -48,6 +58,30 @@ export default async function UsagePage() {
       />
 
       <div className="space-y-6">
+        {/* Self-hosted only. A cap that fills up has to say so while there is still time to do
+            something about it — not on the day an enrollment is refused. */}
+        {licence && (
+          <Card className={licence.tone === "bad" ? "border-bad" : undefined}>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {licence.tone === "bad" ? "Your licence needs attention" : "About your licence"}
+              </CardTitle>
+              <CardDescription>{licence.message}</CardDescription>
+            </CardHeader>
+            {usage.licence?.licence && (
+              <CardContent className="text-xs text-muted-foreground">
+                Licence {usage.licence.licence.id} for {usage.licence.licence.licensee} ·{" "}
+                {usage.licence.licence.max_learners === null
+                  ? "unlimited learners"
+                  : `${usage.licence.learners_now ?? 0} of ${usage.licence.licence.max_learners} learner places in use`}{" "}
+                {/* "Runs to" a date in the past reads as a mistake, so an expired licence says it expired. */}
+                · {usage.licence.licence.lapsed || usage.licence.licence.in_grace ? "expired" : "runs to"}{" "}
+                {formatLocalDateShort(usage.licence.licence.expires_on)}
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>This period</CardTitle>
@@ -122,7 +156,8 @@ export default async function UsagePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center gap-2">
-              {usage.plan.name ?? "No plan"}
+              {/* A self-hosted install has no plan and never will: the licence is the plan. */}
+              {usage.plan.name ?? (usage.licence?.licence ? "Self-hosted licence" : "No plan")}
               {usage.plan.status && <Badge variant="secondary">{usage.plan.status}</Badge>}
             </CardTitle>
             <CardDescription>What the plan allows, and where each answer comes from: {usage.plan.source}.</CardDescription>
@@ -148,7 +183,9 @@ export default async function UsagePage() {
           </CardContent>
         </Card>
 
-        {seesInvoices && (
+        {/* A self-hosted install is licensed annually, not metered monthly: there are no invoices
+            here to be settled or outstanding, and an empty card saying so is a lie by layout. */}
+        {seesInvoices && usage.licence === null && (
           <Card>
             <CardHeader>
               <CardTitle>Invoices</CardTitle>

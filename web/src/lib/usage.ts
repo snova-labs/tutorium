@@ -1,4 +1,5 @@
-import type { Usage, UsageInvoice, UsageMeter } from "@/lib/types";
+import type { LicenceStatus, Usage, UsageInvoice, UsageMeter } from "@/lib/types";
+import { formatLocalDateShort } from "@/lib/time";
 
 /**
  * The one sentence the meter has to get across: what this month will be billed as, and why that
@@ -81,6 +82,86 @@ export function invoiceTone(status: string): "good" | "bad" | "muted" {
 /** The total of what is still owed, which no single invoice row tells you. */
 export function outstanding(invoices: UsageInvoice[]): UsageInvoice[] {
   return invoices.filter((invoice) => invoice.status !== "paid" && invoice.status !== "void");
+}
+
+/**
+ * What a self-hosted install needs told about its licence today, or nothing.
+ *
+ * Hosted academies never see this: they have a subscription, and the server sends null. A lapsed
+ * licence reads as a problem rather than a warning, because new enrollments are already being
+ * refused — but it is still only a notice, since attendance, grades and exports all carry on.
+ *
+ * The sentence is composed here rather than printed as the server sent it, so the dates in it are
+ * the reader's dates. The server says the same things to `platform:licence` and `platform:verify`,
+ * in ISO, for an administrator reading a terminal; keep the two in step. Its sentence is still the
+ * fallback for the case this cannot phrase: a file nobody could read at all.
+ */
+export function licenceNotice(
+  status: LicenceStatus | null,
+): { tone: "bad" | "warn"; message: string; expires: string | null } | null {
+  if (status === null) {
+    return null;
+  }
+
+  const licence = status.licence;
+  const tone = status.ok ? "warn" : "bad";
+
+  if (licence === null) {
+    return status.warning === null ? null : { tone, message: status.warning, expires: null };
+  }
+
+  const expires = formatLocalDateShort(licence.expires_on);
+  const graceEnds = formatLocalDateShort(licence.grace_ends_on);
+  const message = licenceMessage(status, licence, expires, graceEnds);
+
+  return message === null ? null : { tone, message, expires: licence.expires_on };
+}
+
+function licenceMessage(
+  status: LicenceStatus,
+  licence: NonNullable<LicenceStatus["licence"]>,
+  expires: string,
+  graceEnds: string,
+): string | null {
+  if (licence.lapsed) {
+    return (
+      `The licence expired on ${expires} and its grace period ended on ${graceEnds}. New enrollments are ` +
+      "refused; attendance, grades, reports and exports all still work."
+    );
+  }
+
+  if (licence.in_grace) {
+    return (
+      `The licence expired on ${expires}. This install keeps working until ${graceEnds}, and then stops ` +
+      "taking new enrollments. Nothing already recorded is affected."
+    );
+  }
+
+  if (licence.days_left <= 30) {
+    return `The licence runs out on ${expires}, in ${licence.days_left === 1 ? "a day" : `${licence.days_left} days`}.`;
+  }
+
+  return capMessage(status, licence);
+}
+
+/** A cap filling up, said while there is still time to do something about it. */
+function capMessage(status: LicenceStatus, licence: NonNullable<LicenceStatus["licence"]>): string | null {
+  const cap = licence.max_learners;
+  const now = status.learners_now;
+
+  if (cap === null || cap === 0 || now === null) {
+    return null;
+  }
+
+  if (now >= cap) {
+    return (
+      `All ${cap} learner places on the licence are in use. Nobody new can be enrolled until a place frees ` +
+      "up or the licence is raised; everyone already enrolled carries on as normal."
+    );
+  }
+
+  // The server decides when this starts being worth saying, and says so by sending a warning.
+  return status.warning === null ? null : `${now} of the ${cap} learner places on the licence are in use.`;
 }
 
 function learners(count: number): string {

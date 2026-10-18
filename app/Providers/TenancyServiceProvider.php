@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Policies\AttendancePolicyGate;
 use App\Policies\ClassSessionPolicy;
 use App\Services\EntitlementService;
+use App\Services\LicenceService;
 use App\Support\Audit\AuditContext;
 use App\Support\Billing\EntitlementSource;
 use App\Support\Billing\LicenceEntitlements;
@@ -68,11 +69,14 @@ final class TenancyServiceProvider extends ServiceProvider
         $this->app->singleton(PresetRepository::class);
         $this->app->scoped(Terminology::class);
 
+        $this->app->scoped(LicenceService::class);
+
         $this->app->bind(EntitlementSource::class, function ($app) {
-            return config('platform.deployment_mode') === 'self_hosted'
-                ? new LicenceEntitlements(
-                    json_decode((string) @file_get_contents(storage_path('app/licence.json')), true) ?: [],
-                )
+            // The mode decides where every entitlement answer comes from, and it is read from one
+            // place. An earlier spelling of this key did not exist, so self-hosted installs
+            // silently resolved as cloud and a licence cap was never enforced at all.
+            return $app->make(LicenceService::class)->selfHosted()
+                ? new LicenceEntitlements($app->make(LicenceService::class)->licence())
                 : new SubscriptionEntitlements($app->make(TenantContext::class));
         });
 

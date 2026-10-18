@@ -28,6 +28,7 @@ invalidates no reference.
 - `SIGN-IN.md` — emailed sign-in codes for operators and academy staff, the optional authenticator app and recovery codes
 - `BILLING-PAYMENT-METHOD.md` — how an academy adds a card, sees what it pays with, switches to invoicing, and converts a trial in one step
 - `DEPLOYMENT.md` — staging and production on the Oracle server: images, Portainer stacks, Cloudflare Tunnel or Nginx Proxy Manager, promotion and rollback, nightly backups and the weekly restore drill
+- `SELF-HOSTED-LICENCE.md` — self-hosted installs: the signed licence file, verifying it offline, what a full cap or an expired licence does and does not stop
 - `LEARNER-IMPORT.md` — importing learners and guardians from a spreadsheet: template, preview, commit
 
 ## Regenerating

@@ -69,6 +69,7 @@ app/
 config/
   tenancy.php             Resource registry — every tenant-owned model must be listed
   platform.php            Product naming and mode (cloud | self_hosted)
+  licence.php             Self-hosted licence file, its public key and grace period
 database/migrations/      Schema, in dependency order
 tests/Feature/Tenancy/    Isolation harness (blocking check in CI)
 docs/specs/               SL-PRD-000 … SL-PLN-008

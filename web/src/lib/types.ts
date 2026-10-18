@@ -190,6 +190,30 @@ export interface Usage {
       reason: string | null;
     }[];
   };
+  /** Self-hosted installs only; null for a hosted academy, which has a subscription instead. */
+  licence: LicenceStatus | null;
+}
+
+export interface LicenceStatus {
+  /** False once the licence has lapsed: new enrollments are refused, everything else carries on. */
+  ok: boolean;
+  problem: string | null;
+  learners_now: number | null;
+  places_left: number | null;
+  /** The one sentence worth reading today, or none. */
+  warning: string | null;
+  licence: {
+    id: string;
+    licensee: string;
+    issued_on: string;
+    expires_on: string;
+    days_left: number;
+    max_learners: number | null;
+    notes: string | null;
+    grace_ends_on: string;
+    in_grace: boolean;
+    lapsed: boolean;
+  } | null;
 }
 
 export interface UsageInvoice {

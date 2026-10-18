@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace App\Support\Billing;
 
 use App\Models\Tenant;
+use App\Support\Licensing\Licence;
 
 /**
  * Self-hosted mode: answers come from a signed licence file, validated offline.
  *
- * Present now, unused until P5. It exists at this point so that every entitlement check written
- * from here on goes through the interface rather than reaching for a subscription — which is the
- * only thing that keeps the self-hosted product from becoming a fork (SL-ARC-002 §10).
+ * Nothing in the product knows it is being answered by a licence rather than by a subscription,
+ * which is the only thing that keeps the self-hosted product from becoming a fork (SL-ARC-002 §10).
+ * An install with no readable licence answers nothing at all, and the shipped defaults apply —
+ * refusing every question would take the register away from a school over a renewal.
  */
 final class LicenceEntitlements implements EntitlementSource
 {
-    /** @param array<string, mixed> $licence */
-    public function __construct(private readonly array $licence = []) {}
+    public function __construct(private readonly ?Licence $licence = null) {}
 
     public function resolve(Tenant $tenant, string $key): ?Entitlement
     {
-        $features = $this->licence['features'] ?? [];
+        $features = $this->licence?->entitlements() ?? [];
 
         if (! array_key_exists($key, $features)) {
             return null;
@@ -33,6 +34,11 @@ final class LicenceEntitlements implements EntitlementSource
             // A licence cap warns and blocks new enrollments; it never stops a teacher recording
             // attendance for learners who are already there (FR-LIC-1).
             isHard: $key === 'max_learners',
+            // A cap is the one answer somebody will argue about, so it says which licence it
+            // came from. A key present in the features means there is a licence to name.
+            reason: $key === 'max_learners'
+                ? sprintf('Licence %s, %s', $this->licence->id, $this->licence->licensee)
+                : null,
         );
     }
 
@@ -41,7 +47,7 @@ final class LicenceEntitlements implements EntitlementSource
     {
         $entitlements = [];
 
-        foreach (($this->licence['features'] ?? []) as $key => $value) {
+        foreach (($this->licence?->entitlements() ?? []) as $key => $value) {
             $entitlements[$key] = $this->resolve($tenant, $key);
         }
 

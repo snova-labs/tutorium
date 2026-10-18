@@ -15,6 +15,7 @@ use App\Services\TenantProvisioner;
 use App\Support\Billing\Entitlement;
 use App\Support\Billing\EntitlementSource;
 use App\Support\Billing\LicenceEntitlements;
+use App\Support\Licensing\Licence;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -188,9 +189,14 @@ final class EntitlementTest extends TestCase
     public function a_licence_answers_the_same_questions_as_a_subscription(): void
     {
         // The self-hosted path, exercised now so it cannot drift later.
-        $this->app->instance(EntitlementSource::class, new LicenceEntitlements([
-            'features' => ['max_learners' => 500, 'sso' => true, 'api_access' => true],
-        ]));
+        $this->app->instance(EntitlementSource::class, new LicenceEntitlements(new Licence(
+            id: 'LIC-2026-0001',
+            licensee: 'Sample Academy',
+            issuedOn: CarbonImmutable::parse('2026-01-01'),
+            expiresOn: CarbonImmutable::parse('2027-01-01'),
+            maxLearners: 500,
+            features: ['sso' => true, 'api_access' => true],
+        )));
 
         $service = $this->app->make(EntitlementService::class);
 

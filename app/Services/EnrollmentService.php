@@ -23,13 +23,19 @@ use Illuminate\Validation\ValidationException;
  */
 final class EnrollmentService
 {
-    public function __construct(private readonly IdSequenceService $sequences) {}
+    public function __construct(
+        private readonly IdSequenceService $sequences,
+        private readonly EntitlementService $entitlements,
+        private readonly MeteringService $metering,
+        private readonly LicenceService $licences,
+    ) {}
 
     public function enroll(Learner $learner, Batch $batch, ?string $enrolledOn = null, ?EnrollmentStatus $status = null): Enrollment
     {
         $this->guardBatchAccepts($batch);
         $this->guardNotAlreadyEnrolled($learner, $batch);
         $this->guardCapacity($batch);
+        $this->guardLearnerCap($learner);
 
         return DB::transaction(function () use ($learner, $batch, $enrolledOn, $status): Enrollment {
             $status ??= $this->defaultStatus();
@@ -180,6 +186,38 @@ final class EnrollmentService
                 ),
             ]);
         }
+    }
+
+    /**
+     * Refuse a new learner once the account's cap is full.
+     *
+     * Three things this is careful about:
+     *  - It counts learners, the way the invoice counts them, so a learner who is already counted
+     *    can always be put into a second batch however full the cap is. Somebody paid for that
+     *    person once.
+     *  - It blocks only this act, adding somebody new. Attendance, grades, notes, reports and
+     *    exports are untouched by a full cap or a lapsed licence, because a school cannot stop
+     *    teaching the learners it already has (FR-ENT-3).
+     *  - The cap itself is whatever the entitlement layer says, so the same code enforces a cloud
+     *    plan's limit and a self-hosted licence's. Only the expiry is licence-specific.
+     */
+    private function guardLearnerCap(Learner $learner): void
+    {
+        if ($this->alreadyCounted($learner)) {
+            return;
+        }
+
+        $this->licences->guardNewEnrollment();
+        $this->entitlements->guardCreation('max_learners', $this->metering->activeLearners());
+    }
+
+    /** Whether this learner is already inside the billable count, through some other batch. */
+    private function alreadyCounted(Learner $learner): bool
+    {
+        return Enrollment::query()
+            ->where('learner_id', $learner->getKey())
+            ->billable()
+            ->exists();
     }
 
     private function defaultStatus(): EnrollmentStatus
