@@ -204,6 +204,22 @@ final class MeteringService
     }
 
     /**
+     * How many learners count right now.
+     *
+     * The same definition the invoice uses, which is the point: a cap that counted something
+     * other than the billable figure would refuse an enrollment for a number nobody can find
+     * anywhere else on the product.
+     */
+    public function activeLearners(?Tenant $tenant = null): int
+    {
+        $count = fn (): int => array_sum($this->countByBranch());
+
+        return $tenant === null
+            ? $count()
+            : $this->tenancy->runAs($tenant, $count);
+    }
+
+    /**
      * Snapshots with corrections taking precedence over the originals they replace.
      *
      * @return Collection<int, UsageSnapshot>

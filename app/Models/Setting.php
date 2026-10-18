@@ -14,10 +14,16 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class Setting extends Model
 {
+    /** Written by the preset when the account was created, rather than chosen by the academy. */
+    public const ORIGIN_PRESET = 'preset';
+
+    /** Somebody in the academy set this deliberately. */
+    public const ORIGIN_ACADEMY = 'academy';
+
     /** @use HasFactory<SettingFactory> */
     use BelongsToTenant, HasFactory;
 
-    protected $fillable = ['tenant_id', 'key', 'value', 'scope_type', 'scope_id', 'updated_by'];
+    protected $fillable = ['tenant_id', 'key', 'value', 'scope_type', 'scope_id', 'origin', 'updated_by'];
 
     protected function casts(): array
     {

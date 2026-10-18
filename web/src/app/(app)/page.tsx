@@ -10,6 +10,7 @@ import { hideSetupGuide, loadSampleData, removeSampleData } from "@/app/(app)/se
 import { api } from "@/lib/api";
 import { getMe, getTerms } from "@/lib/me";
 import { can } from "@/lib/permissions";
+import { formatLocalDateShort } from "@/lib/time";
 import { stepHref } from "@/lib/settings";
 import type { Onboarding } from "@/lib/types";
 
@@ -35,7 +36,8 @@ export default async function HomePage() {
       {trial.in_trial && (
         <Alert className="mb-6">
           <AlertTitle>
-            Trial: {trial.days_left} {trial.days_left === 1 ? "day" : "days"} left, ending {trial.ends_on}
+            Trial: {trial.days_left} {trial.days_left === 1 ? "day" : "days"} left
+            {trial.ends_on && `, ending ${formatLocalDateShort(trial.ends_on)}`}
           </AlertTitle>
           <AlertDescription>
             <ul className="list-disc pl-4">

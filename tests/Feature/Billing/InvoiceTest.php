@@ -11,13 +11,16 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\UsageSnapshot;
+use App\Models\User;
 use App\Services\InvoiceComposer;
 use App\Services\MeteringService;
 use App\Services\TenantProvisioner;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -79,6 +82,30 @@ final class InvoiceTest extends TestCase
         $this->assertSame('2026-08-14', $invoice->quantity_basis_date->toDateString());
         $this->assertSame($peakDay->getKey(), $invoice->quantity_snapshot_id);
         $this->assertStringContainsString('184 active learners on 2026-08-14', implode(' ', $invoice->notes));
+    }
+
+    #[Test]
+    public function the_endpoint_hands_over_the_basis_date_rather_than_a_sentence(): void
+    {
+        $this->measure('2026-08-14', 184);
+        $invoice = $this->draft();
+
+        Sanctum::actingAs($this->owner(), ['staff']);
+
+        $response = $this->getJson('/api/v1/usage/invoices')->assertOk();
+
+        // A date, so a screen can print it in the reader's own format. The sentence it used to
+        // send carried an ISO date into the interface, where nothing could reformat it.
+        $this->assertSame('2026-08-14', $response->json('data.0.basis_date'));
+        $this->assertSame(184, $response->json('data.0.quantity'));
+
+        // The invoice's own notes are left exactly as they were written when it was raised: they
+        // are evidence of how the figure was explained, not something to restyle later.
+        $this->assertStringContainsString(
+            '184 active learners on 2026-08-14',
+            implode(' ', (array) $response->json('data.0.notes')),
+        );
+        $this->assertSame($invoice->number, $response->json('data.0.number'));
     }
 
     #[Test]
@@ -166,6 +193,18 @@ final class InvoiceTest extends TestCase
         $this->expectExceptionMessage('credit note');
 
         app(InvoiceComposer::class)->issue($invoice);
+    }
+
+    private function owner(): User
+    {
+        app(RolesAndPermissionsSeeder::class)->run($this->tenant);
+
+        return app(TenantContext::class)->runAs($this->tenant, function (): User {
+            $user = User::factory()->create(['is_active' => true, 'scope_all_branches' => true]);
+            $user->syncRoles([config('permissions.owner_role', 'Owner')]);
+
+            return $user->fresh();
+        });
     }
 
     private function draft(): Invoice

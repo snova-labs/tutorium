@@ -20,6 +20,8 @@ final class ResolvedSetting implements Arrayable
         public readonly string $source,
         public readonly ?int $sourceId,
         public readonly bool $isInherited,
+        /** 'preset', 'academy', or null when the row predates the column or is a system default. */
+        public readonly ?string $origin = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -31,6 +33,7 @@ final class ResolvedSetting implements Arrayable
             'source' => $this->source,
             'source_id' => $this->sourceId,
             'is_inherited' => $this->isInherited,
+            'origin' => $this->origin,
         ];
     }
 }

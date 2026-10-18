@@ -160,6 +160,97 @@ export interface Billing {
   available_plans: { code: string; name: string; unit_price: string; minimum: string; current: boolean }[];
 }
 
+export interface UsageMeter {
+  /** Active learners counted today. */
+  today: number;
+  /** The highest daily count so far this period: what the invoice will say. */
+  peak: number;
+  peak_on: string | null;
+  will_be_billed_for: number;
+  basis: string;
+  period: { start: string; end: string };
+  daily: { date: string; count: number; corrected: boolean }[];
+  measured_through: string;
+}
+
+export interface Usage {
+  meter: UsageMeter;
+  /** The counting rules, served with the figure so an invoice is never the first sight of it. */
+  what_counts: { counted: string[]; not_counted: string[]; rules: string[] };
+  plan: {
+    name: string | null;
+    status: string | null;
+    source: string;
+    /** value: a limit (null means unlimited), a boolean for a feature, or a string. */
+    entitlements: {
+      key: string;
+      value: number | boolean | string | null;
+      source: "plan" | "override" | "licence" | "default";
+      enforcement: "hard" | "soft";
+      reason: string | null;
+    }[];
+  };
+  /** Self-hosted installs only; null for a hosted academy, which has a subscription instead. */
+  licence: LicenceStatus | null;
+}
+
+export interface LicenceStatus {
+  /** False once the licence has lapsed: new enrollments are refused, everything else carries on. */
+  ok: boolean;
+  problem: string | null;
+  learners_now: number | null;
+  places_left: number | null;
+  /** The one sentence worth reading today, or none. */
+  warning: string | null;
+  licence: {
+    id: string;
+    licensee: string;
+    issued_on: string;
+    expires_on: string;
+    days_left: number;
+    max_learners: number | null;
+    notes: string | null;
+    grace_ends_on: string;
+    in_grace: boolean;
+    lapsed: boolean;
+  } | null;
+}
+
+export interface UsageInvoice {
+  number: string;
+  period: { start: string; end: string };
+  quantity: number;
+  /** The day the quantity came from, so any figure can be traced back to a day. */
+  basis_date: string | null;
+  total: string;
+  status: string;
+  notes: string | null;
+}
+
+export interface AcademySetting {
+  key: string;
+  value: boolean | number | string | string[] | null;
+  type: "switch" | "number" | "choice" | "roles";
+  label: string;
+  help: string;
+  choices: Record<string, string> | null;
+  min: number | null;
+  max: number | null;
+  /** Which level answered: system, tenant, brand, branch, course, batch. */
+  source: string;
+  /** Whether the stored value was written by the preset or chosen here. */
+  origin: "preset" | "academy" | null;
+  set_here: boolean;
+  /** What the value would be with nothing stored, so a revert can be described. */
+  shipped_default: boolean | number | string | string[] | null;
+}
+
+export interface SettingGroup {
+  key: string;
+  name: string;
+  settings: AcademySetting[];
+}
+
 export interface AttendanceStatus {
   id: number;
   name: string;

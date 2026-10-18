@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Diagnostics;
 
+use App\Services\LicenceService;
 use App\Support\Pdf\PdfOptions;
 use App\Support\Pdf\PdfRenderer;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
@@ -31,6 +32,7 @@ final class PlatformVerifier
         private readonly QueueFactory $queue,
         private readonly MailManager $mail,
         private readonly PdfRenderer $pdf,
+        private readonly LicenceService $licences,
     ) {}
 
     /** @return array<int, CheckResult> */
@@ -46,6 +48,12 @@ final class PlatformVerifier
             'Mail' => fn (): CheckResult => $this->mailTransport(),
             'Report PDFs' => fn (): CheckResult => $this->pdfRenderer(),
         ];
+
+        if ($this->licences->selfHosted()) {
+            // Only a self-hosted install has a licence to be wrong about. On a cloud deploy the
+            // row would be a line of noise on every release.
+            $checks['Licence'] = fn (): CheckResult => $this->licence();
+        }
 
         foreach ($this->disks() as $label => $disk) {
             $checks[$label] = fn (): CheckResult => $this->storage($label, $disk);
@@ -200,6 +208,44 @@ final class PlatformVerifier
         return str_starts_with($bytes, '%PDF')
             ? CheckResult::ok('Report PDFs', sprintf('%s, %d bytes for a one-line page', $this->pdf->name(), strlen($bytes)))
             : CheckResult::fail('Report PDFs', sprintf('%s returned something that is not a PDF', $this->pdf->name()));
+    }
+
+    /**
+     * Can this install still prove what it is allowed to do?
+     *
+     * A failure here is not an outage: attendance, grades and exports carry on. It is the deploy
+     * being told, while somebody is still watching the output, that new enrollments are about to
+     * start being refused.
+     */
+    private function licence(): CheckResult
+    {
+        $licence = $this->licences->licence();
+
+        if ($licence === null) {
+            return CheckResult::fail('Licence', (string) $this->licences->problem());
+        }
+
+        $detail = sprintf(
+            '%s, %s, %s',
+            $licence->id,
+            $licence->licensee,
+            $licence->maxLearners === null ? 'unlimited learners' : $licence->maxLearners.' learners',
+        );
+
+        if ($licence->lapsed()) {
+            return CheckResult::fail('Licence', sprintf(
+                '%s — expired %s, grace ended %s. No new enrollments.',
+                $detail,
+                $licence->expiresOn->toDateString(),
+                $licence->graceEndsOn()->toDateString(),
+            ));
+        }
+
+        $warning = $this->licences->status()['warning'] ?? null;
+
+        return $warning === null
+            ? CheckResult::ok('Licence', sprintf('%s, until %s', $detail, $licence->expiresOn->toDateString()))
+            : CheckResult::warn('Licence', (string) $warning);
     }
 
     private function storage(string $label, string $disk): CheckResult

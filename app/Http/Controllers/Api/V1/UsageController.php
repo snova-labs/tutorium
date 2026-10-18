@@ -8,6 +8,7 @@ use App\Models\EnrollmentStatus;
 use App\Models\Invoice;
 use App\Models\Subscription;
 use App\Services\EntitlementService;
+use App\Services\LicenceService;
 use App\Services\MeteringService;
 use App\Support\Billing\Entitlement;
 use App\Support\Tenancy\TenantContext;
@@ -22,6 +23,7 @@ final class UsageController
     public function __construct(
         private readonly MeteringService $metering,
         private readonly EntitlementService $entitlements,
+        private readonly LicenceService $licences,
         private readonly TenantContext $tenancy,
     ) {}
 
@@ -53,6 +55,10 @@ final class UsageController
                     ],
                 ],
                 'plan' => $this->planSummary(),
+                // Self-hosted only, and null everywhere else: the licence, and the one sentence
+                // worth reading today. A cap that fills up must say so while there is still time
+                // to do something about it, not on the day an enrollment is refused.
+                'licence' => $this->licences->status(),
             ],
         ]);
     }
@@ -73,12 +79,9 @@ final class UsageController
                         'end' => $invoice->period_end->toDateString(),
                     ],
                     'quantity' => $invoice->quantity,
-                    // Traceable by design: the day the figure came from, on the invoice itself.
-                    'basis' => $invoice->quantity_basis_date === null ? null : sprintf(
-                        'Peak of %d on %s',
-                        $invoice->quantity,
-                        $invoice->quantity_basis_date->toDateString(),
-                    ),
+                    // Traceable by design: the day the figure came from. The date, not a sentence
+                    // about it — a screen writes the sentence, in the reader's own date format.
+                    'basis_date' => $invoice->quantity_basis_date?->toDateString(),
                     'total' => $invoice->total(),
                     'status' => $invoice->status,
                     'notes' => $invoice->notes,

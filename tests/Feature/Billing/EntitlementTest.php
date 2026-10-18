@@ -15,6 +15,7 @@ use App\Services\TenantProvisioner;
 use App\Support\Billing\Entitlement;
 use App\Support\Billing\EntitlementSource;
 use App\Support\Billing\LicenceEntitlements;
+use App\Support\Licensing\Licence;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,44 @@ final class EntitlementTest extends TestCase
             'current_period_start' => now()->startOfMonth()->toDateString(),
             'current_period_end' => now()->endOfMonth()->toDateString(),
         ]));
+    }
+
+    #[Test]
+    public function an_unlimited_hard_limit_is_unlimited_rather_than_a_limit_of_one(): void
+    {
+        // A plan feature stores {"value": x}, and x is null for unlimited. Reading it with
+        // `value['value'] ?? value` handed back the wrapper array for exactly that case, so
+        // isUnlimited() was false and asInt() cast an array to 1: unlimited enforced as one.
+        PlanFeature::query()->create([
+            'plan_id' => $this->growth->getKey(), 'feature_key' => 'max_branches',
+            'value' => ['value' => null], 'enforcement' => PlanFeature::HARD,
+        ]);
+
+        $entitlements = app(EntitlementService::class);
+
+        app(TenantContext::class)->runAs($this->tenant, function () use ($entitlements): void {
+            $entitlement = $entitlements->get('max_branches', $this->tenant);
+
+            $this->assertNull($entitlement->value);
+            $this->assertTrue($entitlement->isUnlimited());
+
+            // The thing that matters: having some already does not block the next one.
+            $entitlements->guardCreation('max_branches', 7, $this->tenant);
+        });
+    }
+
+    #[Test]
+    public function an_override_with_no_limit_is_unlimited_too(): void
+    {
+        app(TenantContext::class)->runAs($this->tenant, fn () => TenantEntitlementOverride::query()->create([
+            'feature_key' => 'max_brands', 'value' => ['value' => null], 'reason' => 'Agreed on the call',
+        ]));
+
+        $entitlement = app(EntitlementService::class)->get('max_brands', $this->tenant);
+
+        $this->assertNull($entitlement->value);
+        $this->assertTrue($entitlement->isUnlimited());
+        $this->assertSame(Entitlement::SOURCE_OVERRIDE, $entitlement->source);
     }
 
     #[Test]
@@ -150,9 +189,14 @@ final class EntitlementTest extends TestCase
     public function a_licence_answers_the_same_questions_as_a_subscription(): void
     {
         // The self-hosted path, exercised now so it cannot drift later.
-        $this->app->instance(EntitlementSource::class, new LicenceEntitlements([
-            'features' => ['max_learners' => 500, 'sso' => true, 'api_access' => true],
-        ]));
+        $this->app->instance(EntitlementSource::class, new LicenceEntitlements(new Licence(
+            id: 'LIC-2026-0001',
+            licensee: 'Sample Academy',
+            issuedOn: CarbonImmutable::parse('2026-01-01'),
+            expiresOn: CarbonImmutable::parse('2027-01-01'),
+            maxLearners: 500,
+            features: ['sso' => true, 'api_access' => true],
+        )));
 
         $service = $this->app->make(EntitlementService::class);
 
